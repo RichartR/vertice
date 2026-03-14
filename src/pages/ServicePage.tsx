@@ -32,7 +32,7 @@ export default function ServicePage() {
     <div className="min-h-screen bg-gray-50 pb-16">
 
       {/* Header */}
-      <header className="bg-white border-b-2 border-accent/50 px-6 py-4 flex items-center justify-between">
+      <header className="bg-accent border-b border-accent-dark px-6 py-4 flex items-center justify-between">
         <div className="flex items-center gap-4">
           <button
             onClick={() => navigate('/dashboard')}
