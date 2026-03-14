@@ -2,28 +2,53 @@
 // En producción: empleado ve solo lectura, admin ve edición. Aquí mostramos la vista completa.
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import Tooltip from '../components/ui/Tooltip'
+import StatCard from '../components/ui/StatCard'
+import Badge from '../components/ui/Badge'
+import Modal from '../components/ui/Modal'
+import FormField from '../components/ui/FormField'
+import SubPageHeader from '../components/ui/SubPageHeader'
+import { normalizar } from '../utils/normalizar'
 
-const REGISTROS = [
-  { id: '1', fecha: '14/03/2026', hora: '09:00', cliente: 'María Pérez Gómez',    tratamiento: 'Quiropodia',          notas: '',                          metodo: 'Tarjeta', precio: 35.00 },
-  { id: '2', fecha: '14/03/2026', hora: '10:30', cliente: 'José Martínez López',  tratamiento: 'Plantillas ortopédicas', notas: 'Revisión en 3 meses',    metodo: 'Efectivo', precio: 120.00 },
-  { id: '3', fecha: '13/03/2026', hora: '11:00', cliente: 'Laura Sánchez Ruiz',   tratamiento: 'Uña encarnada',       notas: '',                          metodo: 'Tarjeta', precio: 40.00 },
-  { id: '4', fecha: '13/03/2026', hora: '16:00', cliente: 'Carlos Díaz Moreno',   tratamiento: 'Quiropodia',          notas: 'Pie diabético, extremar cuidado', metodo: 'Efectivo', precio: 35.00 },
-  { id: '5', fecha: '12/03/2026', hora: '09:30', cliente: 'Elena Fernández Gil',  tratamiento: 'Verrugas plantares',  notas: '2ª sesión',                 metodo: 'Tarjeta', precio: 55.00 },
-  { id: '6', fecha: '12/03/2026', hora: '12:00', cliente: 'Lucía Romero Castro',  tratamiento: 'Quiropodia',          notas: '',                          metodo: 'Tarjeta', precio: 35.00 },
-]
+// Clase reutilizable para inputs del formulario
+const inputCls = 'w-full px-3 py-2 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-accent'
+
+type Registro = { id: string; fecha: string; hora: string; cliente: string; tratamiento: string; notas: string; metodo: string; precio: number }
+
+const REGISTROS: Registro[] = []
 
 type Tab = 'registros' | 'estadisticas'
-
-// Normaliza texto eliminando acentos para que "Lopez" encuentre "López"
-function normalizar(texto: string) {
-  return texto.normalize('NFD').replaceAll(/\p{Diacritic}/gu, '').toLowerCase()
-}
 
 export default function ServicePage() {
   const navigate = useNavigate()
   const [tab, setTab] = useState<Tab>('registros')
   const [filtroCliente, setFiltroCliente] = useState('')
   const [filtroMetodo, setFiltroMetodo] = useState('')
+
+  // Estado del modal de registro (null = nuevo, objeto = editar)
+  const [registroModal, setRegistroModal] = useState<{ open: boolean; registro: Registro | null }>({ open: false, registro: null })
+  const [rFecha, setRFecha]           = useState('2026-03-14')
+  const [rHora, setRHora]             = useState('')
+  const [rCliente, setRCliente]       = useState('')
+  const [rTratamiento, setRTratamiento] = useState('')
+  const [rNotas, setRNotas]           = useState('')
+  const [rMetodo, setRMetodo]         = useState('Tarjeta')
+  const [rPrecio, setRPrecio]         = useState('')
+
+  function abrirNuevo() {
+    setRFecha('2026-03-14'); setRHora(''); setRCliente('')
+    setRTratamiento(''); setRNotas(''); setRMetodo('Tarjeta'); setRPrecio('')
+    setRegistroModal({ open: true, registro: null })
+  }
+
+  function abrirEditar(r: Registro) {
+    // Convierte DD/MM/YYYY → YYYY-MM-DD para input[type=date]
+    const [d, m, y] = r.fecha.split('/')
+    setRFecha(`${y}-${m}-${d}`)
+    setRHora(r.hora); setRCliente(r.cliente); setRTratamiento(r.tratamiento)
+    setRNotas(r.notas); setRMetodo(r.metodo); setRPrecio(String(r.precio))
+    setRegistroModal({ open: true, registro: r })
+  }
 
   const registrosFiltrados = REGISTROS.filter(r => {
     const okCliente = normalizar(r.cliente).includes(normalizar(filtroCliente))
@@ -36,25 +61,17 @@ export default function ServicePage() {
   return (
     <div className="min-h-screen bg-gray-50 pb-16">
 
-      {/* Header */}
-      <header className="bg-accent border-b border-accent-dark px-6 py-4 flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <button
-            onClick={() => navigate('/dashboard')}
-            className="text-gray-700 hover:text-gray-900 transition-colors"
-            aria-label="Volver"
-          >
-            ← Volver
+      <SubPageHeader
+        backLabel="← Volver"
+        onBack={() => navigate('/dashboard')}
+        title="Podología"
+        subtitle="Ana García López"
+        rightSlot={
+          <button className="flex items-center gap-2 px-4 py-2 rounded-lg bg-white border border-white/60 text-sm text-gray-700 hover:bg-white/80 transition-colors">
+            <span>↓</span> Exportar Excel
           </button>
-          <div>
-            <h1 className="font-semibold text-gray-900">Podología</h1>
-            <p className="text-xs text-gray-600">Ana García López</p>
-          </div>
-        </div>
-        <button className="flex items-center gap-2 px-4 py-2 rounded-lg bg-white border border-white/60 text-sm text-gray-700 hover:bg-white/80 transition-colors">
-          <span>↓</span> Exportar Excel
-        </button>
-      </header>
+        }
+      />
 
       {/* Tabs */}
       <div className="bg-white border-b border-gray-200 px-6">
@@ -112,7 +129,10 @@ export default function ServicePage() {
             <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
               <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
                 <span className="text-sm text-gray-500">{registrosFiltrados.length} registros · {totalIngresos.toFixed(2)} €</span>
-                <button className="px-4 py-1.5 rounded-lg bg-accent hover:bg-accent-dark text-gray-900 text-sm font-medium transition-colors">
+                <button
+                  onClick={abrirNuevo}
+                  className="px-4 py-1.5 rounded-lg bg-accent hover:bg-accent-dark text-gray-900 text-sm font-medium transition-colors"
+                >
                   + Nuevo registro
                 </button>
               </div>
@@ -134,21 +154,25 @@ export default function ServicePage() {
                         <td className="px-4 py-3 text-gray-500 whitespace-nowrap">{r.hora}</td>
                         <td className="px-4 py-3 text-gray-900 font-medium whitespace-nowrap">{r.cliente}</td>
                         <td className="px-4 py-3 text-gray-700 whitespace-nowrap">{r.tratamiento}</td>
-                        <td className="px-4 py-3 text-gray-400 max-w-48 truncate">{r.notas || '—'}</td>
+                        <td className="px-4 py-3 text-gray-400 overflow-hidden max-w-48">
+                          {r.notas
+                            ? <Tooltip text={r.notas}>{r.notas}</Tooltip>
+                            : '—'
+                          }
+                        </td>
                         <td className="px-4 py-3 whitespace-nowrap">
-                          <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
-                            r.metodo === 'Efectivo'
-                              ? 'bg-green-50 text-green-700'
-                              : 'bg-blue-50 text-blue-700'
-                          }`}>
-                            {r.metodo}
-                          </span>
+                          <Badge variant={r.metodo === 'Efectivo' ? 'efectivo' : 'tarjeta'} />
                         </td>
                         <td className="px-4 py-3 text-gray-900 font-medium whitespace-nowrap">{r.precio.toFixed(2)} €</td>
                         <td className="px-4 py-3 whitespace-nowrap">
                           <div className="flex gap-2">
-                            <button className="text-gray-400 hover:text-gray-600 text-xs">Editar</button>
-                            <button className="text-gray-400 hover:text-red-500 text-xs">Eliminar</button>
+                            <button
+                              onClick={() => abrirEditar(r)}
+                              className="px-2.5 py-1 rounded-md border border-gray-200 text-xs text-gray-600 hover:border-accent hover:bg-accent/10 transition-colors"
+                            >
+                              Editar
+                            </button>
+                            <button className="px-2.5 py-1 rounded-md border border-red-100 text-xs text-red-500 hover:bg-red-50 transition-colors">Eliminar</button>
                           </div>
                         </td>
                       </tr>
@@ -179,16 +203,12 @@ export default function ServicePage() {
             {/* KPIs */}
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
               {[
-                { label: 'Ingresos totales', value: '320,00 €', sub: 'Marzo 2026' },
-                { label: 'Sesiones',         value: '6',        sub: 'Marzo 2026' },
-                { label: 'Ticket medio',     value: '53,33 €',  sub: 'Por sesión' },
-                { label: 'Efectivo / Tarjeta', value: '155 / 165 €', sub: '2 / 4 pagos' },
+                { label: 'Ingresos totales',   value: '320,00 €',     sub: 'Marzo 2026'  },
+                { label: 'Sesiones',            value: '6',            sub: 'Marzo 2026'  },
+                { label: 'Ticket medio',        value: '53,33 €',      sub: 'Por sesión'  },
+                { label: 'Efectivo / Tarjeta',  value: '155 / 165 €',  sub: '2 / 4 pagos' },
               ].map(kpi => (
-                <div key={kpi.label} className="bg-white rounded-xl border border-gray-200 border-l-4 border-l-accent p-5">
-                  <p className="text-xs text-gray-500 font-medium uppercase tracking-wide">{kpi.label}</p>
-                  <p className="text-2xl font-semibold text-gray-900 mt-2">{kpi.value}</p>
-                  <p className="text-xs text-gray-400 mt-1">{kpi.sub}</p>
-                </div>
+                <StatCard key={kpi.label} label={kpi.label} value={kpi.value} sub={kpi.sub} />
               ))}
             </div>
 
@@ -207,9 +227,9 @@ export default function ServicePage() {
                 </thead>
                 <tbody className="divide-y divide-gray-50">
                   {[
-                    ['Enero 2026',   '24', '960,00 €',  '340,00 €', '620,00 €', '40,00 €'],
-                    ['Febrero 2026', '20', '810,00 €',  '275,00 €', '535,00 €', '40,50 €'],
-                    ['Marzo 2026',   '6',  '320,00 €',  '155,00 €', '165,00 €', '53,33 €'],
+                    ['Enero 2026',   '24', '960,00 €', '340,00 €', '620,00 €', '40,00 €'],
+                    ['Febrero 2026', '20', '810,00 €', '275,00 €', '535,00 €', '40,50 €'],
+                    ['Marzo 2026',   '6',  '320,00 €', '155,00 €', '165,00 €', '53,33 €'],
                   ].map(row => (
                     <tr key={row[0]} className="hover:bg-accent/5">
                       {row.map((cell, i) => (
@@ -224,6 +244,49 @@ export default function ServicePage() {
         )}
 
       </main>
+
+      {/* Modal nuevo / editar registro */}
+      {registroModal.open && (
+        <Modal
+          title={registroModal.registro ? 'Editar registro' : 'Nuevo registro'}
+          confirmLabel={registroModal.registro ? 'Guardar cambios' : 'Crear registro'}
+          onClose={() => setRegistroModal({ open: false, registro: null })}
+        >
+          <div className="grid grid-cols-2 gap-3">
+            <FormField id="r-fecha" label="Fecha">
+              <input id="r-fecha" type="date" value={rFecha} onChange={e => setRFecha(e.target.value)} className={inputCls} />
+            </FormField>
+            <FormField id="r-hora" label="Hora">
+              <input id="r-hora" type="time" value={rHora} onChange={e => setRHora(e.target.value)} className={inputCls} />
+            </FormField>
+          </div>
+
+          <FormField id="r-cliente" label="Cliente">
+            <input id="r-cliente" value={rCliente} onChange={e => setRCliente(e.target.value)} placeholder="Nombre completo del cliente" className={inputCls} />
+          </FormField>
+
+          <FormField id="r-tratamiento" label="Tratamiento">
+            <input id="r-tratamiento" value={rTratamiento} onChange={e => setRTratamiento(e.target.value)} placeholder="Ej: Quiropodia" className={inputCls} />
+          </FormField>
+
+          <div className="grid grid-cols-2 gap-3">
+            <FormField id="r-metodo" label="Método de pago">
+              <select id="r-metodo" value={rMetodo} onChange={e => setRMetodo(e.target.value)} className={inputCls}>
+                <option value="Tarjeta">Tarjeta</option>
+                <option value="Efectivo">Efectivo</option>
+              </select>
+            </FormField>
+            <FormField id="r-precio" label="Precio (€)">
+              <input id="r-precio" type="number" min="0" step="0.01" value={rPrecio} onChange={e => setRPrecio(e.target.value)} placeholder="35.00" className={inputCls} />
+            </FormField>
+          </div>
+
+          <FormField id="r-notas" label="Notas" optional>
+            <textarea id="r-notas" value={rNotas} onChange={e => setRNotas(e.target.value)} placeholder="Observaciones..." rows={2} className={`${inputCls} resize-none`} />
+          </FormField>
+        </Modal>
+      )}
+
     </div>
   )
 }

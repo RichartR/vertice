@@ -2,26 +2,9 @@
 import { useNavigate } from 'react-router-dom'
 import logo from '../assets/logo.webp'
 
-const SERVICIOS = [
-  {
-    id: '1',
-    nombre: 'Podología',
-    descripcion: 'Tratamientos del pie: quiropodia, plantillas, uñas encarnadas y más.',
-    registros: 142,
-  },
-  {
-    id: '2',
-    nombre: 'Fisioterapia',
-    descripcion: 'Rehabilitación, masajes terapéuticos y tratamiento del dolor.',
-    registros: 98,
-  },
-  {
-    id: '3',
-    nombre: 'Estética',
-    descripcion: 'Tratamientos faciales, corporales y cuidado de la piel.',
-    registros: 76,
-  },
-]
+type Servicio = { id: string; nombre: string; descripcion: string; registros: number }
+
+const SERVICIOS: Servicio[] = []
 
 export default function DashboardPage() {
   const navigate = useNavigate()
@@ -33,10 +16,9 @@ export default function DashboardPage() {
       <header className="bg-accent border-b border-accent-dark px-6 py-4 flex items-center justify-between">
         <div className="flex items-center gap-3">
           <img src={logo} alt="Vértice" className="h-8 object-contain" />
-          <span className="font-semibold text-gray-900">Vértice</span>
         </div>
         <div className="flex items-center gap-4">
-          <span className="text-sm text-gray-700">Ana García López</span>
+          <span className="text-sm text-gray-700">Usuario</span>
           <button className="text-sm text-gray-600 hover:text-gray-900 transition-colors">
             Cerrar sesión
           </button>
@@ -46,7 +28,7 @@ export default function DashboardPage() {
       {/* Contenido */}
       <main className="max-w-4xl mx-auto px-6 py-10">
         <div className="mb-8">
-          <h1 className="text-xl font-semibold text-gray-900">Bienvenida, Ana</h1>
+          <h1 className="text-xl font-semibold text-gray-900">Bienvenido</h1>
           <p className="text-sm text-gray-500 mt-1">Selecciona un servicio para ver sus registros</p>
         </div>
 

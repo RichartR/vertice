@@ -28,18 +28,9 @@ export default function LoginPage() {
         </div>
 
         {/* Formulario */}
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
-          <div className="h-1 bg-accent" />
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-200">
           <div className="p-8">
           <h2 className="text-base font-semibold text-gray-900 mb-5">Accede a tu cuenta</h2>
-
-          {/* Credenciales de prueba */}
-          <div className="mb-5 p-3 rounded-lg bg-accent/20 border border-accent/40 text-xs text-gray-600 space-y-1">
-            <p className="font-semibold text-gray-700">Credenciales de prueba:</p>
-            <p>👤 <span className="font-mono font-medium">admin@vertice.es</span> → Dashboard admin</p>
-            <p>👤 <span className="font-mono font-medium">empleado@vertice.es</span> → Dashboard empleado</p>
-            <p className="text-gray-400 pt-0.5">(cualquier contraseña)</p>
-          </div>
 
           <form onSubmit={handleLogin} className="space-y-4">
             <div>
