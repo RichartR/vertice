@@ -6,6 +6,7 @@ import ServicePage from './pages/ServicePage'
 import DashboardAdminPage from './pages/admin/DashboardAdminPage'
 import AdminUsersPage from './pages/admin/AdminUsersPage'
 import AdminServicesPage from './pages/admin/AdminServicesPage'
+import AccesoDenegadoPage from './pages/AccesoDenegadoPage'
 
 export default function App() {
   return (
@@ -17,6 +18,7 @@ export default function App() {
         <Route path="/admin/dashboard"  element={<DashboardAdminPage />} />
         <Route path="/admin/users"      element={<AdminUsersPage />} />
         <Route path="/admin/services"   element={<AdminServicesPage />} />
+        <Route path="/acceso-denegado"  element={<AccesoDenegadoPage />} />
         <Route path="*"                 element={<Navigate to="/login" replace />} />
       </Routes>
 
