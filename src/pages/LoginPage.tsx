@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import logo from '../assets/logo.webp'
 
 export default function LoginPage() {
   const [email, setEmail] = useState('')
@@ -22,11 +23,8 @@ export default function LoginPage() {
 
         {/* Logo / nombre */}
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-accent mb-4">
-            <span className="text-xl font-bold text-gray-800">V</span>
-          </div>
-          <h1 className="text-2xl font-semibold text-gray-900">Vértice</h1>
-          <p className="text-sm text-gray-500 mt-1">Centro deportivo multidisciplinar</p>
+          <img src={logo} alt="Vértice" className="h-16 mx-auto mb-3 object-contain" />
+          <p className="text-sm text-gray-500">Centro deportivo multidisciplinar</p>
         </div>
 
         {/* Formulario */}
@@ -43,10 +41,11 @@ export default function LoginPage() {
 
           <form onSubmit={handleLogin} className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">
+              <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1.5">
                 Email
               </label>
               <input
+                id="email"
                 type="email"
                 value={email}
                 onChange={e => setEmail(e.target.value)}
@@ -57,10 +56,11 @@ export default function LoginPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">
+              <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1.5">
                 Contraseña
               </label>
               <input
+                id="password"
                 type="password"
                 value={password}
                 onChange={e => setPassword(e.target.value)}

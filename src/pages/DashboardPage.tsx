@@ -1,5 +1,6 @@
 // Dashboard del empleado — muestra sus servicios asignados como tarjetas clicables.
 import { useNavigate } from 'react-router-dom'
+import logo from '../assets/logo.webp'
 
 const SERVICIOS = [
   {
@@ -34,9 +35,7 @@ export default function DashboardPage() {
       {/* Header */}
       <header className="bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-lg bg-accent flex items-center justify-center">
-            <span className="text-sm font-bold text-gray-800">V</span>
-          </div>
+          <img src={logo} alt="Vértice" className="h-8 object-contain" />
           <span className="font-semibold text-gray-900">Vértice</span>
         </div>
         <div className="flex items-center gap-4">
