@@ -37,15 +37,25 @@ No es una app de podología. La podología es solo uno de los servicios del cent
 ```
 src/
 ├── components/
-│   ├── ui/            # Componentes reutilizables (Button, Input, Modal...)
+│   ├── ui/            # Componentes reutilizables (Button, Input, Modal, FilterBar...)
 │   └── layout/        # Navbar, ProtectedRoute
-├── pages/             # Una página = una ruta
-├── hooks/             # Custom hooks (useAuth, useTreatments, useServices...)
+├── pages/
+│   ├── admin/         # AdminServicesPage, AdminUsersPage
+│   ├── LoginPage.tsx
+│   ├── DashboardPage.tsx
+│   ├── ServicePage.tsx
+│   └── AccesoDenegadoPage.tsx
+├── hooks/             # useAuth, useRecords, useServices, useStats, useFilteredRecords
 ├── lib/               # supabase.ts — cliente de Supabase
-├── context/           # AuthContext.tsx
+├── context/           # AuthContext.tsx (expone: user, profile, loading, isAdmin, isActive)
+├── utils/             # exportExcel.ts
 ├── types/             # Tipos TypeScript del proyecto
 ├── App.tsx
 └── main.tsx
+
+supabase/
+└── functions/
+    └── create-user/   # Edge Function para crear usuarios (deploy en VER-21)
 ```
 
 ---
@@ -90,9 +100,12 @@ src/
 
 ### Seguridad (RLS)
 
-- **Admin**: ve y modifica todo
-- **Empleado**: solo puede ver los registros de los servicios a los que está asignado. No puede crear, editar ni eliminar nada.
-- Función auxiliar `is_admin()` disponible en Supabase para las políticas
+- **Admin**: ve y modifica todo, incluidos servicios inactivos
+- **Empleado activo**: solo puede ver los registros de los servicios a los que está asignado. No puede crear, editar ni eliminar nada.
+- **Empleado desactivado**: no puede ver ningún dato (RLS devuelve vacío)
+- Función auxiliar `is_admin()` — comprueba `rol = 'admin'` en profiles
+- Función auxiliar `is_active()` — comprueba `activo = true` en profiles
+- Los servicios con `activo = false` son invisibles para empleados pero el admin los ve todos
 
 ---
 
@@ -111,28 +124,35 @@ src/
 
 ```
 /login
-  └── admin  → /admin/dashboard
-                ├── /admin/services       (gestión de servicios)
-                ├── /admin/users          (gestión de empleados)
-                └── /admin/services/:id   (registros de un servicio)
+  └── admin              → /dashboard (siempre)
+  └── employee (1 svc)   → /services/:id (directo, sin pasar por dashboard)
+  └── employee (2+ svc)  → /dashboard (elige servicio)
+  └── employee inactivo  → /acceso-denegado
 
-  └── employee → /dashboard
-                  └── /services/:id       (registros de sus servicios)
+/dashboard
+  └── admin    → accesos a /admin/users y /admin/services + lista de servicios
+  └── employee → tarjetas con sus servicios asignados
+
+/services/:id            → vista de registros (empleado: solo lectura)
+/admin/services/:id      → vista de registros (admin: puede editar/eliminar)
+/admin/users             → gestión de empleados (solo admin)
+/admin/services          → gestión de servicios (solo admin)
+/acceso-denegado         → pantalla para empleados desactivados
 ```
 
 ---
 
 ## Funcionalidades principales
 
-1. **Login** — con email y contraseña (Supabase Auth)
-2. **Dashboard empleado** — tarjetas con los servicios asignados. Al hacer clic entra a ver los registros de ese servicio
-3. **Vista de registros** — tabla con: fecha, hora, cliente, tratamiento, notas, método de pago, precio
-4. **Filtros en tiempo real** — por cliente, fecha, tratamiento, método de pago, precio. Sin recargar la página
-5. **CRUD de registros** — solo admin. Formulario modal o inline
-6. **CRUD de servicios** — solo admin. Crear, editar, eliminar servicios y asociar empleados
-7. **CRUD de usuarios** — solo admin. Crear empleados (nombre, email, contraseña, rol)
-8. **Dashboard de estadísticas** — por servicio y mes: total ingresos, sesiones, desglose efectivo/tarjeta, ticket medio
-9. **Exportación a Excel** — con SheetJS (xlsx). Tres hojas: registros, resumen mensual, desglose por método de pago. Mismo formato que el archivo de referencia adjunto al proyecto
+1. **Login** — con email y contraseña. Sesión persistente (localStorage). Redirección inteligente según rol y número de servicios asignados
+2. **Dashboard empleado** — tarjetas con los servicios asignados. Si solo tiene 1 servicio va directo sin pasar por el dashboard
+3. **Vista de registros** — tabla con: fecha, hora, cliente, tratamiento, notas, método de pago, precio. Columna empleado solo visible para admin
+4. **Filtros en tiempo real** — aplicados en frontend sobre datos ya cargados (sin nuevas llamadas a Supabase): cliente, rango fechas, tratamiento, método de pago, rango precio
+5. **CRUD de registros** — solo admin. Formulario en **modal** sobre la tabla. Fecha por defecto = hoy
+6. **CRUD de servicios** — solo admin. Eliminación **lógica** (`activo = false`), nunca física. Los registros se conservan. Asociación de empleados desde el formulario del servicio
+7. **CRUD de usuarios** — solo admin. Creación via **Edge Function** `create-user` (inviteUserByEmail). El empleado recibe email para establecer su contraseña. Asociación de servicios desde el formulario del empleado
+8. **Dashboard de estadísticas** — visible para admin y empleados (cada uno ve solo sus servicios). Métricas por mes: total ingresos, sesiones, desglose efectivo/tarjeta, ticket medio. Tabla resumen anual. Integrado en la vista del servicio como pestaña/sección
+9. **Exportación a Excel** — disponible desde la vista de registros (exporta registros filtrados) y desde el dashboard de estadísticas (exporta el mes seleccionado). 3 hojas: Registro, Resumen Mensual, Método de Pago
 
 ---
 
@@ -191,6 +211,17 @@ Nunca commitear el archivo `.env` — está en `.gitignore`.
 
 ---
 
+## Diseño visual
+
+- **Nombre de la app/centro**: Vértice
+- **Estilo**: Profesional y minimalista
+- **Paleta de colores**: Blancos y grises como base. Color corporativo: `#b9d9ce` (verde menta suave) como color de acento
+- **Tipografía**: Sin definir — elegir una tipografía sans-serif limpia y profesional
+- **Modo**: Light mode (no dark mode)
+- **Logo**: `src/assets/logo.webp` — usar en navbar, pantalla de login y cualquier cabecera
+
+---
+
 ## Estrategia de ramas (Git Flow simplificado)
 
 ```
@@ -233,6 +264,27 @@ Formato: `feature/[clave-jira]-[descripcion-corta]`
 - Tipos en `src/types/index.ts`
 - Una carpeta por feature cuando crezca: `src/features/services/`
 
+## Decisiones de negocio tomadas
+
+- **Eliminación de servicios**: lógica (`activo = false`), nunca física. Los registros históricos se conservan siempre
+- **Eliminación de empleados**: desactivación (`activo = false`), nunca borrado físico
+- **Creación de usuarios**: el admin invita al empleado por email. El empleado establece su propia contraseña en el primer acceso. El admin nunca conoce la contraseña
+- **Nombre en profiles**: almacena nombre + apellidos concatenados (ej: "Ana García López"). El formulario los recoge por separado
+- **Asociación empleado-servicio**: se gestiona desde el formulario del servicio Y desde el formulario del empleado
+- **Estadísticas**: visibles para admin y empleados (cada uno solo ve sus servicios asignados). Integradas en la vista del servicio, no en página separada
+- **Exportación Excel**: disponible desde dos sitios — vista de registros (exporta filtrados) y dashboard estadísticas (exporta mes seleccionado)
+- **Formulario de registros**: modal sobre la tabla, no página separada
+
 ---
 
-_Última actualización: inicio del proyecto — sesión de planificación completa_
+## Edge Functions
+
+| Función       | Ruta                                      | Deploy    | Propósito                                                 |
+| ------------- | ----------------------------------------- | --------- | --------------------------------------------------------- |
+| `create-user` | `supabase/functions/create-user/index.ts` | En VER-21 | Crear usuarios via Admin API sin exponer service_role key |
+
+Secret necesario: `SUPABASE_SERVICE_ROLE_KEY` en Supabase → Settings → Edge Functions → Secrets
+
+---
+
+_Última actualización: sesión de planificación y primeras tareas ejecutadas (VER-12, VER-13)_
