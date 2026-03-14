@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState } from 'react'
+import { createContext, useContext, useEffect, useMemo, useState } from 'react'
 import type { AuthUser } from '@supabase/supabase-js'
 import { supabase } from '../lib/supabase'
 
@@ -20,7 +20,7 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | null>(null)
 
-export function AuthProvider({ children }: { children: React.ReactNode }) {
+export function AuthProvider({ children }: Readonly<{ children: React.ReactNode }>) {
   const [user, setUser] = useState<AuthUser | null>(null)
   const [profile, setProfile] = useState<Profile | null>(null)
   const [loading, setLoading] = useState(true)
@@ -37,8 +37,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (_event, session) => {
         setUser(session?.user ?? null)
-        if (session?.user) fetchProfile(session.user.id)
-        else {
+        if (session?.user) {
+          // Volver a poner loading=true mientras se carga el perfil.
+          // Sin esto hay un flash donde user!=null pero profile=null,
+          // lo que hace isActive=false y ProtectedRoute redirige a /acceso-denegado.
+          setLoading(true)
+          fetchProfile(session.user.id)
+        } else {
           setProfile(null)
           setLoading(false)
         }
@@ -59,7 +64,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setLoading(false)
   }
 
-  const value: AuthContextType = {
+  // useMemo evita que el objeto value sea una referencia nueva en cada render,
+  // lo que forzaría re-renders innecesarios en todos los consumidores del contexto
+  const value = useMemo<AuthContextType>(() => ({
     user,
     profile,
     loading,
@@ -67,7 +74,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // isActive es true si el perfil existe y activo = true
     // El admin siempre se considera activo independientemente del campo activo
     isActive: profile?.activo === true || profile?.rol === 'admin',
-  }
+  }), [user, profile, loading])
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }

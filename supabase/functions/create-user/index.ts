@@ -1,6 +1,17 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
+// Cabeceras CORS necesarias para que el navegador acepte la respuesta
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+}
+
 Deno.serve(async (req) => {
+  // El navegador envía primero un preflight OPTIONS antes de la petición real
+  if (req.method === 'OPTIONS') {
+    return new Response('ok', { headers: corsHeaders })
+  }
+
   try {
     // -------------------------------------------------------
     // 1. Verificar que el caller está autenticado
@@ -11,7 +22,7 @@ Deno.serve(async (req) => {
     // y así aprovechar el RLS de Supabase para validar el rol.
     // -------------------------------------------------------
     const authHeader = req.headers.get('Authorization')
-    if (!authHeader) return new Response('Unauthorized', { status: 401 })
+    if (!authHeader) return new Response('Unauthorized', { status: 401, headers: corsHeaders })
 
     const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL')!,
@@ -21,7 +32,7 @@ Deno.serve(async (req) => {
 
     // Obtenemos el usuario autenticado a partir del token
     const { data: { user: caller } } = await supabaseClient.auth.getUser()
-    if (!caller) return new Response('Unauthorized', { status: 401 })
+    if (!caller) return new Response('Unauthorized', { status: 401, headers: corsHeaders })
 
     // Verificamos que el usuario es admin consultando su perfil.
     // Nota: el RLS de profiles permite que cada usuario vea su
@@ -33,7 +44,7 @@ Deno.serve(async (req) => {
       .single()
 
     if (profile?.rol !== 'admin') {
-      return new Response('Forbidden', { status: 403 })
+      return new Response('Forbidden', { status: 403, headers: corsHeaders })
     }
 
     // -------------------------------------------------------
@@ -65,13 +76,13 @@ Deno.serve(async (req) => {
     if (error) throw error
 
     return new Response(JSON.stringify({ user: data.user }), {
-      headers: { 'Content-Type': 'application/json' },
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 200
     })
 
   } catch (err) {
     return new Response(JSON.stringify({ error: err.message }), {
-      headers: { 'Content-Type': 'application/json' },
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 500
     })
   }

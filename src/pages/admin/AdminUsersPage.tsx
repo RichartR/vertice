@@ -128,7 +128,9 @@ export default function AdminUsersPage() {
     setError(null)
 
     try {
-      const { data: { session } } = await supabase.auth.getSession()
+      // refreshSession() garantiza que el access_token no esté caducado.
+      // getSession() devuelve la sesión cacheada pero no fuerza el refresco.
+      const { data: { session } } = await supabase.auth.refreshSession()
 
       const response = await fetch(
         `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/create-user`,
