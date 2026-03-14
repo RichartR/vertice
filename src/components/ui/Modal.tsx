@@ -4,10 +4,11 @@ interface ModalProps {
   confirmLabel: string
   onClose: () => void
   onConfirm?: () => void
+  confirmDisabled?: boolean
   children: React.ReactNode
 }
 
-export default function Modal({ title, confirmLabel, onClose, onConfirm, children }: Readonly<ModalProps>) {
+export default function Modal({ title, confirmLabel, onClose, onConfirm, confirmDisabled, children }: Readonly<ModalProps>) {
   return (
     <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-40 p-4">
       <div className="bg-white rounded-2xl shadow-xl w-full max-w-md">
@@ -33,7 +34,8 @@ export default function Modal({ title, confirmLabel, onClose, onConfirm, childre
           </button>
           <button
             onClick={onConfirm}
-            className="flex-1 px-4 py-2 rounded-lg bg-accent hover:bg-accent-dark text-gray-900 text-sm font-medium transition-colors"
+            disabled={confirmDisabled}
+            className="flex-1 px-4 py-2 rounded-lg bg-accent hover:bg-accent-dark text-gray-900 text-sm font-medium transition-colors disabled:opacity-60"
           >
             {confirmLabel}
           </button>
