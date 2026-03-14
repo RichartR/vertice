@@ -19,11 +19,11 @@ export default function DashboardAdminPage() {
         <div className="flex items-center gap-3">
           <img src={logo} alt="Vértice" className="h-8 object-contain" />
           <span className="font-semibold text-gray-900">Vértice</span>
-          <span className="px-2 py-0.5 rounded-full bg-gray-100 text-gray-500 text-xs font-medium">Admin</span>
+          <span className="px-2 py-0.5 rounded-full bg-white/40 text-gray-700 text-xs font-medium">Admin</span>
         </div>
         <div className="flex items-center gap-4">
-          <span className="text-sm text-gray-600">Ricardo Torres</span>
-          <button className="text-sm text-gray-400 hover:text-gray-600 transition-colors">
+          <span className="text-sm text-gray-700">Ricardo Torres</span>
+          <button className="text-sm text-gray-600 hover:text-gray-900 transition-colors">
             Cerrar sesión
           </button>
         </div>

@@ -36,8 +36,8 @@ export default function DashboardPage() {
           <span className="font-semibold text-gray-900">Vértice</span>
         </div>
         <div className="flex items-center gap-4">
-          <span className="text-sm text-gray-600">Ana García López</span>
-          <button className="text-sm text-gray-400 hover:text-gray-600 transition-colors">
+          <span className="text-sm text-gray-700">Ana García López</span>
+          <button className="text-sm text-gray-600 hover:text-gray-900 transition-colors">
             Cerrar sesión
           </button>
         </div>

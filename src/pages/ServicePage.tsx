@@ -36,17 +36,17 @@ export default function ServicePage() {
         <div className="flex items-center gap-4">
           <button
             onClick={() => navigate('/dashboard')}
-            className="text-gray-400 hover:text-gray-600 transition-colors"
+            className="text-gray-700 hover:text-gray-900 transition-colors"
             aria-label="Volver"
           >
             ← Volver
           </button>
           <div>
             <h1 className="font-semibold text-gray-900">Podología</h1>
-            <p className="text-xs text-gray-400">Ana García López</p>
+            <p className="text-xs text-gray-600">Ana García López</p>
           </div>
         </div>
-        <button className="flex items-center gap-2 px-4 py-2 rounded-lg border border-gray-200 text-sm text-gray-600 hover:bg-gray-50 transition-colors">
+        <button className="flex items-center gap-2 px-4 py-2 rounded-lg bg-white border border-white/60 text-sm text-gray-700 hover:bg-white/80 transition-colors">
           <span>↓</span> Exportar Excel
         </button>
       </header>
@@ -166,7 +166,7 @@ export default function ServicePage() {
                   <option>Enero 2026</option>
                 </select>
               </div>
-              <button className="flex items-center gap-2 px-4 py-2 rounded-lg border border-gray-200 text-sm text-gray-600 hover:bg-gray-50 transition-colors">
+              <button className="flex items-center gap-2 px-4 py-2 rounded-lg border border-gray-200 text-sm text-gray-600 hover:bg-gray-50 transition-colors bg-white">
                 <span>↓</span> Exportar mes
               </button>
             </div>
