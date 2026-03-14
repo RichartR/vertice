@@ -15,7 +15,7 @@ export default function DashboardAdminPage() {
     <div className="min-h-screen bg-gray-50 pb-16">
 
       {/* Header */}
-      <header className="bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between">
+      <header className="bg-white border-b-2 border-accent/50 px-6 py-4 flex items-center justify-between">
         <div className="flex items-center gap-3">
           <img src={logo} alt="Vértice" className="h-8 object-contain" />
           <span className="font-semibold text-gray-900">Vértice</span>
@@ -70,7 +70,7 @@ export default function DashboardAdminPage() {
               <button
                 key={s.id}
                 onClick={() => navigate(`/services/${s.id}`)}
-                className="w-full flex items-center justify-between p-5 bg-white rounded-2xl border border-gray-200 hover:border-accent hover:shadow-sm transition-all text-left group"
+                className="w-full flex items-center justify-between p-5 bg-white rounded-2xl border border-gray-200 hover:border-accent hover:bg-accent/5 hover:shadow-sm transition-all text-left group"
               >
                 <div className="flex items-center gap-4">
                   <div className="w-10 h-10 rounded-xl bg-gray-100 flex items-center justify-center text-base font-semibold text-gray-500">

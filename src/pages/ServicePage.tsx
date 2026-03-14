@@ -32,7 +32,7 @@ export default function ServicePage() {
     <div className="min-h-screen bg-gray-50 pb-16">
 
       {/* Header */}
-      <header className="bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between">
+      <header className="bg-white border-b-2 border-accent/50 px-6 py-4 flex items-center justify-between">
         <div className="flex items-center gap-4">
           <button
             onClick={() => navigate('/dashboard')}
@@ -113,7 +113,7 @@ export default function ServicePage() {
               </div>
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
-                  <thead className="bg-gray-50 border-b border-gray-100">
+                  <thead className="bg-accent/10 border-b border-accent/20">
                     <tr>
                       {['Fecha', 'Hora', 'Cliente', 'Tratamiento', 'Notas', 'Método', 'Precio', ''].map(h => (
                         <th key={h} className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">
@@ -124,7 +124,7 @@ export default function ServicePage() {
                   </thead>
                   <tbody className="divide-y divide-gray-50">
                     {registrosFiltrados.map(r => (
-                      <tr key={r.id} className="hover:bg-gray-50 transition-colors">
+                      <tr key={r.id} className="hover:bg-accent/5 transition-colors">
                         <td className="px-4 py-3 text-gray-700 whitespace-nowrap">{r.fecha}</td>
                         <td className="px-4 py-3 text-gray-500 whitespace-nowrap">{r.hora}</td>
                         <td className="px-4 py-3 text-gray-900 font-medium whitespace-nowrap">{r.cliente}</td>
@@ -179,7 +179,7 @@ export default function ServicePage() {
                 { label: 'Ticket medio',     value: '53,33 €',  sub: 'Por sesión' },
                 { label: 'Efectivo / Tarjeta', value: '155 / 165 €', sub: '2 / 4 pagos' },
               ].map(kpi => (
-                <div key={kpi.label} className="bg-white rounded-xl border border-gray-200 p-5">
+                <div key={kpi.label} className="bg-white rounded-xl border border-gray-200 border-l-4 border-l-accent p-5">
                   <p className="text-xs text-gray-500 font-medium uppercase tracking-wide">{kpi.label}</p>
                   <p className="text-2xl font-semibold text-gray-900 mt-2">{kpi.value}</p>
                   <p className="text-xs text-gray-400 mt-1">{kpi.sub}</p>
@@ -193,7 +193,7 @@ export default function ServicePage() {
                 <h3 className="text-sm font-semibold text-gray-900">Resumen anual</h3>
               </div>
               <table className="w-full text-sm">
-                <thead className="bg-gray-50 border-b border-gray-100">
+                <thead className="bg-accent/10 border-b border-accent/20">
                   <tr>
                     {['Mes', 'Sesiones', 'Ingresos', 'Efectivo', 'Tarjeta', 'Ticket medio'].map(h => (
                       <th key={h} className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">{h}</th>
@@ -206,7 +206,7 @@ export default function ServicePage() {
                     ['Febrero 2026', '20', '810,00 €',  '275,00 €', '535,00 €', '40,50 €'],
                     ['Marzo 2026',   '6',  '320,00 €',  '155,00 €', '165,00 €', '53,33 €'],
                   ].map(row => (
-                    <tr key={row[0]} className="hover:bg-gray-50">
+                    <tr key={row[0]} className="hover:bg-accent/5">
                       {row.map((cell, i) => (
                         <td key={i} className={`px-4 py-3 ${i === 0 ? 'text-gray-700 font-medium' : 'text-gray-600'}`}>{cell}</td>
                       ))}

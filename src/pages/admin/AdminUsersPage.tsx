@@ -22,7 +22,7 @@ export default function AdminUsersPage() {
     <div className="min-h-screen bg-gray-50 pb-16">
 
       {/* Header */}
-      <header className="bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between">
+      <header className="bg-white border-b-2 border-accent/50 px-6 py-4 flex items-center justify-between">
         <div className="flex items-center gap-4">
           <button
             onClick={() => navigate('/admin/dashboard')}
@@ -48,7 +48,7 @@ export default function AdminUsersPage() {
             <p className="text-sm text-gray-500">{EMPLEADOS.length} usuarios registrados</p>
           </div>
           <table className="w-full text-sm">
-            <thead className="bg-gray-50 border-b border-gray-100">
+            <thead className="bg-accent/10 border-b border-accent/20">
               <tr>
                 {['Nombre', 'Email', 'Rol', 'Servicios asignados', 'Estado', ''].map(h => (
                   <th key={h} className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">{h}</th>
@@ -57,7 +57,7 @@ export default function AdminUsersPage() {
             </thead>
             <tbody className="divide-y divide-gray-50">
               {EMPLEADOS.map(emp => (
-                <tr key={emp.id} className="hover:bg-gray-50 transition-colors">
+                <tr key={emp.id} className="hover:bg-accent/5 transition-colors">
                   <td className="px-5 py-4">
                     <div className="flex items-center gap-3">
                       <div className="w-8 h-8 rounded-full bg-accent/40 flex items-center justify-center text-xs font-semibold text-gray-700">
