@@ -8,21 +8,18 @@ const SERVICIOS = [
     nombre: 'Podología',
     descripcion: 'Tratamientos del pie: quiropodia, plantillas, uñas encarnadas y más.',
     registros: 142,
-    color: 'bg-blue-50 border-blue-100',
   },
   {
     id: '2',
     nombre: 'Fisioterapia',
     descripcion: 'Rehabilitación, masajes terapéuticos y tratamiento del dolor.',
     registros: 98,
-    color: 'bg-green-50 border-green-100',
   },
   {
     id: '3',
     nombre: 'Estética',
     descripcion: 'Tratamientos faciales, corporales y cuidado de la piel.',
     registros: 76,
-    color: 'bg-pink-50 border-pink-100',
   },
 ]
 
@@ -58,7 +55,7 @@ export default function DashboardPage() {
             <button
               key={servicio.id}
               onClick={() => navigate(`/services/${servicio.id}`)}
-              className={`text-left p-6 rounded-2xl border-2 ${servicio.color} hover:shadow-md transition-all group`}
+              className="text-left p-6 rounded-2xl border border-gray-200 bg-white hover:border-accent hover:shadow-md transition-all group"
             >
               <h2 className="font-semibold text-gray-900 text-base group-hover:text-gray-700">
                 {servicio.nombre}
