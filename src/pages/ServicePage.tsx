@@ -14,6 +14,11 @@ const REGISTROS = [
 
 type Tab = 'registros' | 'estadisticas'
 
+// Normaliza texto eliminando acentos para que "Lopez" encuentre "López"
+function normalizar(texto: string) {
+  return texto.normalize('NFD').replaceAll(/\p{Diacritic}/gu, '').toLowerCase()
+}
+
 export default function ServicePage() {
   const navigate = useNavigate()
   const [tab, setTab] = useState<Tab>('registros')
@@ -21,7 +26,7 @@ export default function ServicePage() {
   const [filtroMetodo, setFiltroMetodo] = useState('')
 
   const registrosFiltrados = REGISTROS.filter(r => {
-    const okCliente = r.cliente.toLowerCase().includes(filtroCliente.toLowerCase())
+    const okCliente = normalizar(r.cliente).includes(normalizar(filtroCliente))
     const okMetodo = filtroMetodo ? r.metodo === filtroMetodo : true
     return okCliente && okMetodo
   })
