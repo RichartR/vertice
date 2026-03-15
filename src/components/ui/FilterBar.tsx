@@ -15,76 +15,81 @@ export default function FilterBar({ filtros, onChange, onReset }: FilterBarProps
   const hayFiltros = Object.values(filtros).some(v => v !== '')
 
   return (
-    <div className="bg-white rounded-xl border border-gray-200 p-4 mb-4 flex flex-wrap gap-3 items-center">
+    <div className="bg-white rounded-xl border border-gray-200 p-4 mb-4">
 
-      <input
-        type="text"
-        placeholder="Buscar cliente..."
-        value={filtros.cliente}
-        onChange={e => onChange('cliente', e.target.value)}
-        className={`${inputCls} w-44`}
-      />
+      {/* Todos los filtros en una sola fila — flex-1 en texto, ancho fijo en fecha/precio/select */}
+      <div className="flex gap-2 items-center">
+        <input
+          type="text"
+          placeholder="Buscar cliente..."
+          value={filtros.cliente}
+          onChange={e => onChange('cliente', e.target.value)}
+          className={`${inputCls} flex-1 min-w-0`}
+        />
 
-      {/* Rango de fechas: dos campos independientes */}
-      <input
-        type="date"
-        title="Fecha desde"
-        value={filtros.fechaDesde}
-        onChange={e => onChange('fechaDesde', e.target.value)}
-        className={`${inputCls} text-gray-500`}
-      />
-      <input
-        type="date"
-        title="Fecha hasta"
-        value={filtros.fechaHasta}
-        onChange={e => onChange('fechaHasta', e.target.value)}
-        className={`${inputCls} text-gray-500`}
-      />
+        <input
+          type="date"
+          title="Fecha desde"
+          value={filtros.fechaDesde}
+          onChange={e => onChange('fechaDesde', e.target.value)}
+          className={`${inputCls} text-gray-500 shrink-0`}
+        />
+        <input
+          type="date"
+          title="Fecha hasta"
+          value={filtros.fechaHasta}
+          onChange={e => onChange('fechaHasta', e.target.value)}
+          className={`${inputCls} text-gray-500 shrink-0`}
+        />
 
-      <input
-        type="text"
-        placeholder="Tratamiento..."
-        value={filtros.tratamiento}
-        onChange={e => onChange('tratamiento', e.target.value)}
-        className={`${inputCls} w-40`}
-      />
+        <input
+          type="text"
+          placeholder="Tratamiento..."
+          value={filtros.tratamiento}
+          onChange={e => onChange('tratamiento', e.target.value)}
+          className={`${inputCls} flex-1 min-w-0`}
+        />
 
-      <select
-        value={filtros.metodoPago}
-        onChange={e => onChange('metodoPago', e.target.value)}
-        className={`${inputCls} text-gray-600`}
-      >
-        <option value="">Método de pago</option>
-        <option value="efectivo">Efectivo</option>
-        <option value="tarjeta">Tarjeta</option>
-      </select>
-
-      <input
-        type="number"
-        placeholder="Precio mín"
-        min="0"
-        step="0.01"
-        value={filtros.precioMin}
-        onChange={e => onChange('precioMin', e.target.value)}
-        className={`${inputCls} w-28`}
-      />
-      <input
-        type="number"
-        placeholder="Precio máx"
-        min="0"
-        step="0.01"
-        value={filtros.precioMax}
-        onChange={e => onChange('precioMax', e.target.value)}
-        className={`${inputCls} w-28`}
-      />
-
-      {hayFiltros && (
-        <button
-          onClick={onReset}
-          className="px-3 py-2 rounded-lg border border-gray-200 text-sm text-gray-400 hover:text-gray-600 hover:border-gray-300 transition-colors"
+        <select
+          value={filtros.metodoPago}
+          onChange={e => onChange('metodoPago', e.target.value)}
+          className={`${inputCls} text-gray-600 shrink-0`}
         >
-          Limpiar filtros
-        </button>
+          <option value="">Método de pago</option>
+          <option value="efectivo">Efectivo</option>
+          <option value="tarjeta">Tarjeta</option>
+        </select>
+
+        <input
+          type="number"
+          placeholder="Precio mín"
+          min="0"
+          step="0.01"
+          value={filtros.precioMin}
+          onChange={e => onChange('precioMin', e.target.value)}
+          className={`${inputCls} w-32 shrink-0`}
+        />
+        <input
+          type="number"
+          placeholder="Precio máx"
+          min="0"
+          step="0.01"
+          value={filtros.precioMax}
+          onChange={e => onChange('precioMax', e.target.value)}
+          className={`${inputCls} w-32 shrink-0`}
+        />
+      </div>
+
+      {/* Botón limpiar en su propia fila, alineado a la izquierda */}
+      {hayFiltros && (
+        <div className="mt-2">
+          <button
+            onClick={onReset}
+            className="px-3 py-1.5 rounded-lg border border-gray-200 text-sm text-gray-400 hover:text-gray-600 hover:border-gray-300 transition-colors"
+          >
+            Limpiar filtros
+          </button>
+        </div>
       )}
     </div>
   )
