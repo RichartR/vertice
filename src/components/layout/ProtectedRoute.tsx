@@ -1,5 +1,6 @@
 import { Navigate } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
+import Navbar from './Navbar'
 
 interface ProtectedRouteProps {
   children: React.ReactNode
@@ -30,5 +31,10 @@ export default function ProtectedRoute({ children, requireAdmin = false }: Reado
   // Ruta solo para admin y el usuario no lo es → dashboard
   if (requireAdmin && !isAdmin) return <Navigate to="/dashboard" replace />
 
-  return <>{children}</>
+  return (
+    <>
+      <Navbar />
+      {children}
+    </>
+  )
 }

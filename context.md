@@ -220,6 +220,12 @@ Nunca commitear el archivo `.env` — está en `.gitignore`.
 - **Modo**: Light mode (no dark mode)
 - **Logo**: `src/assets/logo.webp` — usar en navbar, pantalla de login y cualquier cabecera
 
+## Despliegue
+
+- **Plataforma**: Vercel (repositorio privado en GitHub, acceso concedido solo a Vercel)
+- **URL**: Se usará la URL por defecto que proporciona Vercel (sin dominio personalizado de momento)
+- **VER-31 (dominio + DNS)**: Descartada por ahora, se retomará si el cliente decide adquirir un dominio en el futuro
+
 ---
 
 ## Estrategia de ramas (Git Flow simplificado)

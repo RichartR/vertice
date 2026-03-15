@@ -1,14 +1,14 @@
 // Panel de gestión de usuarios (admin) — tabla de empleados + modal de creación/edición.
 import { useEffect, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
 import SearchInput from '../../components/ui/SearchInput'
 import Modal from '../../components/ui/Modal'
 import Badge from '../../components/ui/Badge'
 import FormField from '../../components/ui/FormField'
-import CheckboxGroup from '../../components/ui/CheckboxGroup'
-import SubPageHeader from '../../components/ui/SubPageHeader'
+import MultiSelect from '../../components/ui/MultiSelect'
 import { normalizar } from '../../utils/normalizar'
+import { updateEmployeeServices } from '../../utils/assignments'
+import Select from '../../components/ui/Select'
 
 type Empleado = {
   id: string
@@ -25,7 +25,6 @@ type Servicio = {
 }
 
 export default function AdminUsersPage() {
-  const navigate = useNavigate()
 
   // --- Datos ---
   const [empleados, setEmpleados] = useState<Empleado[]>([])
@@ -156,10 +155,8 @@ export default function AdminUsersPage() {
       const { user: nuevoUsuario } = await response.json()
 
       // Asignar servicios si se seleccionaron
-      if (serviciosAsignados.length > 0 && nuevoUsuario?.id) {
-        await supabase.from('service_employees').insert(
-          serviciosAsignados.map(sid => ({ employee_id: nuevoUsuario.id, service_id: sid }))
-        )
+      if (nuevoUsuario?.id) {
+        await updateEmployeeServices(nuevoUsuario.id, serviciosAsignados)
       }
 
       setModalOpen(false)
@@ -186,14 +183,8 @@ export default function AdminUsersPage() {
         .update({ nombre: `${nombre} ${apellidos}`.trim(), rol })
         .eq('id', empleadoEdicion.id)
 
-      // Reemplazar asignaciones: borrar las actuales e insertar las nuevas
-      await supabase.from('service_employees').delete().eq('employee_id', empleadoEdicion.id)
-
-      if (serviciosAsignados.length > 0) {
-        await supabase.from('service_employees').insert(
-          serviciosAsignados.map(sid => ({ employee_id: empleadoEdicion.id, service_id: sid }))
-        )
-      }
+      // Reemplazar asignaciones via helper reutilizable (VER-22)
+      await updateEmployeeServices(empleadoEdicion.id, serviciosAsignados)
 
       setModalOpen(false)
       cargarDatos()
@@ -221,18 +212,14 @@ export default function AdminUsersPage() {
   return (
     <div className="min-h-screen bg-gray-50 pb-16">
 
-      <SubPageHeader
-        backLabel="← Dashboard"
-        onBack={() => navigate('/dashboard')}
-        title="Gestión de usuarios"
-        rightSlot={
-          <button onClick={abrirNuevo} className="px-4 py-2 bg-white hover:bg-white/80 text-gray-800 text-sm font-medium rounded-lg transition-colors">
+      <main className="max-w-5xl mx-auto px-6 py-8">
+
+        <div className="flex items-center justify-between mb-6">
+          <h1 className="text-xl font-semibold text-gray-900">Gestión de usuarios</h1>
+          <button onClick={abrirNuevo} className="px-4 py-2 bg-accent-dark hover:bg-accent text-gray-800 text-sm font-medium rounded-lg transition-colors">
             + Nuevo empleado
           </button>
-        }
-      />
-
-      <main className="max-w-5xl mx-auto px-6 py-8">
+        </div>
 
         {/* Mensaje de éxito */}
         {exito && (
@@ -354,23 +341,22 @@ export default function AdminUsersPage() {
           </FormField>
 
           <FormField id="u-rol" label="Rol">
-            <select
-              id="u-rol"
+            <Select
               value={rol}
-              onChange={e => setRol(e.target.value)}
-              className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-accent"
-            >
-              <option value="employee">Empleado</option>
-              <option value="admin">Admin</option>
-            </select>
+              onChange={setRol}
+              options={[
+                { value: 'employee', label: 'Empleado' },
+                { value: 'admin', label: 'Admin' },
+              ]}
+            />
           </FormField>
 
-          <CheckboxGroup
+          <MultiSelect
             label="Servicios asignados"
             options={servicios.map(s => s.nombre)}
             selected={nombresSeleccionados}
             onToggle={toggleServicio}
-            scrollable
+            placeholder="Sin asignar"
           />
 
           {error && (

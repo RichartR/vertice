@@ -1,77 +1,245 @@
-// Vista de registros de un servicio — con filtros, tabla y pestaña de estadísticas.
-// En producción: empleado ve solo lectura, admin ve edición. Aquí mostramos la vista completa.
-import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+// Vista de registros de un servicio — tabla con filtros + pestaña de estadísticas.
+// Empleado: solo lectura, sin columna Empleado.
+// Admin: columna Empleado visible, botones Editar y Eliminar por fila + CRUD conectado a Supabase.
+import { useEffect, useMemo, useState } from 'react'
+import { useParams, useNavigate } from 'react-router-dom'
+import { supabase } from '../lib/supabase'
+import { useAuth } from '../context/AuthContext'
+import { useRecords, type Registro } from '../hooks/useRecords'
+import { useFilteredRecords, FILTROS_VACIOS, type Filtros } from '../hooks/useFilteredRecords'
+import { useStats } from '../hooks/useStats'
+import FilterBar from '../components/ui/FilterBar'
 import Tooltip from '../components/ui/Tooltip'
-import StatCard from '../components/ui/StatCard'
 import Badge from '../components/ui/Badge'
 import Modal from '../components/ui/Modal'
+import Select from '../components/ui/Select'
 import FormField from '../components/ui/FormField'
-import SubPageHeader from '../components/ui/SubPageHeader'
-import { normalizar } from '../utils/normalizar'
+import { exportToExcel } from '../utils/exportExcel'
 
-// Clase reutilizable para inputs del formulario
 const inputCls = 'w-full px-3 py-2 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-accent'
 
-type Registro = { id: string; fecha: string; hora: string; cliente: string; tratamiento: string; notas: string; metodo: string; precio: number }
+// YYYY-MM-DD → DD/MM/YYYY
+function formatFecha(fecha: string) {
+  const [y, m, d] = fecha.split('-')
+  return `${d}/${m}/${y}`
+}
 
-const REGISTROS: Registro[] = []
+// HH:MM:SS → HH:MM
+function formatHora(hora: string) {
+  return hora.substring(0, 5)
+}
 
 type Tab = 'registros' | 'estadisticas'
 
-export default function ServicePage() {
-  const navigate = useNavigate()
-  const [tab, setTab] = useState<Tab>('registros')
-  const [filtroCliente, setFiltroCliente] = useState('')
-  const [filtroMetodo, setFiltroMetodo] = useState('')
+type Empleado = { id: string; nombre: string }
 
-  // Estado del modal de registro (null = nuevo, objeto = editar)
+const MESES = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+               'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre']
+
+// Rango de años disponibles en el selector: 5 años atrás hasta el año actual
+const CURRENT_YEAR = new Date().getFullYear()
+
+export default function ServicePage() {
+  const { id: serviceId } = useParams<{ id: string }>()
+  const navigate = useNavigate()
+  const { profile, isAdmin, user } = useAuth()
+
+  const { registros, cargando, recargar } = useRecords(serviceId ?? '')
+
+  // Nombre del servicio
+  const [nombreServicio, setNombreServicio] = useState('')
+
+  // Mostrar botón "← Mis servicios" solo si el empleado tiene más de 1 servicio
+  const [serviciosCount, setServiciosCount] = useState(0)
+
+  // Tabs
+  const [tab, setTab] = useState<Tab>('registros')
+
+  // Selector de mes/año para la pestaña de estadísticas (por defecto el mes actual)
+  const hoy = new Date()
+  const [mesSel, setMesSel]   = useState(hoy.getMonth() + 1)  // 1–12
+  const [yearSel, setYearSel] = useState(hoy.getFullYear())
+
+  // Filtros — gestionados como un objeto plano para facilitar el reset
+  const [filtros, setFiltros] = useState<Filtros>(FILTROS_VACIOS)
+  const registrosFiltrados = useFilteredRecords(registros, filtros)
+  const { resumenAnual } = useStats(registros, mesSel, yearSel)
+
+  // Años disponibles: años con al menos un registro + el año actual siempre presente
+  const yearsDisponibles = useMemo(() => {
+    const enRegistros = new Set(registros.map(r => Number(r.fecha.split('-')[0])))
+    enRegistros.add(CURRENT_YEAR)
+    return Array.from(enRegistros).sort((a, b) => a - b)
+  }, [registros])
+
+  // Registros del año seleccionado — usados para exportar desde la pestaña de estadísticas
+  const registrosAnio = useMemo(
+    () => registros.filter(r => Number(r.fecha.split('-')[0]) === yearSel),
+    [registros, yearSel]
+  )
+
+  function handleFiltroChange(key: keyof Filtros, value: string) {
+    setFiltros(prev => ({ ...prev, [key]: value }))
+  }
+
+  // --- Modal crear/editar ---
+
   const [registroModal, setRegistroModal] = useState<{ open: boolean; registro: Registro | null }>({ open: false, registro: null })
-  const [rFecha, setRFecha]           = useState('2026-03-14')
-  const [rHora, setRHora]             = useState('')
-  const [rCliente, setRCliente]       = useState('')
+  const [rFecha, setRFecha]             = useState('')
+  const [rHora, setRHora]               = useState('')
+  const [rCliente, setRCliente]         = useState('')
   const [rTratamiento, setRTratamiento] = useState('')
-  const [rNotas, setRNotas]           = useState('')
-  const [rMetodo, setRMetodo]         = useState('Tarjeta')
-  const [rPrecio, setRPrecio]         = useState('')
+  const [rNotas, setRNotas]             = useState('')
+  const [rMetodo, setRMetodo]           = useState<'efectivo' | 'tarjeta'>('tarjeta')
+  const [rPrecio, setRPrecio]           = useState('')
+  const [rEmpleado, setREmpleado]       = useState('')  // employee_id seleccionado
+
+  // Lista de empleados activos asignados a este servicio (para el select del modal)
+  const [empleados, setEmpleados]   = useState<Empleado[]>([])
+  const [rGuardando, setRGuardando] = useState(false)
+  const [rError, setRError]         = useState<string | null>(null)
+
+  useEffect(() => {
+    if (!serviceId) return
+
+    // Nombre del servicio
+    supabase
+      .from('services')
+      .select('nombre')
+      .eq('id', serviceId)
+      .single()
+      .then(({ data }) => setNombreServicio(data?.nombre ?? ''))
+
+    // Conteo de servicios del empleado (para mostrar botón volver)
+    if (!isAdmin && user) {
+      supabase
+        .from('service_employees')
+        .select('*', { count: 'exact', head: true })
+        .then(({ count }) => setServiciosCount(count ?? 0))
+    }
+  }, [serviceId, isAdmin, user])
+
+  // Carga los empleados activos asignados a este servicio al abrir el modal
+  async function cargarEmpleados() {
+    if (!serviceId) return
+    const { data } = await supabase
+      .from('service_employees')
+      .select('profiles(id, nombre, activo)')
+      .eq('service_id', serviceId)
+
+    // Normalizamos la respuesta y filtramos solo empleados activos
+    const lista: Empleado[] = (data ?? [])
+      .map((row: any) => row.profiles)
+      .filter((p: any) => p?.activo === true)
+      .map((p: any) => ({ id: p.id, nombre: p.nombre }))
+
+    setEmpleados(lista)
+  }
 
   function abrirNuevo() {
-    setRFecha('2026-03-14'); setRHora(''); setRCliente('')
-    setRTratamiento(''); setRNotas(''); setRMetodo('Tarjeta'); setRPrecio('')
+    const hoy = new Date().toISOString().split('T')[0]
+    setRFecha(hoy); setRHora(''); setRCliente('')
+    setRTratamiento(''); setRNotas(''); setRMetodo('tarjeta'); setRPrecio(''); setREmpleado('')
+    setRError(null)
+    cargarEmpleados()
     setRegistroModal({ open: true, registro: null })
   }
 
   function abrirEditar(r: Registro) {
-    // Convierte DD/MM/YYYY → YYYY-MM-DD para input[type=date]
-    const [d, m, y] = r.fecha.split('/')
-    setRFecha(`${y}-${m}-${d}`)
-    setRHora(r.hora); setRCliente(r.cliente); setRTratamiento(r.tratamiento)
-    setRNotas(r.notas); setRMetodo(r.metodo); setRPrecio(String(r.precio))
+    setRFecha(r.fecha)
+    setRHora(formatHora(r.hora))
+    setRCliente(r.cliente)
+    setRTratamiento(r.tratamiento)
+    setRNotas(r.notas ?? '')
+    setRMetodo(r.metodo_pago)
+    setRPrecio(String(r.precio))
+    setREmpleado(r.employee_id ?? '')
+    setRError(null)
+    cargarEmpleados()
     setRegistroModal({ open: true, registro: r })
   }
 
-  const registrosFiltrados = REGISTROS.filter(r => {
-    const okCliente = normalizar(r.cliente).includes(normalizar(filtroCliente))
-    const okMetodo = filtroMetodo ? r.metodo === filtroMetodo : true
-    return okCliente && okMetodo
-  })
+  // Validación + INSERT / UPDATE en Supabase
+  async function guardarRegistro() {
+    if (!rFecha || !rHora || !rCliente.trim() || !rTratamiento.trim() || !rPrecio || !rEmpleado) {
+      setRError('Completa todos los campos obligatorios')
+      return
+    }
+
+    setRGuardando(true)
+    setRError(null)
+
+    const payload = {
+      service_id: serviceId,
+      employee_id: rEmpleado,
+      fecha: rFecha,
+      hora: rHora,
+      cliente: rCliente.trim(),
+      tratamiento: rTratamiento.trim(),
+      notas: rNotas.trim() || null,
+      metodo_pago: rMetodo,
+      precio: Number.parseFloat(rPrecio),
+    }
+
+    const { error } = registroModal.registro
+      ? await supabase.from('records').update(payload).eq('id', registroModal.registro.id)
+      : await supabase.from('records').insert(payload)
+
+    if (error) {
+      setRError('Error al guardar el registro. Inténtalo de nuevo.')
+      setRGuardando(false)
+      return
+    }
+
+    recargar()
+    setRegistroModal({ open: false, registro: null })
+    setRGuardando(false)
+  }
+
+  async function eliminarRegistro(id: string) {
+    await supabase.from('records').delete().eq('id', id)
+    recargar()
+  }
 
   const totalIngresos = registrosFiltrados.reduce((sum, r) => sum + r.precio, 0)
+  const mostrarVolver = !isAdmin && serviciosCount > 1
+
+  // Columnas de la tabla según rol
+  const columnas = isAdmin
+    ? ['Fecha', 'Hora', 'Cliente', 'Tratamiento', 'Empleado', 'Notas', 'Método', 'Precio', '']
+    : ['Fecha', 'Hora', 'Cliente', 'Tratamiento', 'Notas', 'Método', 'Precio']
+
+  const labelAccion = registroModal.registro ? 'Guardar cambios' : 'Crear registro'
+  const confirmLabel = rGuardando ? 'Guardando...' : labelAccion
 
   return (
     <div className="min-h-screen bg-gray-50 pb-16">
 
-      <SubPageHeader
-        backLabel="← Volver"
-        onBack={() => navigate('/dashboard')}
-        title="Podología"
-        subtitle="Ana García López"
-        rightSlot={
-          <button className="flex items-center gap-2 px-4 py-2 rounded-lg bg-white border border-white/60 text-sm text-gray-700 hover:bg-white/80 transition-colors">
-            <span>↓</span> Exportar Excel
-          </button>
-        }
-      />
+      {/* Cabecera de página */}
+      <div className="bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between">
+        <div className="flex items-center gap-4">
+          {mostrarVolver && (
+            <button
+              onClick={() => navigate('/dashboard')}
+              className="text-sm text-gray-500 hover:text-gray-800 transition-colors"
+            >
+              ← Mis servicios
+            </button>
+          )}
+          <div>
+            <h1 className="font-semibold text-gray-900">{nombreServicio || '…'}</h1>
+            {!isAdmin && profile?.nombre && (
+              <p className="text-xs text-gray-500 mt-0.5">{profile.nombre}</p>
+            )}
+          </div>
+        </div>
+        <button
+          onClick={() => exportToExcel(registrosFiltrados, nombreServicio)}
+          className="flex items-center gap-2 px-4 py-2 rounded-lg bg-gray-100 text-sm text-gray-700 hover:bg-gray-200 transition-colors"
+        >
+          <span>↓</span> Exportar Excel
+        </button>
+      </div>
 
       {/* Tabs */}
       <div className="bg-white border-b border-gray-200 px-6">
@@ -80,7 +248,7 @@ export default function ServicePage() {
             <button
               key={t}
               onClick={() => setTab(t)}
-              className={`py-3 text-sm font-medium border-b-2 transition-colors capitalize ${
+              className={`py-3 text-sm font-medium border-b-2 transition-colors ${
                 tab === t
                   ? 'border-accent-dark text-gray-900'
                   : 'border-transparent text-gray-400 hover:text-gray-600'
@@ -96,51 +264,34 @@ export default function ServicePage() {
 
         {tab === 'registros' && (
           <>
-            {/* Filtros */}
-            <div className="bg-white rounded-xl border border-gray-200 p-4 mb-4 flex flex-wrap gap-3">
-              <input
-                type="text"
-                placeholder="Buscar cliente..."
-                value={filtroCliente}
-                onChange={e => setFiltroCliente(e.target.value)}
-                className="px-3 py-2 rounded-lg border border-gray-200 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-accent w-52"
-              />
-              <input
-                type="date"
-                className="px-3 py-2 rounded-lg border border-gray-200 text-sm text-gray-500 focus:outline-none focus:ring-2 focus:ring-accent"
-              />
-              <input
-                type="text"
-                placeholder="Tratamiento..."
-                className="px-3 py-2 rounded-lg border border-gray-200 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-accent w-44"
-              />
-              <select
-                value={filtroMetodo}
-                onChange={e => setFiltroMetodo(e.target.value)}
-                className="px-3 py-2 rounded-lg border border-gray-200 text-sm text-gray-600 focus:outline-none focus:ring-2 focus:ring-accent"
-              >
-                <option value="">Método de pago</option>
-                <option value="Efectivo">Efectivo</option>
-                <option value="Tarjeta">Tarjeta</option>
-              </select>
-            </div>
+            {/* Filtros — rango de fechas + precio mín/máx + texto parcial */}
+            <FilterBar
+              filtros={filtros}
+              onChange={handleFiltroChange}
+              onReset={() => setFiltros(FILTROS_VACIOS)}
+            />
 
             {/* Tabla */}
             <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
               <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
-                <span className="text-sm text-gray-500">{registrosFiltrados.length} registros · {totalIngresos.toFixed(2)} €</span>
-                <button
-                  onClick={abrirNuevo}
-                  className="px-4 py-1.5 rounded-lg bg-accent hover:bg-accent-dark text-gray-900 text-sm font-medium transition-colors"
-                >
-                  + Nuevo registro
-                </button>
+                <span className="text-sm text-gray-500">
+                  {cargando ? 'Cargando...' : `${registrosFiltrados.length} registros · ${totalIngresos.toFixed(2)} €`}
+                </span>
+                {isAdmin && (
+                  <button
+                    onClick={abrirNuevo}
+                    className="px-4 py-1.5 rounded-lg bg-accent hover:bg-accent-dark text-gray-900 text-sm font-medium transition-colors"
+                  >
+                    + Nuevo registro
+                  </button>
+                )}
               </div>
+
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead className="bg-accent/10 border-b border-accent/20">
                     <tr>
-                      {['Fecha', 'Hora', 'Cliente', 'Tratamiento', 'Notas', 'Método', 'Precio', ''].map(h => (
+                      {columnas.map(h => (
                         <th key={h} className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">
                           {h}
                         </th>
@@ -148,33 +299,54 @@ export default function ServicePage() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-50">
+                    {!cargando && registrosFiltrados.length === 0 && (
+                      <tr>
+                        <td colSpan={columnas.length} className="px-4 py-10 text-center text-sm text-gray-400">
+                          No hay registros con estos filtros.
+                        </td>
+                      </tr>
+                    )}
                     {registrosFiltrados.map(r => (
                       <tr key={r.id} className="hover:bg-accent/5 transition-colors">
-                        <td className="px-4 py-3 text-gray-700 whitespace-nowrap">{r.fecha}</td>
-                        <td className="px-4 py-3 text-gray-500 whitespace-nowrap">{r.hora}</td>
+                        <td className="px-4 py-3 text-gray-700 whitespace-nowrap">{formatFecha(r.fecha)}</td>
+                        <td className="px-4 py-3 text-gray-500 whitespace-nowrap">{formatHora(r.hora)}</td>
                         <td className="px-4 py-3 text-gray-900 font-medium whitespace-nowrap">{r.cliente}</td>
                         <td className="px-4 py-3 text-gray-700 whitespace-nowrap">{r.tratamiento}</td>
-                        <td className="px-4 py-3 text-gray-400 overflow-hidden max-w-48">
+                        {isAdmin && (
+                          <td className="px-4 py-3 text-gray-500 whitespace-nowrap">
+                            {r.profiles?.nombre ?? <span className="text-gray-300">—</span>}
+                          </td>
+                        )}
+                        <td className="px-4 py-3 text-gray-400 max-w-48 overflow-hidden">
                           {r.notas
                             ? <Tooltip text={r.notas}>{r.notas}</Tooltip>
-                            : '—'
+                            : <span className="text-gray-200">—</span>
                           }
                         </td>
                         <td className="px-4 py-3 whitespace-nowrap">
-                          <Badge variant={r.metodo === 'Efectivo' ? 'efectivo' : 'tarjeta'} />
+                          <Badge variant={r.metodo_pago === 'efectivo' ? 'efectivo' : 'tarjeta'} />
                         </td>
-                        <td className="px-4 py-3 text-gray-900 font-medium whitespace-nowrap">{r.precio.toFixed(2)} €</td>
-                        <td className="px-4 py-3 whitespace-nowrap">
-                          <div className="flex gap-2">
-                            <button
-                              onClick={() => abrirEditar(r)}
-                              className="px-2.5 py-1 rounded-md border border-gray-200 text-xs text-gray-600 hover:border-accent hover:bg-accent/10 transition-colors"
-                            >
-                              Editar
-                            </button>
-                            <button className="px-2.5 py-1 rounded-md border border-red-100 text-xs text-red-500 hover:bg-red-50 transition-colors">Eliminar</button>
-                          </div>
+                        <td className="px-4 py-3 text-gray-900 font-medium whitespace-nowrap">
+                          {Number(r.precio).toFixed(2)} €
                         </td>
+                        {isAdmin && (
+                          <td className="px-4 py-3 whitespace-nowrap">
+                            <div className="flex gap-2">
+                              <button
+                                onClick={() => abrirEditar(r)}
+                                className="px-2.5 py-1 rounded-md border border-gray-200 text-xs text-gray-600 hover:border-accent hover:bg-accent/10 transition-colors"
+                              >
+                                Editar
+                              </button>
+                              <button
+                                onClick={() => eliminarRegistro(r.id)}
+                                className="px-2.5 py-1 rounded-md border border-red-100 text-xs text-red-500 hover:bg-red-50 transition-colors"
+                              >
+                                Eliminar
+                              </button>
+                            </div>
+                          </td>
+                        )}
                       </tr>
                     ))}
                   </tbody>
@@ -186,60 +358,60 @@ export default function ServicePage() {
 
         {tab === 'estadisticas' && (
           <div className="space-y-6">
-            {/* Selector de mes */}
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <select className="px-3 py-2 rounded-lg border border-gray-200 text-sm text-gray-600 focus:outline-none focus:ring-2 focus:ring-accent">
-                  <option>Marzo 2026</option>
-                  <option>Febrero 2026</option>
-                  <option>Enero 2026</option>
-                </select>
-              </div>
-              <button className="flex items-center gap-2 px-4 py-2 rounded-lg border border-gray-200 text-sm text-gray-600 hover:bg-gray-50 transition-colors bg-white">
-                <span>↓</span> Exportar mes
-              </button>
+
+            {/* Selector de año */}
+            <div className="flex items-center gap-3">
+              <Select
+                value={String(yearSel)}
+                onChange={v => setYearSel(Number(v))}
+                options={yearsDisponibles.map(y => ({ value: String(y), label: String(y) }))}
+              />
             </div>
 
-            {/* KPIs */}
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-              {[
-                { label: 'Ingresos totales',   value: '320,00 €',     sub: 'Marzo 2026'  },
-                { label: 'Sesiones',            value: '6',            sub: 'Marzo 2026'  },
-                { label: 'Ticket medio',        value: '53,33 €',      sub: 'Por sesión'  },
-                { label: 'Efectivo / Tarjeta',  value: '155 / 165 €',  sub: '2 / 4 pagos' },
-              ].map(kpi => (
-                <StatCard key={kpi.label} label={kpi.label} value={kpi.value} sub={kpi.sub} />
-              ))}
-            </div>
-
-            {/* Tabla resumen anual */}
+            {/* Tabla resumen anual — clic en una fila para destacarla */}
             <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-              <div className="px-5 py-4 border-b border-gray-100">
-                <h3 className="text-sm font-semibold text-gray-900">Resumen anual</h3>
+              <div className="px-5 py-3 border-b border-gray-100 flex items-center justify-between">
+                <span className="text-sm font-medium text-gray-700">Resumen {yearSel}</span>
+                <button
+                  onClick={() => exportToExcel(registrosAnio, nombreServicio)}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gray-100 text-xs text-gray-700 hover:bg-gray-200 transition-colors"
+                >
+                  <span>↓</span> Exportar año
+                </button>
               </div>
-              <table className="w-full text-sm">
-                <thead className="bg-accent/10 border-b border-accent/20">
-                  <tr>
-                    {['Mes', 'Sesiones', 'Ingresos', 'Efectivo', 'Tarjeta', 'Ticket medio'].map(h => (
-                      <th key={h} className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">{h}</th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-50">
-                  {[
-                    ['Enero 2026',   '24', '960,00 €', '340,00 €', '620,00 €', '40,00 €'],
-                    ['Febrero 2026', '20', '810,00 €', '275,00 €', '535,00 €', '40,50 €'],
-                    ['Marzo 2026',   '6',  '320,00 €', '155,00 €', '165,00 €', '53,33 €'],
-                  ].map(row => (
-                    <tr key={row[0]} className="hover:bg-accent/5">
-                      {row.map((cell, i) => (
-                        <td key={i} className={`px-4 py-3 ${i === 0 ? 'text-gray-700 font-medium' : 'text-gray-600'}`}>{cell}</td>
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead className="bg-accent/10 border-b border-accent/20">
+                    <tr>
+                      {['Mes', 'Total (€)', 'Efectivo (€)', 'Tarjeta (€)', 'Sesiones', 'Ticket medio'].map(h => (
+                        <th key={h} className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                          {h}
+                        </th>
                       ))}
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody className="divide-y divide-gray-50">
+                    {resumenAnual.map(s => (
+                      <tr
+                        key={s.mes}
+                        onClick={() => setMesSel(s.mes)}
+                        className={`transition-colors cursor-pointer ${s.mes === mesSel ? 'bg-accent/40 font-semibold' : 'hover:bg-accent/10'}`}
+                      >
+                        <td className="px-4 py-3 text-gray-700 font-medium">{MESES[s.mes - 1]}</td>
+                        <td className="px-4 py-3 text-gray-900 font-medium">{s.totalIngresos.toFixed(2)} €</td>
+                        <td className="px-4 py-3 text-gray-600">{s.totalEfectivo.toFixed(2)} €</td>
+                        <td className="px-4 py-3 text-gray-600">{s.totalTarjeta.toFixed(2)} €</td>
+                        <td className="px-4 py-3 text-gray-600">{s.numSesiones}</td>
+                        <td className="px-4 py-3 text-gray-600">
+                          {s.numSesiones > 0 ? `${s.ticketMedio.toFixed(2)} €` : '—'}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </div>
+
           </div>
         )}
 
@@ -249,7 +421,9 @@ export default function ServicePage() {
       {registroModal.open && (
         <Modal
           title={registroModal.registro ? 'Editar registro' : 'Nuevo registro'}
-          confirmLabel={registroModal.registro ? 'Guardar cambios' : 'Crear registro'}
+          confirmLabel={confirmLabel}
+          confirmDisabled={rGuardando}
+          onConfirm={guardarRegistro}
           onClose={() => setRegistroModal({ open: false, registro: null })}
         >
           <div className="grid grid-cols-2 gap-3">
@@ -269,12 +443,26 @@ export default function ServicePage() {
             <input id="r-tratamiento" value={rTratamiento} onChange={e => setRTratamiento(e.target.value)} placeholder="Ej: Quiropodia" className={inputCls} />
           </FormField>
 
+          {/* Selector de empleado — muestra solo los activos asignados a este servicio */}
+          <FormField id="r-empleado" label="Empleado">
+            <Select
+              value={rEmpleado}
+              onChange={setREmpleado}
+              placeholder="Selecciona un empleado"
+              options={empleados.map(emp => ({ value: emp.id, label: emp.nombre }))}
+            />
+          </FormField>
+
           <div className="grid grid-cols-2 gap-3">
             <FormField id="r-metodo" label="Método de pago">
-              <select id="r-metodo" value={rMetodo} onChange={e => setRMetodo(e.target.value)} className={inputCls}>
-                <option value="Tarjeta">Tarjeta</option>
-                <option value="Efectivo">Efectivo</option>
-              </select>
+              <Select
+                value={rMetodo}
+                onChange={v => setRMetodo(v as 'efectivo' | 'tarjeta')}
+                options={[
+                  { value: 'tarjeta', label: 'Tarjeta' },
+                  { value: 'efectivo', label: 'Efectivo' },
+                ]}
+              />
             </FormField>
             <FormField id="r-precio" label="Precio (€)">
               <input id="r-precio" type="number" min="0" step="0.01" value={rPrecio} onChange={e => setRPrecio(e.target.value)} placeholder="35.00" className={inputCls} />
@@ -284,6 +472,10 @@ export default function ServicePage() {
           <FormField id="r-notas" label="Notas" optional>
             <textarea id="r-notas" value={rNotas} onChange={e => setRNotas(e.target.value)} placeholder="Observaciones..." rows={2} className={`${inputCls} resize-none`} />
           </FormField>
+
+          {rError && (
+            <p className="text-xs text-red-600 bg-red-50 rounded-lg px-3 py-2">{rError}</p>
+          )}
         </Modal>
       )}
 
