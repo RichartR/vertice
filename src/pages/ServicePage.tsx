@@ -238,10 +238,12 @@ export default function ServicePage() {
             </button>
           )}
           <div>
-            <h1 className="font-semibold text-gray-900">{nombreServicio || '…'}</h1>
-            {!isAdmin && profile?.nombre && (
-              <p className="text-xs text-gray-500 mt-0.5">{profile.nombre}</p>
-            )}
+            <h1 className="font-semibold text-gray-900">
+              {nombreServicio || '…'}
+              {!isAdmin && profile?.nombre && (
+                <span className="font-normal text-gray-500"> — {profile.nombre}</span>
+              )}
+            </h1>
           </div>
         </div>
         <button
