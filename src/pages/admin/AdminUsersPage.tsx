@@ -5,9 +5,10 @@ import SearchInput from '../../components/ui/SearchInput'
 import Modal from '../../components/ui/Modal'
 import Badge from '../../components/ui/Badge'
 import FormField from '../../components/ui/FormField'
-import CheckboxGroup from '../../components/ui/CheckboxGroup'
+import MultiSelect from '../../components/ui/MultiSelect'
 import { normalizar } from '../../utils/normalizar'
 import { updateEmployeeServices } from '../../utils/assignments'
+import Select from '../../components/ui/Select'
 
 type Empleado = {
   id: string
@@ -340,23 +341,22 @@ export default function AdminUsersPage() {
           </FormField>
 
           <FormField id="u-rol" label="Rol">
-            <select
-              id="u-rol"
+            <Select
               value={rol}
-              onChange={e => setRol(e.target.value)}
-              className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-accent"
-            >
-              <option value="employee">Empleado</option>
-              <option value="admin">Admin</option>
-            </select>
+              onChange={setRol}
+              options={[
+                { value: 'employee', label: 'Empleado' },
+                { value: 'admin', label: 'Admin' },
+              ]}
+            />
           </FormField>
 
-          <CheckboxGroup
+          <MultiSelect
             label="Servicios asignados"
             options={servicios.map(s => s.nombre)}
             selected={nombresSeleccionados}
             onToggle={toggleServicio}
-            scrollable
+            placeholder="Sin asignar"
           />
 
           {error && (

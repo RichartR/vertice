@@ -1,6 +1,7 @@
 // Barra de filtros para la tabla de registros.
 // Recibe el estado de filtros y callbacks desde ServicePage — no gestiona estado propio.
 import type { Filtros } from '../../hooks/useFilteredRecords'
+import Select from './Select'
 
 const inputCls = 'px-3 py-2 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-accent'
 
@@ -50,15 +51,16 @@ export default function FilterBar({ filtros, onChange, onReset }: FilterBarProps
           className={`${inputCls} flex-1 min-w-0`}
         />
 
-        <select
+        <Select
           value={filtros.metodoPago}
-          onChange={e => onChange('metodoPago', e.target.value)}
-          className={`${inputCls} text-gray-600 shrink-0`}
-        >
-          <option value="">Método de pago</option>
-          <option value="efectivo">Efectivo</option>
-          <option value="tarjeta">Tarjeta</option>
-        </select>
+          onChange={v => onChange('metodoPago', v)}
+          placeholder="Método de pago"
+          options={[
+            { value: 'efectivo', label: 'Efectivo' },
+            { value: 'tarjeta', label: 'Tarjeta' },
+          ]}
+          className="shrink-0"
+        />
 
         <input
           type="number"

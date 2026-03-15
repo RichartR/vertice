@@ -1,17 +1,18 @@
 // Vista de registros de un servicio — tabla con filtros + pestaña de estadísticas.
 // Empleado: solo lectura, sin columna Empleado.
 // Admin: columna Empleado visible, botones Editar y Eliminar por fila + CRUD conectado a Supabase.
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
 import { useRecords, type Registro } from '../hooks/useRecords'
 import { useFilteredRecords, FILTROS_VACIOS, type Filtros } from '../hooks/useFilteredRecords'
+import { useStats } from '../hooks/useStats'
 import FilterBar from '../components/ui/FilterBar'
 import Tooltip from '../components/ui/Tooltip'
-import StatCard from '../components/ui/StatCard'
 import Badge from '../components/ui/Badge'
 import Modal from '../components/ui/Modal'
+import Select from '../components/ui/Select'
 import FormField from '../components/ui/FormField'
 
 const inputCls = 'w-full px-3 py-2 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-accent'
@@ -31,6 +32,12 @@ type Tab = 'registros' | 'estadisticas'
 
 type Empleado = { id: string; nombre: string }
 
+const MESES = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+               'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre']
+
+// Rango de años disponibles en el selector: 5 años atrás hasta el año actual
+const CURRENT_YEAR = new Date().getFullYear()
+
 export default function ServicePage() {
   const { id: serviceId } = useParams<{ id: string }>()
   const navigate = useNavigate()
@@ -47,9 +54,22 @@ export default function ServicePage() {
   // Tabs
   const [tab, setTab] = useState<Tab>('registros')
 
+  // Selector de mes/año para la pestaña de estadísticas (por defecto el mes actual)
+  const hoy = new Date()
+  const [mesSel, setMesSel]   = useState(hoy.getMonth() + 1)  // 1–12
+  const [yearSel, setYearSel] = useState(hoy.getFullYear())
+
   // Filtros — gestionados como un objeto plano para facilitar el reset
   const [filtros, setFiltros] = useState<Filtros>(FILTROS_VACIOS)
   const registrosFiltrados = useFilteredRecords(registros, filtros)
+  const { resumenAnual } = useStats(registros, mesSel, yearSel)
+
+  // Años disponibles: años con al menos un registro + el año actual siempre presente
+  const yearsDisponibles = useMemo(() => {
+    const enRegistros = new Set(registros.map(r => Number(r.fecha.split('-')[0])))
+    enRegistros.add(CURRENT_YEAR)
+    return Array.from(enRegistros).sort((a, b) => a - b)
+  }, [registros])
 
   function handleFiltroChange(key: keyof Filtros, value: string) {
     setFiltros(prev => ({ ...prev, [key]: value }))
@@ -328,33 +348,54 @@ export default function ServicePage() {
 
         {tab === 'estadisticas' && (
           <div className="space-y-6">
-            <div className="flex items-center justify-between">
-              <p className="text-sm text-gray-400">Las estadísticas detalladas se implementarán próximamente.</p>
+
+            {/* Selector de año */}
+            <div className="flex items-center gap-3">
+              <Select
+                value={String(yearSel)}
+                onChange={v => setYearSel(Number(v))}
+                options={yearsDisponibles.map(y => ({ value: String(y), label: String(y) }))}
+              />
             </div>
 
-            {/* KPIs básicos calculados desde los registros actuales */}
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-              <StatCard
-                label="Ingresos totales"
-                value={`${registros.reduce((s, r) => s + r.precio, 0).toFixed(2)} €`}
-                sub="Todos los registros"
-              />
-              <StatCard
-                label="Sesiones"
-                value={String(registros.length)}
-                sub="Todos los registros"
-              />
-              <StatCard
-                label="Ticket medio"
-                value={registros.length > 0 ? `${(registros.reduce((s, r) => s + r.precio, 0) / registros.length).toFixed(2)} €` : '—'}
-                sub="Por sesión"
-              />
-              <StatCard
-                label="Efectivo / Tarjeta"
-                value={`${registros.filter(r => r.metodo_pago === 'efectivo').length} / ${registros.filter(r => r.metodo_pago === 'tarjeta').length}`}
-                sub="Número de pagos"
-              />
+            {/* Tabla resumen anual — clic en una fila para destacarla */}
+            <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+              <div className="px-5 py-3 border-b border-gray-100">
+                <span className="text-sm font-medium text-gray-700">Resumen {yearSel}</span>
+              </div>
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead className="bg-accent/10 border-b border-accent/20">
+                    <tr>
+                      {['Mes', 'Total (€)', 'Efectivo (€)', 'Tarjeta (€)', 'Sesiones', 'Ticket medio'].map(h => (
+                        <th key={h} className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                          {h}
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-50">
+                    {resumenAnual.map(s => (
+                      <tr
+                        key={s.mes}
+                        onClick={() => setMesSel(s.mes)}
+                        className={`transition-colors cursor-pointer ${s.mes === mesSel ? 'bg-accent/40 font-semibold' : 'hover:bg-accent/10'}`}
+                      >
+                        <td className="px-4 py-3 text-gray-700 font-medium">{MESES[s.mes - 1]}</td>
+                        <td className="px-4 py-3 text-gray-900 font-medium">{s.totalIngresos.toFixed(2)} €</td>
+                        <td className="px-4 py-3 text-gray-600">{s.totalEfectivo.toFixed(2)} €</td>
+                        <td className="px-4 py-3 text-gray-600">{s.totalTarjeta.toFixed(2)} €</td>
+                        <td className="px-4 py-3 text-gray-600">{s.numSesiones}</td>
+                        <td className="px-4 py-3 text-gray-600">
+                          {s.numSesiones > 0 ? `${s.ticketMedio.toFixed(2)} €` : '—'}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </div>
+
           </div>
         )}
 
@@ -388,20 +429,24 @@ export default function ServicePage() {
 
           {/* Selector de empleado — muestra solo los activos asignados a este servicio */}
           <FormField id="r-empleado" label="Empleado">
-            <select id="r-empleado" value={rEmpleado} onChange={e => setREmpleado(e.target.value)} className={inputCls}>
-              <option value="">Selecciona un empleado</option>
-              {empleados.map(emp => (
-                <option key={emp.id} value={emp.id}>{emp.nombre}</option>
-              ))}
-            </select>
+            <Select
+              value={rEmpleado}
+              onChange={setREmpleado}
+              placeholder="Selecciona un empleado"
+              options={empleados.map(emp => ({ value: emp.id, label: emp.nombre }))}
+            />
           </FormField>
 
           <div className="grid grid-cols-2 gap-3">
             <FormField id="r-metodo" label="Método de pago">
-              <select id="r-metodo" value={rMetodo} onChange={e => setRMetodo(e.target.value as 'efectivo' | 'tarjeta')} className={inputCls}>
-                <option value="tarjeta">Tarjeta</option>
-                <option value="efectivo">Efectivo</option>
-              </select>
+              <Select
+                value={rMetodo}
+                onChange={v => setRMetodo(v as 'efectivo' | 'tarjeta')}
+                options={[
+                  { value: 'tarjeta', label: 'Tarjeta' },
+                  { value: 'efectivo', label: 'Efectivo' },
+                ]}
+              />
             </FormField>
             <FormField id="r-precio" label="Precio (€)">
               <input id="r-precio" type="number" min="0" step="0.01" value={rPrecio} onChange={e => setRPrecio(e.target.value)} placeholder="35.00" className={inputCls} />

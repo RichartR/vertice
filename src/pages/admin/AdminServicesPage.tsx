@@ -6,7 +6,7 @@ import Tooltip from '../../components/ui/Tooltip'
 import SearchInput from '../../components/ui/SearchInput'
 import Modal from '../../components/ui/Modal'
 import FormField from '../../components/ui/FormField'
-import CheckboxGroup from '../../components/ui/CheckboxGroup'
+import MultiSelect from '../../components/ui/MultiSelect'
 import { normalizar } from '../../utils/normalizar'
 import { updateServiceEmployees } from '../../utils/assignments'
 
@@ -341,12 +341,12 @@ export default function AdminServicesPage() {
             />
           </FormField>
 
-          <CheckboxGroup
+          <MultiSelect
             label="Empleados asignados"
             options={empleadosActivos.map(e => e.nombre)}
             selected={nombresSeleccionados}
             onToggle={toggleEmpleado}
-            scrollable
+            placeholder="Sin asignar"
           />
 
           {error && (
