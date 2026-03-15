@@ -1,5 +1,5 @@
 // Barra de navegación superior — presente en todas las páginas protegidas.
-// Links visibles según rol: admin ve Usuarios y Servicios; empleado ve Dashboard solo si tiene >1 servicio.
+// Admin: logo + "Gestión Servicios" → /dashboard. Empleado: logo (si >1 servicio) + nombre + cerrar sesión.
 import { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import logo from '../../assets/logo.webp'
@@ -31,33 +31,29 @@ export default function Navbar() {
   const navLinkCls = 'px-3 py-1.5 rounded-lg text-sm font-medium text-gray-700 hover:bg-white/50 hover:text-gray-900 transition-colors'
 
   return (
-    <nav className="bg-accent border-b border-accent-dark px-6 py-3 flex items-center justify-between">
-      <div className="flex items-center gap-2">
-        {/* Logo — solo marca, no enlace */}
-        <div className="flex items-center gap-3 pr-4 mr-2 border-r border-accent-dark/40">
+    <nav className="bg-accent border-b border-accent-dark px-4 sm:px-6 py-3 flex items-center justify-between">
+      <div className="flex items-center gap-1 md:gap-2">
+        {/* Logo — enlace al dashboard */}
+        <Link to="/dashboard" className="flex items-center gap-3 pr-4 mr-2 border-r border-accent-dark/40">
           <img src={logo} alt="Vértice" className="h-8 object-contain" />
           {isAdmin && (
             <span className="px-2 py-0.5 rounded-full bg-white/30 text-gray-600 text-xs font-medium tracking-wide">
               Admin
             </span>
           )}
-        </div>
+        </Link>
 
-        {/* Links de navegación */}
+        {/* Links de navegación — ocultos en móvil */}
         {isAdmin && (
-          <>
-            <Link to="/dashboard" className={navLinkCls}>Dashboard</Link>
-            <Link to="/admin/users" className={navLinkCls}>Usuarios</Link>
-            <Link to="/admin/services" className={navLinkCls}>Servicios</Link>
-          </>
+          <Link to="/dashboard" className={`hidden md:block ${navLinkCls}`}>Gestión Servicios</Link>
         )}
         {!isAdmin && serviciosCount > 1 && (
-          <Link to="/dashboard" className={navLinkCls}>Mis servicios</Link>
+          <Link to="/dashboard" className={`hidden md:block ${navLinkCls}`}>Mis servicios</Link>
         )}
       </div>
 
       <div className="flex items-center gap-3">
-        <span className="text-sm text-gray-700 font-medium">{profile?.nombre ?? ''}</span>
+        <span className="hidden sm:inline text-sm text-gray-700 font-medium">{profile?.nombre ?? ''}</span>
         <button
           onClick={handleLogout}
           className="px-3 py-1.5 rounded-lg text-sm text-gray-600 hover:bg-white/50 hover:text-gray-900 transition-colors"

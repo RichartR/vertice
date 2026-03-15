@@ -182,7 +182,7 @@ export default function AdminServicesPage() {
   return (
     <div className="min-h-screen bg-gray-50 pb-16">
 
-      <main className="max-w-5xl mx-auto px-6 py-8">
+      <main className="max-w-5xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
 
         <div className="flex items-center justify-between mb-6">
           <h1 className="text-xl font-semibold text-gray-900">Gestión de servicios</h1>
@@ -194,7 +194,7 @@ export default function AdminServicesPage() {
         <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
 
           {/* Cabecera con pestañas y búsqueda */}
-          <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between gap-4">
+          <div className="px-4 sm:px-5 py-4 border-b border-gray-100 flex flex-wrap items-center justify-between gap-3">
             <div className="flex gap-1 bg-gray-100 rounded-lg p-1">
               {(['activos', 'inactivos'] as Pestaña[]).map(tab => (
                 <button
@@ -218,7 +218,8 @@ export default function AdminServicesPage() {
             </div>
           </div>
 
-          <table className="w-full text-sm table-fixed">
+          <div className="overflow-x-auto">
+          <table className="w-full text-sm table-fixed min-w-[600px]">
             <colgroup>
               <col className="w-[22%]" />
               <col className="w-[32%]" />
@@ -304,6 +305,7 @@ export default function AdminServicesPage() {
               })}
             </tbody>
           </table>
+          </div>
         </div>
 
         <p className="text-xs text-gray-400 mt-4 px-1">

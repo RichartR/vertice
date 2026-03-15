@@ -42,7 +42,7 @@ export default function DashboardAdminPage() {
 
   return (
     <div className="min-h-screen bg-gray-50 pb-16">
-      <main className="max-w-5xl mx-auto px-6 py-10">
+      <main className="max-w-5xl mx-auto px-4 sm:px-6 py-6 sm:py-10">
 
         <div className="mb-2">
           <h1 className="text-xl font-semibold text-gray-900">
@@ -53,7 +53,7 @@ export default function DashboardAdminPage() {
         {/* Accesos rápidos */}
         <div className="mb-10 mt-8">
           <h2 className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-4">Administración</h2>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <button
               onClick={() => navigate('/admin/users')}
               className="flex items-center gap-4 p-5 bg-white rounded-2xl border border-gray-200 hover:border-accent hover:shadow-sm transition-all text-left group"

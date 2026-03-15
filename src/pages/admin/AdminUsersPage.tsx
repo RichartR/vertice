@@ -1,4 +1,4 @@
-// Panel de gestión de usuarios (admin) — tabla de empleados + modal de creación/edición.
+// Panel de gestión de usuarios (admin) — tabla con pestañas Activos/Inactivos + modal de creación/edición.
 import { useEffect, useState } from 'react'
 import { supabase } from '../../lib/supabase'
 import SearchInput from '../../components/ui/SearchInput'
@@ -24,6 +24,8 @@ type Servicio = {
   nombre: string
 }
 
+type Pestaña = 'activos' | 'inactivos'
+
 export default function AdminUsersPage() {
 
   // --- Datos ---
@@ -31,7 +33,8 @@ export default function AdminUsersPage() {
   const [servicios, setServicios] = useState<Servicio[]>([])
   const [cargando, setCargando] = useState(true)
 
-  // --- Búsqueda ---
+  // --- Pestañas y búsqueda ---
+  const [pestañaActiva, setPestañaActiva] = useState<Pestaña>('activos')
   const [busqueda, setBusqueda] = useState('')
 
   // --- Modal ---
@@ -41,14 +44,14 @@ export default function AdminUsersPage() {
   const [apellidos, setApellidos] = useState('')
   const [email, setEmail] = useState('')
   const [rol, setRol] = useState('employee')
-  // Almacena IDs de servicios seleccionados en el modal
   const [serviciosAsignados, setServiciosAsignados] = useState<string[]>([])
   const [guardando, setGuardando] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [exito, setExito] = useState<string | null>(null)
 
   const esEdicion = empleadoEdicion !== null
-  const labelConfirmar = esEdicion ? 'Guardar cambios' : 'Enviar invitación'
+  const labelAccion = esEdicion ? 'Guardar cambios' : 'Enviar invitación'
+  const labelConfirmar = guardando ? 'Guardando...' : labelAccion
 
   useEffect(() => {
     cargarDatos()
@@ -57,14 +60,12 @@ export default function AdminUsersPage() {
   async function cargarDatos() {
     setCargando(true)
 
-    // Cargamos en paralelo los perfiles, servicios activos y asignaciones
     const [{ data: perfiles }, { data: svcs }, { data: asignaciones }] = await Promise.all([
       supabase.from('profiles').select('*').order('nombre'),
       supabase.from('services').select('id, nombre').eq('activo', true).order('nombre'),
       supabase.from('service_employees').select('employee_id, service_id'),
     ])
 
-    // Agrupamos las asignaciones por employee_id para consultarlas fácilmente
     const asignacionesPorEmpleado = new Map<string, string[]>()
     asignaciones?.forEach(a => {
       const lista = asignacionesPorEmpleado.get(a.employee_id) ?? []
@@ -103,8 +104,6 @@ export default function AdminUsersPage() {
     setModalOpen(true)
   }
 
-  // --- CheckboxGroup trabaja con nombres; internamente usamos IDs ---
-
   function toggleServicio(nombreServicio: string) {
     const servicio = servicios.find(s => s.nombre === nombreServicio)
     if (!servicio) return
@@ -115,7 +114,6 @@ export default function AdminUsersPage() {
     )
   }
 
-  // Convierte IDs seleccionados → nombres para mostrar en CheckboxGroup
   const nombresSeleccionados = serviciosAsignados
     .map(id => servicios.find(s => s.id === id)?.nombre ?? '')
     .filter(Boolean)
@@ -127,8 +125,6 @@ export default function AdminUsersPage() {
     setError(null)
 
     try {
-      // refreshSession() garantiza que el access_token no esté caducado.
-      // getSession() devuelve la sesión cacheada pero no fuerza el refresco.
       const { data: { session } } = await supabase.auth.refreshSession()
 
       const response = await fetch(
@@ -154,7 +150,6 @@ export default function AdminUsersPage() {
 
       const { user: nuevoUsuario } = await response.json()
 
-      // Asignar servicios si se seleccionaron
       if (nuevoUsuario?.id) {
         await updateEmployeeServices(nuevoUsuario.id, serviciosAsignados)
       }
@@ -183,7 +178,6 @@ export default function AdminUsersPage() {
         .update({ nombre: `${nombre} ${apellidos}`.trim(), rol })
         .eq('id', empleadoEdicion.id)
 
-      // Reemplazar asignaciones via helper reutilizable (VER-22)
       await updateEmployeeServices(empleadoEdicion.id, serviciosAsignados)
 
       setModalOpen(false)
@@ -195,58 +189,106 @@ export default function AdminUsersPage() {
     }
   }
 
-  // --- Activar/desactivar usuario ---
+  // --- Activar / desactivar ---
 
-  async function toggleActivo(emp: Empleado) {
-    await supabase.from('profiles').update({ activo: !emp.activo }).eq('id', emp.id)
+  async function setActivo(emp: Empleado, activo: boolean) {
+    await supabase.from('profiles').update({ activo }).eq('id', emp.id)
     cargarDatos()
   }
 
-  // --- Filtro ---
+  // --- Reset de contraseña ---
 
-  const empleadosFiltrados = empleados.filter(e =>
+  const [resetEmail, setResetEmail] = useState<string | null>(null)
+  const [enviandoReset, setEnviandoReset] = useState(false)
+
+  async function handleReset() {
+    if (!resetEmail) return
+    setEnviandoReset(true)
+    const { error: err } = await supabase.auth.resetPasswordForEmail(resetEmail, {
+      redirectTo: `${globalThis.location.origin}/reset-password`,
+    })
+    setResetEmail(null)
+    setEnviandoReset(false)
+    if (!err) {
+      setExito(`Email enviado a ${resetEmail}`)
+      setTimeout(() => setExito(null), 5000)
+    }
+  }
+
+  // --- Listas filtradas por pestaña ---
+
+  const activos = empleados.filter(e => e.activo && (
     normalizar(e.nombre).includes(normalizar(busqueda)) ||
     normalizar(e.email).includes(normalizar(busqueda))
-  )
+  ))
+  const inactivos = empleados.filter(e => !e.activo && (
+    normalizar(e.nombre).includes(normalizar(busqueda)) ||
+    normalizar(e.email).includes(normalizar(busqueda))
+  ))
+  const lista = pestañaActiva === 'activos' ? activos : inactivos
 
   return (
     <div className="min-h-screen bg-gray-50 pb-16">
 
-      <main className="max-w-5xl mx-auto px-6 py-8">
+      <main className="max-w-5xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
 
         <div className="flex items-center justify-between mb-6">
           <h1 className="text-xl font-semibold text-gray-900">Gestión de usuarios</h1>
-          <button onClick={abrirNuevo} className="px-4 py-2 bg-accent-dark hover:bg-accent text-gray-800 text-sm font-medium rounded-lg transition-colors">
-            + Nuevo empleado
-          </button>
+          {pestañaActiva === 'activos' && (
+            <button onClick={abrirNuevo} className="px-4 py-2 bg-accent-dark hover:bg-accent text-gray-800 text-sm font-medium rounded-lg transition-colors">
+              + Nuevo empleado
+            </button>
+          )}
         </div>
 
-        {/* Mensaje de éxito */}
         {exito && (
           <div className="mb-4 px-4 py-3 bg-green-50 border border-green-200 rounded-xl text-sm text-green-700">
             {exito}
           </div>
         )}
 
-        {/* Tabla de empleados */}
         <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
-          <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
-            <p className="text-sm text-gray-500">
-              {cargando ? 'Cargando...' : `${empleadosFiltrados.length} usuarios registrados`}
-            </p>
-            <SearchInput value={busqueda} onChange={setBusqueda} placeholder="Buscar empleado..." />
+
+          {/* Cabecera con pestañas y búsqueda */}
+          <div className="px-4 sm:px-5 py-4 border-b border-gray-100 flex flex-wrap items-center justify-between gap-3">
+            <div className="flex gap-1 bg-gray-100 rounded-lg p-1">
+              {(['activos', 'inactivos'] as Pestaña[]).map(tab => (
+                <button
+                  key={tab}
+                  onClick={() => { setPestañaActiva(tab); setBusqueda('') }}
+                  className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors capitalize ${
+                    pestañaActiva === tab
+                      ? 'bg-white text-gray-900 shadow-sm'
+                      : 'text-gray-500 hover:text-gray-700'
+                  }`}
+                >
+                  {tab}
+                </button>
+              ))}
+            </div>
+            <div className="flex items-center gap-4">
+              <p className="text-sm text-gray-400">
+                {cargando ? 'Cargando...' : `${lista.length} ${pestañaActiva}`}
+              </p>
+              <SearchInput value={busqueda} onChange={setBusqueda} placeholder="Buscar empleado..." />
+            </div>
           </div>
 
-          <table className="w-full text-sm">
+          <div className="overflow-x-auto">
+          <table className="w-full text-sm min-w-[700px]">
             <thead className="bg-accent/10 border-b border-accent/20">
               <tr>
-                {['Nombre', 'Email', 'Rol', 'Servicios asignados', 'Estado', ''].map(h => (
-                  <th key={h} className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">{h}</th>
-                ))}
+                <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Nombre</th>
+                <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Email</th>
+                <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Rol</th>
+                {pestañaActiva === 'activos' && (
+                  <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Servicios asignados</th>
+                )}
+                <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide"></th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-50">
-              {empleadosFiltrados.map(emp => (
+              {lista.map(emp => (
                 <tr key={emp.id} className="hover:bg-accent/5 transition-colors">
                   <td className="px-5 py-4">
                     <div className="flex items-center gap-3">
@@ -260,54 +302,82 @@ export default function AdminUsersPage() {
                   <td className="px-5 py-4">
                     <Badge variant={emp.rol === 'admin' ? 'admin' : 'empleado'} />
                   </td>
-                  <td className="px-5 py-4 text-gray-500">
-                    {emp.servicios.length > 0
-                      ? emp.servicios
-                          .map(id => servicios.find(s => s.id === id)?.nombre ?? id)
-                          .join(', ')
-                      : <span className="text-gray-300">—</span>
-                    }
-                  </td>
+                  {pestañaActiva === 'activos' && (
+                    <td className="px-5 py-4 text-gray-500">
+                      {emp.servicios.length > 0
+                        ? emp.servicios
+                            .map(id => servicios.find(s => s.id === id)?.nombre ?? id)
+                            .join(', ')
+                        : <span className="text-gray-300">—</span>
+                      }
+                    </td>
+                  )}
                   <td className="px-5 py-4">
-                    <Badge variant={emp.activo ? 'activo' : 'inactivo'} />
-                  </td>
-                  <td className="px-5 py-4">
-                    <div className="flex gap-3">
-                      <button
-                        onClick={() => abrirEditar(emp)}
-                        className="px-2.5 py-1 rounded-md border border-gray-200 text-xs text-gray-600 hover:border-accent hover:bg-accent/10 transition-colors"
-                      >
-                        Editar
-                      </button>
-                      <button
-                        onClick={() => toggleActivo(emp)}
-                        className={`px-2.5 py-1 rounded-md border text-xs transition-colors ${
-                          emp.activo
-                            ? 'border-red-100 text-red-500 hover:bg-red-50'
-                            : 'border-green-100 text-green-600 hover:bg-green-50'
-                        }`}
-                      >
-                        {emp.activo ? 'Desactivar' : 'Activar'}
-                      </button>
+                    <div className="flex gap-2 whitespace-nowrap">
+                      {pestañaActiva === 'activos' ? (
+                        <>
+                          <button
+                            onClick={() => abrirEditar(emp)}
+                            className="px-2.5 py-1 rounded-md border border-gray-200 text-xs text-gray-600 hover:border-accent hover:bg-accent/10 transition-colors"
+                          >
+                            Editar
+                          </button>
+                          <button
+                            onClick={() => setResetEmail(emp.email)}
+                            className="px-2.5 py-1 rounded-md border border-blue-100 text-xs text-blue-600 hover:bg-blue-50 transition-colors"
+                          >
+                            Restablecer contraseña
+                          </button>
+                          <button
+                            onClick={() => setActivo(emp, false)}
+                            className="px-2.5 py-1 rounded-md border border-red-100 text-xs text-red-500 hover:bg-red-50 transition-colors"
+                          >
+                            Desactivar
+                          </button>
+                        </>
+                      ) : (
+                        <button
+                          onClick={() => setActivo(emp, true)}
+                          className="px-2.5 py-1 rounded-md border border-green-100 text-xs text-green-600 hover:bg-green-50 transition-colors"
+                        >
+                          Reactivar
+                        </button>
+                      )}
                     </div>
                   </td>
                 </tr>
               ))}
             </tbody>
           </table>
+          </div>
         </div>
       </main>
+
+      {/* Modal confirmación reset contraseña */}
+      {resetEmail && (
+        <Modal
+          title="Restablecer contraseña"
+          confirmLabel={enviandoReset ? 'Enviando...' : 'Enviar email'}
+          confirmDisabled={enviandoReset}
+          onConfirm={handleReset}
+          onClose={() => setResetEmail(null)}
+        >
+          <p className="text-sm text-gray-600">
+            ¿Enviar email de restablecimiento de contraseña a <span className="font-medium text-gray-900">{resetEmail}</span>?
+          </p>
+        </Modal>
+      )}
 
       {/* Modal creación/edición */}
       {modalOpen && (
         <Modal
           title={esEdicion ? 'Editar empleado' : 'Nuevo empleado'}
-          confirmLabel={guardando ? 'Guardando...' : labelConfirmar}
+          confirmLabel={labelConfirmar}
           confirmDisabled={guardando}
           onConfirm={esEdicion ? handleEditar : handleCrear}
           onClose={() => setModalOpen(false)}
         >
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <FormField id="u-nombre" label="Nombre">
               <input
                 id="u-nombre"
