@@ -51,7 +51,7 @@ export default function Navbar() {
           <Link to="/dashboard" className={`hidden md:block ${navLinkCls}`}>Gestión Servicios</Link>
         )}
         {isAdmin && (
-          <Link to="/admin/incidencias" className={`hidden md:block ${navLinkCls}`}>Incidencias</Link>
+          <Link to="/admin/incidencias" className={`hidden md:block ${navLinkCls}`}>Incidencias de Asistencia</Link>
         )}
         {!isAdmin && serviciosCount > 1 && (
           <Link to="/dashboard" className={`hidden md:block ${navLinkCls}`}>Mis servicios</Link>
