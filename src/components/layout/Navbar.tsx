@@ -1,5 +1,5 @@
 // Barra de navegación superior — presente en todas las páginas protegidas.
-// Links visibles según rol: admin ve Usuarios y Servicios; empleado ve Dashboard solo si tiene >1 servicio.
+// Admin: logo + "Gestión Servicios" → /dashboard. Empleado: logo (si >1 servicio) + nombre + cerrar sesión.
 import { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import logo from '../../assets/logo.webp'
@@ -45,11 +45,7 @@ export default function Navbar() {
 
         {/* Links de navegación */}
         {isAdmin && (
-          <>
-            <Link to="/dashboard" className={navLinkCls}>Dashboard</Link>
-            <Link to="/admin/users" className={navLinkCls}>Usuarios</Link>
-            <Link to="/admin/services" className={navLinkCls}>Servicios</Link>
-          </>
+          <Link to="/dashboard" className={navLinkCls}>Gestión Servicios</Link>
         )}
         {!isAdmin && serviciosCount > 1 && (
           <Link to="/dashboard" className={navLinkCls}>Mis servicios</Link>
