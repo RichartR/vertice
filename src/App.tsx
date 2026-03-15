@@ -8,6 +8,7 @@ import ServicePage from './pages/ServicePage'
 import AdminUsersPage from './pages/admin/AdminUsersPage'
 import AdminServicesPage from './pages/admin/AdminServicesPage'
 import { useAuth } from './context/AuthContext'
+import IosBanner from './components/ui/IosBanner'
 
 // Renderiza el dashboard correcto según el rol del usuario.
 function DashboardRouter() {
@@ -17,6 +18,8 @@ function DashboardRouter() {
 
 export default function App() {
   return (
+    <>
+    <IosBanner />
     <Routes>
       {/* Rutas públicas */}
       <Route path="/login"           element={<LoginPage />} />
@@ -57,5 +60,6 @@ export default function App() {
       {/* Fallback — redirigir al dashboard (el ProtectedRoute se encarga si no hay sesión) */}
       <Route path="*" element={<Navigate to="/dashboard" replace />} />
     </Routes>
+    </>
   )
 }
