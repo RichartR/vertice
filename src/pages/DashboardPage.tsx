@@ -26,7 +26,7 @@ export default function DashboardPage() {
 
     setServicios(
       data
-        ?.map(row => row.services as Servicio | null)
+        ?.map(row => row.services as unknown as Servicio | null)
         .filter((s): s is Servicio => s !== null) ?? []
     )
     setCargando(false)
@@ -42,15 +42,17 @@ export default function DashboardPage() {
           <p className="text-sm text-gray-500 mt-1">Selecciona un servicio para ver sus registros</p>
         </div>
 
-        {cargando ? (
+        {cargando && (
           <div className="flex justify-center py-16">
             <div className="w-6 h-6 border-2 border-accent border-t-transparent rounded-full animate-spin" />
           </div>
-        ) : servicios.length === 0 ? (
+        )}
+        {!cargando && servicios.length === 0 && (
           <p className="text-sm text-gray-400 text-center py-16">
             No tienes servicios asignados todavía.
           </p>
-        ) : (
+        )}
+        {!cargando && servicios.length > 0 && (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {servicios.map(servicio => (
               <button
