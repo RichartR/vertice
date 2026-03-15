@@ -1,5 +1,6 @@
-// Panel de gestión de incidencias (admin) — VER-46 + VER-47.
-// Tres pestañas: Pendientes / Resueltas / Caducadas.
+// Panel de gestión de incidencias (admin) — VER-46 + VER-47 + VER-48.
+// Tres pestanyas de gestión: Pendientes / Resueltas / Caducadas.
+// Pestanya Estadísticas con buscador por socio y 5 métricas (VER-48).
 // Filtros en frontend por socio, sesión, fecha y aviso.
 // Modal de creación/edición inline (VER-47).
 // Popups para transiciones de estado con campos extra.
@@ -8,8 +9,11 @@ import { supabase } from '../../lib/supabase'
 import Modal from '../../components/ui/Modal'
 import FormField from '../../components/ui/FormField'
 import { normalizar } from '../../utils/normalizar'
+import { useIncidenciasStats } from '../../hooks/useIncidenciasStats'
+import Select from '../../components/ui/Select'
 
 type Estado = 'pendiente' | 'resuelta' | 'caducada'
+type Vista = Estado | 'estadisticas'
 
 type Incidencia = {
   id: string
@@ -23,6 +27,14 @@ type Incidencia = {
   fecha_nueva_clase: string | null
 }
 
+type IncidenciaStat = {
+  id: string
+  fecha: string
+  nombre_socio: string
+  estado: Estado
+  aviso: boolean
+}
+
 type Filtros = {
   socio: string
   sesion: string
@@ -33,7 +45,9 @@ type Filtros = {
 
 const FILTROS_VACIO: Filtros = { socio: '', sesion: '', fechaDesde: '', fechaHasta: '', aviso: 'todos' }
 
-const PESTAÑAS: Estado[] = ['pendiente', 'resuelta', 'caducada']
+const MESES = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre']
+
+const PESTANYAS_GESTION: Estado[] = ['pendiente', 'resuelta', 'caducada']
 const LABELS: Record<Estado, string> = { pendiente: 'Pendientes', resuelta: 'Resueltas', caducada: 'Caducadas' }
 
 function formatFecha(iso: string): string {
@@ -50,12 +64,18 @@ function hayFiltrosActivos(f: Filtros): boolean {
 }
 
 export default function AdminIncidenciasPage() {
-  // --- Datos ---
+  // --- Datos de gestión (por estado) ---
   const [incidencias, setIncidencias] = useState<Incidencia[]>([])
   const [cargando, setCargando] = useState(true)
 
-  // --- Pestañas y filtros ---
-  const [pestaña, setPestaña] = useState<Estado>('pendiente')
+  // --- Datos de estadísticas (todas, sin filtro de estado) ---
+  const [todasIncidencias, setTodasIncidencias] = useState<IncidenciaStat[]>([])
+  const [busquedaStats, setBusquedaStats] = useState('')
+  const [mesStats, setMesStats] = useState('')
+  const [anyoStats, setAnyoStats] = useState('')
+
+  // --- Pestanyas y filtros ---
+  const [pestanya, setPestanya] = useState<Vista>('pendiente')
   const [filtros, setFiltros] = useState<Filtros>(FILTROS_VACIO)
 
   // --- Modal crear/editar (VER-47) ---
@@ -83,19 +103,45 @@ export default function AdminIncidenciasPage() {
   // --- Confirmación borrado ---
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null)
 
+  // --- Estadísticas (VER-48) ---
+  const incidenciasParaStats = todasIncidencias.filter(i => {
+    if (mesStats && i.fecha.substring(5, 7) !== mesStats.padStart(2, '0')) return false
+    if (anyoStats && i.fecha.substring(0, 4) !== anyoStats) return false
+    return true
+  })
+  const { stats } = useIncidenciasStats(incidenciasParaStats, busquedaStats)
+  const anyosStats = Array.from(new Set(todasIncidencias.map(i => i.fecha.substring(0, 4)))).sort((a, b) => b.localeCompare(a))
+  const hayFiltroStats = !!(busquedaStats || mesStats || anyoStats)
+  const opcionesMeses = MESES.map((m, idx) => ({ value: String(idx + 1), label: m }))
+  const opcionesAnyos = anyosStats.map(a => ({ value: a, label: a }))
+
+  // Carga las incidencias de la pestanya activa (solo pestanyas de gestión)
   useEffect(() => {
-    cargar()
-  }, [pestaña])
+    if (pestanya !== 'estadisticas') cargar()
+  }, [pestanya])
+
+  // Carga todas las incidencias para estadísticas (fetch independiente, al montar)
+  useEffect(() => {
+    cargarStats()
+  }, [])
 
   async function cargar() {
     setCargando(true)
     const { data } = await supabase
       .from('incidencias')
       .select('*')
-      .eq('estado', pestaña)
+      .eq('estado', pestanya as Estado)
       .order('fecha', { ascending: false })
     setIncidencias((data as Incidencia[]) ?? [])
     setCargando(false)
+  }
+
+  async function cargarStats() {
+    const { data } = await supabase
+      .from('incidencias')
+      .select('id, fecha, nombre_socio, estado, aviso')
+      .order('fecha', { ascending: false })
+    setTodasIncidencias((data as IncidenciaStat[]) ?? [])
   }
 
   // --- Filtrado en frontend ---
@@ -109,8 +155,8 @@ export default function AdminIncidenciasPage() {
     return true
   })
 
-  function cambiarPestaña(tab: Estado) {
-    setPestaña(tab)
+  function cambiarPestanya(tab: Vista) {
+    setPestanya(tab)
     setFiltros(FILTROS_VACIO)
   }
 
@@ -163,6 +209,7 @@ export default function AdminIncidenciasPage() {
     setGuardando(false)
     setModalOpen(false)
     cargar()
+    cargarStats()
   }
 
   // --- Transiciones de estado ---
@@ -181,6 +228,7 @@ export default function AdminIncidenciasPage() {
     setPopupResuelta(null)
     setGuardandoT(false)
     cargar()
+    cargarStats()
   }
 
   async function marcarCaducada() {
@@ -195,29 +243,33 @@ export default function AdminIncidenciasPage() {
     setPopupCaducada(null)
     setGuardandoT(false)
     cargar()
+    cargarStats()
   }
 
   async function volverPendienteDesdeResuelta(id: string) {
     await supabase.from('incidencias').update({ estado: 'pendiente', fecha_nueva_clase: null }).eq('id', id)
     cargar()
+    cargarStats()
   }
 
   async function volverPendienteDesdeCaducada(id: string, obs: string | null) {
     const textoLimpio = obs?.split('\nObservaciones tras caducar:')[0] ?? null
     await supabase.from('incidencias').update({ estado: 'pendiente', observaciones: textoLimpio || null }).eq('id', id)
     cargar()
+    cargarStats()
   }
 
   async function eliminar(id: string) {
     await supabase.from('incidencias').delete().eq('id', id)
     setConfirmDeleteId(null)
     cargar()
+    cargarStats()
   }
 
   // --- Estilos reutilizables ---
   const inputCls = 'px-3 py-2 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-accent'
   const btnAccion = 'px-2 py-1 rounded-md border text-xs transition-colors'
-  const colSpan = pestaña === 'resuelta' ? 8 : 7
+  const colSpan = pestanya === 'resuelta' ? 8 : 7
   const labelModal = editando ? 'Guardar cambios' : 'Crear incidencia'
   const confirmLabelModal = guardando ? 'Guardando...' : labelModal
 
@@ -235,7 +287,7 @@ export default function AdminIncidenciasPage() {
       return (
         <tr>
           <td colSpan={colSpan} className="text-center py-16 text-gray-400 text-sm">
-            No hay incidencias {LABELS[pestaña].toLowerCase()}
+            No hay incidencias {LABELS[pestanya as Estado].toLowerCase()}
           </td>
         </tr>
       )
@@ -258,7 +310,7 @@ export default function AdminIncidenciasPage() {
             {i.observaciones || '—'}
           </span>
         </td>
-        {pestaña === 'resuelta' && (
+        {pestanya === 'resuelta' && (
           <td className="px-4 py-3 text-gray-700 whitespace-nowrap">
             {i.fecha_nueva_clase ? formatFecha(i.fecha_nueva_clase) : '—'}
           </td>
@@ -271,7 +323,7 @@ export default function AdminIncidenciasPage() {
             >
               Editar
             </button>
-            {pestaña === 'pendiente' && (
+            {pestanya === 'pendiente' && (
               <>
                 <button
                   onClick={() => { setPopupResuelta({ id: i.id }); setFechaNuevaClase(''); setErrTransicion(null) }}
@@ -287,7 +339,7 @@ export default function AdminIncidenciasPage() {
                 </button>
               </>
             )}
-            {pestaña === 'resuelta' && (
+            {pestanya === 'resuelta' && (
               <button
                 onClick={() => volverPendienteDesdeResuelta(i.id)}
                 className={`${btnAccion} border-blue-100 text-blue-600 hover:bg-blue-50`}
@@ -295,7 +347,7 @@ export default function AdminIncidenciasPage() {
                 Pendiente
               </button>
             )}
-            {pestaña === 'caducada' && (
+            {pestanya === 'caducada' && (
               <button
                 onClick={() => volverPendienteDesdeCaducada(i.id, i.observaciones)}
                 className={`${btnAccion} border-blue-100 text-blue-600 hover:bg-blue-50`}
@@ -322,117 +374,207 @@ export default function AdminIncidenciasPage() {
         {/* Cabecera */}
         <div className="flex items-center justify-between mb-6">
           <h1 className="text-xl font-semibold text-gray-900">Incidencias de clases</h1>
-          <button
-            onClick={abrirNuevo}
-            className="px-4 py-2 bg-accent-dark hover:bg-accent text-gray-800 text-sm font-medium rounded-lg transition-colors"
-          >
-            + Nueva incidencia
-          </button>
+          {pestanya !== 'estadisticas' && (
+            <button
+              onClick={abrirNuevo}
+              className="px-4 py-2 bg-accent-dark hover:bg-accent text-gray-800 text-sm font-medium rounded-lg transition-colors"
+            >
+              + Nueva incidencia
+            </button>
+          )}
         </div>
 
-        <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
+        <div className={`bg-white rounded-2xl border border-gray-200 ${pestanya === 'estadisticas' ? '' : 'overflow-hidden'}`}>
 
-          {/* Pestañas + contador */}
+          {/* Pestanyas */}
           <div className="px-4 sm:px-5 py-4 border-b border-gray-100 flex flex-wrap items-center justify-between gap-3">
-            <div className="flex gap-1 bg-gray-100 rounded-lg p-1">
-              {PESTAÑAS.map(tab => (
-                <button
-                  key={tab}
-                  onClick={() => cambiarPestaña(tab)}
-                  className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
-                    pestaña === tab
-                      ? 'bg-white text-gray-900 shadow-sm'
-                      : 'text-gray-500 hover:text-gray-700'
-                  }`}
-                >
-                  {LABELS[tab]}
-                </button>
-              ))}
-            </div>
-            <p className="text-sm text-gray-400">
-              {cargando ? 'Cargando...' : `${lista.length} registros`}
-            </p>
-          </div>
-
-          {/* Barra de filtros */}
-          <div className="px-4 sm:px-5 py-3 border-b border-gray-100 flex flex-col md:flex-row gap-2 md:items-center">
-            <input
-              type="text"
-              value={filtros.socio}
-              onChange={e => setFiltros(f => ({ ...f, socio: e.target.value }))}
-              placeholder="Buscar socio..."
-              className={`${inputCls} w-full md:flex-1`}
-            />
-            <input
-              type="text"
-              value={filtros.sesion}
-              onChange={e => setFiltros(f => ({ ...f, sesion: e.target.value }))}
-              placeholder="Buscar sesión..."
-              className={`${inputCls} w-full md:flex-1`}
-            />
-            <input
-              type="date"
-              value={filtros.fechaDesde}
-              onChange={e => setFiltros(f => ({ ...f, fechaDesde: e.target.value }))}
-              className={`${inputCls} w-full md:flex-1`}
-            />
-            <input
-              type="date"
-              value={filtros.fechaHasta}
-              onChange={e => setFiltros(f => ({ ...f, fechaHasta: e.target.value }))}
-              className={`${inputCls} w-full md:flex-1`}
-            />
-            <select
-              value={filtros.aviso}
-              onChange={e => setFiltros(f => ({ ...f, aviso: e.target.value as 'todos' | 'si' | 'no' }))}
-              className={`${inputCls} w-full md:flex-1`}
-            >
-              <option value="todos">¿Avisó? Todos</option>
-              <option value="si">Sí avisó</option>
-              <option value="no">No avisó</option>
-            </select>
-            {hayFiltrosActivos(filtros) && (
+            <div className="flex items-center gap-3">
+              <div className="flex gap-1 bg-gray-100 rounded-lg p-1">
+                {PESTANYAS_GESTION.map(tab => (
+                  <button
+                    key={tab}
+                    onClick={() => cambiarPestanya(tab)}
+                    className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
+                      pestanya === tab
+                        ? 'bg-white text-gray-900 shadow-sm'
+                        : 'text-gray-500 hover:text-gray-700'
+                    }`}
+                  >
+                    {LABELS[tab]}
+                  </button>
+                ))}
+              </div>
               <button
-                onClick={() => setFiltros(FILTROS_VACIO)}
-                className="text-xs text-gray-500 hover:text-gray-700 px-2 py-1 rounded-md border border-gray-200 hover:bg-gray-50 transition-colors whitespace-nowrap"
+                onClick={() => cambiarPestanya('estadisticas')}
+                className={`px-3 py-1.5 rounded-md text-xs font-medium border transition-colors ${
+                  pestanya === 'estadisticas'
+                    ? 'bg-accent border-accent-dark text-gray-800'
+                    : 'border-gray-200 text-gray-500 hover:border-accent hover:text-gray-700 bg-white'
+                }`}
               >
-                Limpiar filtros
+                Estadísticas
               </button>
+            </div>
+            {pestanya !== 'estadisticas' && (
+              <p className="text-sm text-gray-400">
+                {cargando ? 'Cargando...' : `${lista.length} registros`}
+              </p>
             )}
           </div>
 
-          {/* Tabla */}
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm table-fixed min-w-[980px]">
-              <colgroup>
-                <col className="w-[90px]" />
-                <col className="w-[110px]" />
-                <col className="w-[120px]" />
-                <col className="w-[70px]" />
-                <col className="w-[85px]" />
-                <col />{/* Observaciones — toma el espacio restante */}
-                {pestaña === 'resuelta' && <col className="w-[130px]" />}
-                <col className="w-[260px]" />
-              </colgroup>
-              <thead className="bg-accent/10 border-b border-accent/20">
-                <tr>
-                  <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Fecha</th>
-                  <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Socio</th>
-                  <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Sesión</th>
-                  <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">¿Avisó?</th>
-                  <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Hora aviso</th>
-                  <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Observaciones</th>
-                  {pestaña === 'resuelta' && (
-                    <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Fecha nueva clase</th>
-                  )}
-                  <th className="text-right px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide"></th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-50">
-                {renderFilas()}
-              </tbody>
-            </table>
-          </div>
+          {/* Vista de gestión: filtros + tabla */}
+          {pestanya !== 'estadisticas' && (
+            <>
+              {/* Barra de filtros */}
+              <div className="px-4 sm:px-5 py-3 border-b border-gray-100 flex flex-wrap gap-2">
+                <input
+                  type="text"
+                  value={filtros.socio}
+                  onChange={e => setFiltros(f => ({ ...f, socio: e.target.value }))}
+                  placeholder="Buscar socio..."
+                  className={`${inputCls} w-full md:flex-1`}
+                />
+                <input
+                  type="text"
+                  value={filtros.sesion}
+                  onChange={e => setFiltros(f => ({ ...f, sesion: e.target.value }))}
+                  placeholder="Buscar sesión..."
+                  className={`${inputCls} w-full md:flex-1`}
+                />
+                <input
+                  type="date"
+                  value={filtros.fechaDesde}
+                  onChange={e => setFiltros(f => ({ ...f, fechaDesde: e.target.value }))}
+                  className={`${inputCls} w-full md:flex-1`}
+                />
+                <input
+                  type="date"
+                  value={filtros.fechaHasta}
+                  onChange={e => setFiltros(f => ({ ...f, fechaHasta: e.target.value }))}
+                  className={`${inputCls} w-full md:flex-1`}
+                />
+                <select
+                  value={filtros.aviso}
+                  onChange={e => setFiltros(f => ({ ...f, aviso: e.target.value as 'todos' | 'si' | 'no' }))}
+                  className={`${inputCls} w-full md:flex-1`}
+                >
+                  <option value="todos">¿Avisó? Todos</option>
+                  <option value="si">Sí avisó</option>
+                  <option value="no">No avisó</option>
+                </select>
+                {hayFiltrosActivos(filtros) && (
+                  <button
+                    onClick={() => setFiltros(FILTROS_VACIO)}
+                    className="px-3 py-1.5 rounded-lg border border-gray-200 text-sm text-gray-500 hover:text-gray-700 hover:bg-gray-50 transition-colors"
+                  >
+                    Limpiar filtros
+                  </button>
+                )}
+              </div>
+
+              {/* Tabla */}
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm table-fixed min-w-[980px]">
+                  <colgroup>
+                    <col className="w-[90px]" />
+                    <col className="w-[110px]" />
+                    <col className="w-[120px]" />
+                    <col className="w-[70px]" />
+                    <col className="w-[85px]" />
+                    <col />{/* Observaciones — toma el espacio restante */}
+                    {pestanya === 'resuelta' && <col className="w-[130px]" />}
+                    <col className="w-[260px]" />
+                  </colgroup>
+                  <thead className="bg-accent/10 border-b border-accent/20">
+                    <tr>
+                      <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Fecha</th>
+                      <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Socio</th>
+                      <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Sesión</th>
+                      <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">¿Avisó?</th>
+                      <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Hora aviso</th>
+                      <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Observaciones</th>
+                      {pestanya === 'resuelta' && (
+                        <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Fecha nueva clase</th>
+                      )}
+                      <th className="text-right px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide"></th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-50">
+                    {renderFilas()}
+                  </tbody>
+                </table>
+              </div>
+            </>
+          )}
+
+          {/* Vista Estadísticas — VER-48 */}
+          {pestanya === 'estadisticas' && (
+            <div className="px-4 sm:px-6 py-6">
+
+              {/* Filtros: socio + mes + año + limpiar */}
+              <div className="flex flex-col md:flex-row gap-2 md:items-center mb-4">
+                <input
+                  type="text"
+                  value={busquedaStats}
+                  onChange={e => setBusquedaStats(e.target.value)}
+                  placeholder="Buscar socio..."
+                  className={`${inputCls} w-full md:flex-1`}
+                />
+                <Select
+                  value={mesStats}
+                  onChange={setMesStats}
+                  options={opcionesMeses}
+                  placeholder="Todos los meses"
+                  className="w-full md:flex-1"
+                />
+                <Select
+                  value={anyoStats}
+                  onChange={setAnyoStats}
+                  options={opcionesAnyos}
+                  placeholder="Todos los años"
+                  className="w-full md:flex-1"
+                />
+                {hayFiltroStats && (
+                  <button
+                    onClick={() => { setBusquedaStats(''); setMesStats(''); setAnyoStats('') }}
+                    className="text-xs text-gray-500 hover:text-gray-700 px-3 py-2 rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors whitespace-nowrap"
+                  >
+                    Limpiar
+                  </button>
+                )}
+              </div>
+
+              {/* Etiqueta de contexto */}
+              <p className="text-base font-semibold text-gray-700 mb-4">
+                {[busquedaStats, mesStats ? MESES[Number.parseInt(mesStats) - 1] : '', anyoStats].filter(Boolean).join(' · ') || 'Totales'}
+              </p>
+
+              {/* 5 tarjetas de métricas */}
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
+                <div className="bg-gray-50 rounded-xl p-4 border border-gray-100">
+                  <p className="text-2xl font-bold text-gray-900">{stats.total}</p>
+                  <p className="text-xs font-medium text-gray-500 mt-1">Total incidencias</p>
+                </div>
+                <div className="bg-yellow-50 rounded-xl p-4 border border-yellow-100">
+                  <p className="text-2xl font-bold text-yellow-700">{stats.pendientes}</p>
+                  <p className="text-xs font-medium text-yellow-600 mt-1">Pendientes</p>
+                </div>
+                <div className="bg-green-50 rounded-xl p-4 border border-green-100">
+                  <p className="text-2xl font-bold text-green-700">{stats.resueltas}</p>
+                  <p className="text-xs font-medium text-green-600 mt-1">Resueltas</p>
+                </div>
+                <div className="bg-orange-50 rounded-xl p-4 border border-orange-100">
+                  <p className="text-2xl font-bold text-orange-600">{stats.caducadas}</p>
+                  <p className="text-xs font-medium text-orange-500 mt-1">Caducadas</p>
+                </div>
+                <div className="bg-red-50 rounded-xl p-4 border border-red-100">
+                  <p className="text-2xl font-bold text-red-600">{stats.sinAviso}</p>
+                  <p className="text-xs font-medium text-red-500 mt-1">Sin aviso</p>
+                </div>
+              </div>
+            </div>
+          )}
+
         </div>
       </main>
 
