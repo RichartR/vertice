@@ -1,6 +1,7 @@
-// Panel de gestión de servicios (admin) — tabla + modal de creación/edición.
-import { useState } from 'react'
+// Panel de gestión de servicios (admin) — tabla con pestañas Activos/Inactivos + modal creación/edición.
+import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { supabase } from '../../lib/supabase'
 import Tooltip from '../../components/ui/Tooltip'
 import SearchInput from '../../components/ui/SearchInput'
 import Modal from '../../components/ui/Modal'
@@ -8,28 +9,85 @@ import FormField from '../../components/ui/FormField'
 import CheckboxGroup from '../../components/ui/CheckboxGroup'
 import SubPageHeader from '../../components/ui/SubPageHeader'
 import { normalizar } from '../../utils/normalizar'
+import { updateServiceEmployees } from '../../utils/assignments'
 
-type Servicio = { id: string; nombre: string; descripcion: string; empleados: string[]; registros: number; activo: boolean }
+type Servicio = {
+  id: string
+  nombre: string
+  descripcion: string
+  empleados: string[] // IDs de empleados asignados
+  activo: boolean
+}
 
-const SERVICIOS: Servicio[] = []
-const EMPLEADOS_ACTIVOS: string[] = []
+type Empleado = {
+  id: string
+  nombre: string
+}
+
+type Pestaña = 'activos' | 'inactivos'
 
 export default function AdminServicesPage() {
   const navigate = useNavigate()
+
+  // --- Datos ---
+  const [servicios, setServicios] = useState<Servicio[]>([])
+  const [empleadosActivos, setEmpleadosActivos] = useState<Empleado[]>([])
+  const [cargando, setCargando] = useState(true)
+
+  // --- Pestañas y búsqueda ---
+  const [pestañaActiva, setPestañaActiva] = useState<Pestaña>('activos')
   const [busqueda, setBusqueda] = useState('')
-  const [servicioEdicion, setServicioEdicion] = useState<Servicio | null>(null)
+
+  // --- Modal ---
   const [modalOpen, setModalOpen] = useState(false)
+  const [servicioEdicion, setServicioEdicion] = useState<Servicio | null>(null)
   const [nombre, setNombre] = useState('')
   const [descripcion, setDescripcion] = useState('')
-  const [asignados, setAsignados] = useState<string[]>([])
+  const [empleadosAsignados, setEmpleadosAsignados] = useState<string[]>([])
+  const [guardando, setGuardando] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
-  const serviciosFiltrados = SERVICIOS.filter(s =>
-    normalizar(s.nombre).includes(normalizar(busqueda))
-  )
+  const esEdicion = servicioEdicion !== null
+  const labelAccion = esEdicion ? 'Guardar cambios' : 'Crear servicio'
+  const labelConfirmar = guardando ? 'Guardando...' : labelAccion
+
+  useEffect(() => {
+    cargarDatos()
+  }, [])
+
+  async function cargarDatos() {
+    setCargando(true)
+
+    // El admin puede ver todos los servicios (activos e inactivos) gracias a la RLS "Admin gestiona servicios"
+    const [{ data: svcs }, { data: emps }, { data: asignaciones }] = await Promise.all([
+      supabase.from('services').select('*').order('nombre'),
+      supabase.from('profiles').select('id, nombre').eq('activo', true).eq('rol', 'employee').order('nombre'),
+      supabase.from('service_employees').select('service_id, employee_id'),
+    ])
+
+    const asignacionesPorServicio = new Map<string, string[]>()
+    asignaciones?.forEach(a => {
+      const lista = asignacionesPorServicio.get(a.service_id) ?? []
+      lista.push(a.employee_id)
+      asignacionesPorServicio.set(a.service_id, lista)
+    })
+
+    setServicios(
+      svcs?.map(s => ({
+        ...s,
+        empleados: asignacionesPorServicio.get(s.id) ?? [],
+      })) ?? []
+    )
+    setEmpleadosActivos(emps ?? [])
+    setCargando(false)
+  }
+
+  // --- Abrir modal ---
 
   function abrirNuevo() {
     setServicioEdicion(null)
-    setNombre(''); setDescripcion(''); setAsignados([])
+    setNombre(''); setDescripcion(''); setEmpleadosAsignados([])
+    setError(null)
     setModalOpen(true)
   }
 
@@ -37,22 +95,97 @@ export default function AdminServicesPage() {
     setServicioEdicion(s)
     setNombre(s.nombre)
     setDescripcion(s.descripcion)
-    setAsignados([...s.empleados])
+    setEmpleadosAsignados([...s.empleados])
+    setError(null)
     setModalOpen(true)
   }
 
-  function toggleEmpleado(emp: string) {
-    setAsignados(prev => prev.includes(emp) ? prev.filter(e => e !== emp) : [...prev, emp])
+  // --- CheckboxGroup trabaja con nombres; internamente usamos IDs ---
+
+  function toggleEmpleado(nombreEmpleado: string) {
+    const emp = empleadosActivos.find(e => e.nombre === nombreEmpleado)
+    if (!emp) return
+    setEmpleadosAsignados(prev =>
+      prev.includes(emp.id)
+        ? prev.filter(id => id !== emp.id)
+        : [...prev, emp.id]
+    )
   }
 
-  const esEdicion = servicioEdicion !== null
+  const nombresSeleccionados = empleadosAsignados
+    .map(id => empleadosActivos.find(e => e.id === id)?.nombre ?? '')
+    .filter(Boolean)
+
+  // --- Crear servicio ---
+
+  async function handleCrear() {
+    if (!nombre.trim()) { setError('El nombre del servicio es obligatorio'); return }
+    setGuardando(true)
+    setError(null)
+
+    try {
+      const { data: nuevoServicio, error: errInsert } = await supabase
+        .from('services')
+        .insert({ nombre: nombre.trim(), descripcion: descripcion.trim(), activo: true })
+        .select('id')
+        .single()
+
+      if (errInsert) throw errInsert
+
+      await updateServiceEmployees(nuevoServicio.id, empleadosAsignados)
+
+      setModalOpen(false)
+      cargarDatos()
+    } catch {
+      setError('Error al crear el servicio. Inténtalo de nuevo.')
+    } finally {
+      setGuardando(false)
+    }
+  }
+
+  // --- Editar servicio ---
+
+  async function handleEditar() {
+    if (!servicioEdicion || !nombre.trim()) return
+    setGuardando(true)
+    setError(null)
+
+    try {
+      await supabase
+        .from('services')
+        .update({ nombre: nombre.trim(), descripcion: descripcion.trim() })
+        .eq('id', servicioEdicion.id)
+
+      await updateServiceEmployees(servicioEdicion.id, empleadosAsignados)
+
+      setModalOpen(false)
+      cargarDatos()
+    } catch {
+      setError('Error al guardar los cambios. Inténtalo de nuevo.')
+    } finally {
+      setGuardando(false)
+    }
+  }
+
+  // --- Activar / desactivar (eliminación lógica) ---
+
+  async function setActivo(s: Servicio, activo: boolean) {
+    await supabase.from('services').update({ activo }).eq('id', s.id)
+    cargarDatos()
+  }
+
+  // --- Listas filtradas por pestaña ---
+
+  const activos = servicios.filter(s => s.activo && normalizar(s.nombre).includes(normalizar(busqueda)))
+  const inactivos = servicios.filter(s => !s.activo && normalizar(s.nombre).includes(normalizar(busqueda)))
+  const lista = pestañaActiva === 'activos' ? activos : inactivos
 
   return (
     <div className="min-h-screen bg-gray-50 pb-16">
 
       <SubPageHeader
         backLabel="← Dashboard"
-        onBack={() => navigate('/admin/dashboard')}
+        onBack={() => navigate('/dashboard')}
         title="Gestión de servicios"
         rightSlot={
           <button onClick={abrirNuevo} className="px-4 py-2 bg-white hover:bg-white/80 text-gray-800 text-sm font-medium rounded-lg transition-colors">
@@ -64,97 +197,166 @@ export default function AdminServicesPage() {
       <main className="max-w-5xl mx-auto px-6 py-8">
 
         <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
-          <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
-            <p className="text-sm text-gray-500">{serviciosFiltrados.length} servicios activos</p>
-            <SearchInput value={busqueda} onChange={setBusqueda} placeholder="Buscar servicio..." />
+
+          {/* Cabecera con pestañas y búsqueda */}
+          <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between gap-4">
+            <div className="flex gap-1 bg-gray-100 rounded-lg p-1">
+              {(['activos', 'inactivos'] as Pestaña[]).map(tab => (
+                <button
+                  key={tab}
+                  onClick={() => { setPestañaActiva(tab); setBusqueda('') }}
+                  className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors capitalize ${
+                    pestañaActiva === tab
+                      ? 'bg-white text-gray-900 shadow-sm'
+                      : 'text-gray-500 hover:text-gray-700'
+                  }`}
+                >
+                  {tab}
+                </button>
+              ))}
+            </div>
+            <div className="flex items-center gap-4">
+              <p className="text-sm text-gray-400">
+                {cargando ? 'Cargando...' : `${lista.length} ${pestañaActiva}`}
+              </p>
+              <SearchInput value={busqueda} onChange={setBusqueda} placeholder="Buscar servicio..." />
+            </div>
           </div>
+
           <table className="w-full text-sm table-fixed">
             <colgroup>
-              <col className="w-[18%]" />
-              <col className="w-[28%]" />
-              <col className="w-[20%]" />
-              <col className="w-[12%]" />
               <col className="w-[22%]" />
+              <col className="w-[32%]" />
+              {pestañaActiva === 'activos' && <col className="w-[26%]" />}
+              <col className={pestañaActiva === 'activos' ? 'w-[20%]' : 'w-[46%]'} />
             </colgroup>
             <thead className="bg-accent/10 border-b border-accent/20">
               <tr>
-                {['Servicio', 'Descripción', 'Empleados', 'Registros', ''].map(h => (
-                  <th key={h} className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">{h}</th>
-                ))}
+                <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Servicio</th>
+                <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Descripción</th>
+                {pestañaActiva === 'activos' && (
+                  <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Empleados asignados</th>
+                )}
+                <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide"></th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-50">
-              {serviciosFiltrados.map(s => (
-                <tr key={s.id} className="hover:bg-accent/5 transition-colors">
-                  <td className="px-4 py-4">
-                    <div className="flex items-center gap-2 min-w-0">
-                      <div className="w-8 h-8 shrink-0 rounded-xl bg-accent/30 flex items-center justify-center text-sm font-bold text-gray-700">
-                        {s.nombre[0]}
+              {lista.map(s => {
+                const nombresEmpleados = s.empleados
+                  .map(id => empleadosActivos.find(e => e.id === id)?.nombre ?? '')
+                  .filter(Boolean)
+                  .join(', ')
+
+                return (
+                  <tr key={s.id} className="hover:bg-accent/5 transition-colors">
+                    <td className="px-4 py-4">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <div className="w-8 h-8 shrink-0 rounded-xl bg-accent/30 flex items-center justify-center text-sm font-bold text-gray-700">
+                          {s.nombre[0]}
+                        </div>
+                        <span className="font-semibold text-gray-900 truncate">{s.nombre}</span>
                       </div>
-                      <span className="font-semibold text-gray-900 truncate">{s.nombre}</span>
-                    </div>
-                  </td>
-                  <td className="px-4 py-4 text-gray-500 overflow-hidden">
-                    <Tooltip text={s.descripcion}>{s.descripcion}</Tooltip>
-                  </td>
-                  <td className="px-4 py-4 text-gray-500 overflow-hidden">
-                    <Tooltip text={s.empleados.join(', ')}>{s.empleados.join(', ')}</Tooltip>
-                  </td>
-                  <td className="px-4 py-4 whitespace-nowrap">
-                    <span className="font-medium text-gray-900">{s.registros}</span>
-                    <span className="text-gray-400 text-xs ml-1">reg.</span>
-                  </td>
-                  <td className="px-4 py-4">
-                    <div className="flex gap-1.5 whitespace-nowrap">
-                      <button
-                        onClick={() => navigate(`/services/${s.id}`)}
-                        className="px-2 py-1 rounded-md border border-gray-200 text-xs text-gray-600 hover:border-accent hover:bg-accent/10 transition-colors"
-                      >
-                        Ver
-                      </button>
-                      <button
-                        onClick={() => abrirEditar(s)}
-                        className="px-2 py-1 rounded-md border border-gray-200 text-xs text-gray-600 hover:border-accent hover:bg-accent/10 transition-colors"
-                      >
-                        Editar
-                      </button>
-                      <button className="px-2 py-1 rounded-md border border-red-100 text-xs text-red-500 hover:bg-red-50 transition-colors">Desactivar</button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
+                    </td>
+                    <td className="px-4 py-4 text-gray-500 overflow-hidden">
+                      {s.descripcion
+                        ? <Tooltip text={s.descripcion}>{s.descripcion}</Tooltip>
+                        : <span className="text-gray-300">—</span>
+                      }
+                    </td>
+                    {pestañaActiva === 'activos' && (
+                      <td className="px-4 py-4 text-gray-500 overflow-hidden">
+                        {nombresEmpleados
+                          ? <Tooltip text={nombresEmpleados}>{nombresEmpleados}</Tooltip>
+                          : <span className="text-gray-300">Sin asignar</span>
+                        }
+                      </td>
+                    )}
+                    <td className="px-4 py-4">
+                      <div className="flex gap-1.5 whitespace-nowrap">
+                        {pestañaActiva === 'activos' ? (
+                          <>
+                            <button
+                              onClick={() => navigate(`/services/${s.id}`)}
+                              className="px-2 py-1 rounded-md border border-gray-200 text-xs text-gray-600 hover:border-accent hover:bg-accent/10 transition-colors"
+                            >
+                              Ver
+                            </button>
+                            <button
+                              onClick={() => abrirEditar(s)}
+                              className="px-2 py-1 rounded-md border border-gray-200 text-xs text-gray-600 hover:border-accent hover:bg-accent/10 transition-colors"
+                            >
+                              Editar
+                            </button>
+                            <button
+                              onClick={() => setActivo(s, false)}
+                              className="px-2 py-1 rounded-md border border-red-100 text-xs text-red-500 hover:bg-red-50 transition-colors"
+                            >
+                              Desactivar
+                            </button>
+                          </>
+                        ) : (
+                          <button
+                            onClick={() => setActivo(s, true)}
+                            className="px-2 py-1 rounded-md border border-green-100 text-xs text-green-600 hover:bg-green-50 transition-colors"
+                          >
+                            Reactivar
+                          </button>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                )
+              })}
             </tbody>
           </table>
         </div>
 
-        {/* Nota sobre eliminación lógica */}
         <p className="text-xs text-gray-400 mt-4 px-1">
           Los servicios desactivados no se eliminan — sus registros históricos se conservan siempre.
         </p>
       </main>
 
-      {/* Modal creación/edición */}
+      {/* Modal creación/edición — solo para servicios activos */}
       {modalOpen && (
         <Modal
           title={esEdicion ? 'Editar servicio' : 'Nuevo servicio'}
-          confirmLabel={esEdicion ? 'Guardar cambios' : 'Crear servicio'}
+          confirmLabel={labelConfirmar}
+          confirmDisabled={guardando}
+          onConfirm={esEdicion ? handleEditar : handleCrear}
           onClose={() => setModalOpen(false)}
         >
           <FormField id="s-nombre" label="Nombre del servicio">
-            <input id="s-nombre" value={nombre} onChange={e => setNombre(e.target.value)} placeholder="Ej: Nutrición deportiva" className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-accent" />
+            <input
+              id="s-nombre"
+              value={nombre}
+              onChange={e => setNombre(e.target.value)}
+              placeholder="Ej: Nutrición deportiva"
+              className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-accent"
+            />
           </FormField>
 
           <FormField id="s-descripcion" label="Descripción" optional>
-            <textarea id="s-descripcion" value={descripcion} onChange={e => setDescripcion(e.target.value)} placeholder="Breve descripción del servicio..." rows={3} className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-accent resize-none" />
+            <textarea
+              id="s-descripcion"
+              value={descripcion}
+              onChange={e => setDescripcion(e.target.value)}
+              placeholder="Breve descripción del servicio..."
+              rows={3}
+              className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-accent resize-none"
+            />
           </FormField>
 
           <CheckboxGroup
             label="Empleados asignados"
-            options={EMPLEADOS_ACTIVOS}
-            selected={asignados}
+            options={empleadosActivos.map(e => e.nombre)}
+            selected={nombresSeleccionados}
             onToggle={toggleEmpleado}
             scrollable
           />
+
+          {error && (
+            <p className="text-xs text-red-600 bg-red-50 rounded-lg px-3 py-2">{error}</p>
+          )}
         </Modal>
       )}
 
