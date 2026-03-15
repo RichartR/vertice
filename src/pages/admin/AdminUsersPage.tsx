@@ -195,6 +195,25 @@ export default function AdminUsersPage() {
     }
   }
 
+  // --- Reset de contraseña ---
+
+  const [resetEmail, setResetEmail] = useState<string | null>(null)
+  const [enviandoReset, setEnviandoReset] = useState(false)
+
+  async function handleReset() {
+    if (!resetEmail) return
+    setEnviandoReset(true)
+    const { error: err } = await supabase.auth.resetPasswordForEmail(resetEmail, {
+      redirectTo: `${globalThis.location.origin}/reset-password`,
+    })
+    setResetEmail(null)
+    setEnviandoReset(false)
+    if (!err) {
+      setExito(`Email enviado a ${resetEmail}`)
+      setTimeout(() => setExito(null), 5000)
+    }
+  }
+
   // --- Activar/desactivar usuario ---
 
   async function toggleActivo(emp: Empleado) {
@@ -279,6 +298,14 @@ export default function AdminUsersPage() {
                       >
                         Editar
                       </button>
+                      {emp.activo && (
+                        <button
+                          onClick={() => setResetEmail(emp.email)}
+                          className="px-2.5 py-1 rounded-md border border-blue-100 text-xs text-blue-600 hover:bg-blue-50 transition-colors"
+                        >
+                          Restablecer contraseña
+                        </button>
+                      )}
                       <button
                         onClick={() => toggleActivo(emp)}
                         className={`px-2.5 py-1 rounded-md border text-xs transition-colors ${
@@ -297,6 +324,21 @@ export default function AdminUsersPage() {
           </table>
         </div>
       </main>
+
+      {/* Modal confirmación reset contraseña */}
+      {resetEmail && (
+        <Modal
+          title="Restablecer contraseña"
+          confirmLabel={enviandoReset ? 'Enviando...' : 'Enviar email'}
+          confirmDisabled={enviandoReset}
+          onConfirm={handleReset}
+          onClose={() => setResetEmail(null)}
+        >
+          <p className="text-sm text-gray-600">
+            ¿Enviar email de restablecimiento de contraseña a <span className="font-medium text-gray-900">{resetEmail}</span>?
+          </p>
+        </Modal>
+      )}
 
       {/* Modal creación/edición */}
       {modalOpen && (
