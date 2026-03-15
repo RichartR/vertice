@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useLocation } from 'react-router-dom'
 import logo from '../assets/logo.webp'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
@@ -13,6 +13,8 @@ export default function LoginPage() {
   // "submitting" es distinto de "loading" (que es el estado de sesión global)
   const [submitting, setSubmitting] = useState(false)
   const navigate = useNavigate()
+  const location = useLocation()
+  const successMessage = (location.state as { message?: string } | null)?.message ?? null
 
   // Si ya hay sesión activa al cargar la página, redirigir automáticamente
   // Equivalente a un guard en Angular (canActivate)
@@ -89,6 +91,13 @@ export default function LoginPage() {
           <img src={logo} alt="Vértice" className="h-16 mx-auto mb-3 object-contain" />
           <p className="text-sm text-gray-500">Centro deportivo multidisciplinar</p>
         </div>
+
+        {/* Banner de éxito — aparece tras cambio de contraseña */}
+        {successMessage && (
+          <div className="mb-4 px-4 py-3 bg-green-50 border border-green-200 rounded-xl text-sm text-green-700">
+            {successMessage}
+          </div>
+        )}
 
         {/* Formulario */}
         <div className="bg-white rounded-2xl shadow-sm border border-gray-200">
