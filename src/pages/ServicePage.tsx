@@ -42,7 +42,7 @@ const CURRENT_YEAR = new Date().getFullYear()
 export default function ServicePage() {
   const { id: serviceId } = useParams<{ id: string }>()
   const navigate = useNavigate()
-  const { profile, isAdmin, user } = useAuth()
+  const { isAdmin, user } = useAuth()
 
   const { registros, cargando, recargar } = useRecords(serviceId ?? '')
 
@@ -95,7 +95,8 @@ export default function ServicePage() {
   const [rEmpleado, setREmpleado]       = useState('')  // employee_id seleccionado
 
   // Lista de empleados activos asignados a este servicio (para el select del modal)
-  const [empleados, setEmpleados]   = useState<Empleado[]>([])
+  const [empleados, setEmpleados]         = useState<Empleado[]>([])
+  const [mostrarSelectorEmpleado, setMostrarSelectorEmpleado] = useState(false)
   const [rGuardando, setRGuardando] = useState(false)
   const [rError, setRError]         = useState<string | null>(null)
 
@@ -110,6 +111,9 @@ export default function ServicePage() {
       .single()
       .then(({ data }) => setNombreServicio(data?.nombre ?? ''))
 
+    // Empleados del servicio (para el header y el modal)
+    cargarEmpleados()
+
     // Conteo de servicios del empleado (para mostrar botón volver)
     if (!isAdmin && user) {
       supabase
@@ -119,33 +123,39 @@ export default function ServicePage() {
     }
   }, [serviceId, isAdmin, user])
 
-  // Carga los empleados activos asignados a este servicio al abrir el modal
-  async function cargarEmpleados() {
-    if (!serviceId) return
+  // Carga los empleados activos asignados a este servicio y devuelve la lista
+  async function cargarEmpleados(): Promise<Empleado[]> {
+    if (!serviceId) return []
     const { data } = await supabase
       .from('service_employees')
       .select('profiles(id, nombre, activo)')
       .eq('service_id', serviceId)
 
-    // Normalizamos la respuesta y filtramos solo empleados activos
     const lista: Empleado[] = (data ?? [])
       .map((row: any) => row.profiles)
       .filter((p: any) => p?.activo === true)
       .map((p: any) => ({ id: p.id, nombre: p.nombre }))
 
     setEmpleados(lista)
+    return lista
   }
 
-  function abrirNuevo() {
+  async function abrirNuevo() {
     const hoy = new Date().toISOString().split('T')[0]
     setRFecha(hoy); setRHora(''); setRCliente('')
-    setRTratamiento(''); setRNotas(''); setRMetodo('tarjeta'); setRPrecio(''); setREmpleado('')
+    setRTratamiento(''); setRNotas(''); setRMetodo('tarjeta'); setRPrecio('')
     setRError(null)
-    cargarEmpleados()
+
+    const lista = await cargarEmpleados()
+    // 1 empleado → asignación automática, sin selector
+    // 0 empleados → employee_id null, sin selector
+    // 2+ empleados → mostrar selector
+    setREmpleado(lista.length === 1 ? lista[0].id : '')
+    setMostrarSelectorEmpleado(lista.length > 1)
     setRegistroModal({ open: true, registro: null })
   }
 
-  function abrirEditar(r: Registro) {
+  async function abrirEditar(r: Registro) {
     setRFecha(r.fecha)
     setRHora(formatHora(r.hora))
     setRCliente(r.cliente)
@@ -155,13 +165,17 @@ export default function ServicePage() {
     setRPrecio(String(r.precio))
     setREmpleado(r.employee_id ?? '')
     setRError(null)
-    cargarEmpleados()
+
+    const lista = await cargarEmpleados()
+    // Al editar siempre mostramos el selector si hay 2+ empleados (para poder corregir)
+    setMostrarSelectorEmpleado(lista.length > 1)
     setRegistroModal({ open: true, registro: r })
   }
 
   // Validación + INSERT / UPDATE en Supabase
   async function guardarRegistro() {
-    if (!rFecha || !rHora || !rCliente.trim() || !rTratamiento.trim() || !rPrecio || !rEmpleado) {
+    const empleadoRequerido = mostrarSelectorEmpleado && !rEmpleado
+    if (!rFecha || !rHora || !rCliente.trim() || !rTratamiento.trim() || !rPrecio || empleadoRequerido) {
       setRError('Completa todos los campos obligatorios')
       return
     }
@@ -171,7 +185,7 @@ export default function ServicePage() {
 
     const payload = {
       service_id: serviceId,
-      employee_id: rEmpleado,
+      employee_id: rEmpleado || null,
       fecha: rFecha,
       hora: rHora,
       cliente: rCliente.trim(),
@@ -227,10 +241,12 @@ export default function ServicePage() {
             </button>
           )}
           <div>
-            <h1 className="font-semibold text-gray-900">{nombreServicio || '…'}</h1>
-            {!isAdmin && profile?.nombre && (
-              <p className="text-xs text-gray-500 mt-0.5">{profile.nombre}</p>
-            )}
+            <h1 className="font-semibold text-gray-900">
+              {nombreServicio || '…'}
+              {empleados.length === 1 && (
+                <span className="font-normal text-gray-500"> — {empleados[0].nombre}</span>
+              )}
+            </h1>
           </div>
         </div>
         <button
@@ -443,15 +459,17 @@ export default function ServicePage() {
             <input id="r-tratamiento" value={rTratamiento} onChange={e => setRTratamiento(e.target.value)} placeholder="Ej: Quiropodia" className={inputCls} />
           </FormField>
 
-          {/* Selector de empleado — muestra solo los activos asignados a este servicio */}
-          <FormField id="r-empleado" label="Empleado">
-            <Select
-              value={rEmpleado}
-              onChange={setREmpleado}
-              placeholder="Selecciona un empleado"
-              options={empleados.map(emp => ({ value: emp.id, label: emp.nombre }))}
-            />
-          </FormField>
+          {/* Selector de empleado — solo visible si hay 2+ empleados asignados */}
+          {mostrarSelectorEmpleado && (
+            <FormField id="r-empleado" label="Empleado">
+              <Select
+                value={rEmpleado}
+                onChange={setREmpleado}
+                placeholder="Selecciona un empleado"
+                options={empleados.map(emp => ({ value: emp.id, label: emp.nombre }))}
+              />
+            </FormField>
+          )}
 
           <div className="grid grid-cols-2 gap-3">
             <FormField id="r-metodo" label="Método de pago">
