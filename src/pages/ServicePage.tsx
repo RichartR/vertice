@@ -1,17 +1,18 @@
 // Vista de registros de un servicio — tabla con filtros + pestaña de estadísticas.
 // Empleado: solo lectura, sin columna Empleado.
-// Admin: columna Empleado visible, botones Editar y Eliminar por fila.
+// Admin: columna Empleado visible, botones Editar y Eliminar por fila + CRUD conectado a Supabase.
 import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
 import { useRecords, type Registro } from '../hooks/useRecords'
+import { useFilteredRecords, FILTROS_VACIOS, type Filtros } from '../hooks/useFilteredRecords'
+import FilterBar from '../components/ui/FilterBar'
 import Tooltip from '../components/ui/Tooltip'
 import StatCard from '../components/ui/StatCard'
 import Badge from '../components/ui/Badge'
 import Modal from '../components/ui/Modal'
 import FormField from '../components/ui/FormField'
-import { normalizar } from '../utils/normalizar'
 
 const inputCls = 'w-full px-3 py-2 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-accent'
 
@@ -28,6 +29,8 @@ function formatHora(hora: string) {
 
 type Tab = 'registros' | 'estadisticas'
 
+type Empleado = { id: string; nombre: string }
+
 export default function ServicePage() {
   const { id: serviceId } = useParams<{ id: string }>()
   const navigate = useNavigate()
@@ -41,22 +44,33 @@ export default function ServicePage() {
   // Mostrar botón "← Mis servicios" solo si el empleado tiene más de 1 servicio
   const [serviciosCount, setServiciosCount] = useState(0)
 
-  // Tabs y filtros
+  // Tabs
   const [tab, setTab] = useState<Tab>('registros')
-  const [filtroCliente, setFiltroCliente] = useState('')
-  const [filtroTratamiento, setFiltroTratamiento] = useState('')
-  const [filtroFecha, setFiltroFecha] = useState('')
-  const [filtroMetodo, setFiltroMetodo] = useState('')
 
-  // Modal crear/editar (funcionalidad real en VER-26)
+  // Filtros — gestionados como un objeto plano para facilitar el reset
+  const [filtros, setFiltros] = useState<Filtros>(FILTROS_VACIOS)
+  const registrosFiltrados = useFilteredRecords(registros, filtros)
+
+  function handleFiltroChange(key: keyof Filtros, value: string) {
+    setFiltros(prev => ({ ...prev, [key]: value }))
+  }
+
+  // --- Modal crear/editar ---
+
   const [registroModal, setRegistroModal] = useState<{ open: boolean; registro: Registro | null }>({ open: false, registro: null })
   const [rFecha, setRFecha]             = useState('')
   const [rHora, setRHora]               = useState('')
   const [rCliente, setRCliente]         = useState('')
   const [rTratamiento, setRTratamiento] = useState('')
   const [rNotas, setRNotas]             = useState('')
-  const [rMetodo, setRMetodo]           = useState('tarjeta')
+  const [rMetodo, setRMetodo]           = useState<'efectivo' | 'tarjeta'>('tarjeta')
   const [rPrecio, setRPrecio]           = useState('')
+  const [rEmpleado, setREmpleado]       = useState('')  // employee_id seleccionado
+
+  // Lista de empleados activos asignados a este servicio (para el select del modal)
+  const [empleados, setEmpleados]   = useState<Empleado[]>([])
+  const [rGuardando, setRGuardando] = useState(false)
+  const [rError, setRError]         = useState<string | null>(null)
 
   useEffect(() => {
     if (!serviceId) return
@@ -78,10 +92,29 @@ export default function ServicePage() {
     }
   }, [serviceId, isAdmin, user])
 
+  // Carga los empleados activos asignados a este servicio al abrir el modal
+  async function cargarEmpleados() {
+    if (!serviceId) return
+    const { data } = await supabase
+      .from('service_employees')
+      .select('profiles(id, nombre, activo)')
+      .eq('service_id', serviceId)
+
+    // Normalizamos la respuesta y filtramos solo empleados activos
+    const lista: Empleado[] = (data ?? [])
+      .map((row: any) => row.profiles)
+      .filter((p: any) => p?.activo === true)
+      .map((p: any) => ({ id: p.id, nombre: p.nombre }))
+
+    setEmpleados(lista)
+  }
+
   function abrirNuevo() {
     const hoy = new Date().toISOString().split('T')[0]
     setRFecha(hoy); setRHora(''); setRCliente('')
-    setRTratamiento(''); setRNotas(''); setRMetodo('tarjeta'); setRPrecio('')
+    setRTratamiento(''); setRNotas(''); setRMetodo('tarjeta'); setRPrecio(''); setREmpleado('')
+    setRError(null)
+    cargarEmpleados()
     setRegistroModal({ open: true, registro: null })
   }
 
@@ -93,17 +126,53 @@ export default function ServicePage() {
     setRNotas(r.notas ?? '')
     setRMetodo(r.metodo_pago)
     setRPrecio(String(r.precio))
+    setREmpleado(r.employee_id ?? '')
+    setRError(null)
+    cargarEmpleados()
     setRegistroModal({ open: true, registro: r })
   }
 
-  // Filtrado
-  const registrosFiltrados = registros.filter(r => {
-    const okCliente     = normalizar(r.cliente).includes(normalizar(filtroCliente))
-    const okTratamiento = normalizar(r.tratamiento).includes(normalizar(filtroTratamiento))
-    const okFecha       = filtroFecha ? r.fecha === filtroFecha : true
-    const okMetodo      = filtroMetodo ? r.metodo_pago === filtroMetodo : true
-    return okCliente && okTratamiento && okFecha && okMetodo
-  })
+  // Validación + INSERT / UPDATE en Supabase
+  async function guardarRegistro() {
+    if (!rFecha || !rHora || !rCliente.trim() || !rTratamiento.trim() || !rPrecio || !rEmpleado) {
+      setRError('Completa todos los campos obligatorios')
+      return
+    }
+
+    setRGuardando(true)
+    setRError(null)
+
+    const payload = {
+      service_id: serviceId,
+      employee_id: rEmpleado,
+      fecha: rFecha,
+      hora: rHora,
+      cliente: rCliente.trim(),
+      tratamiento: rTratamiento.trim(),
+      notas: rNotas.trim() || null,
+      metodo_pago: rMetodo,
+      precio: Number.parseFloat(rPrecio),
+    }
+
+    const { error } = registroModal.registro
+      ? await supabase.from('records').update(payload).eq('id', registroModal.registro.id)
+      : await supabase.from('records').insert(payload)
+
+    if (error) {
+      setRError('Error al guardar el registro. Inténtalo de nuevo.')
+      setRGuardando(false)
+      return
+    }
+
+    recargar()
+    setRegistroModal({ open: false, registro: null })
+    setRGuardando(false)
+  }
+
+  async function eliminarRegistro(id: string) {
+    await supabase.from('records').delete().eq('id', id)
+    recargar()
+  }
 
   const totalIngresos = registrosFiltrados.reduce((sum, r) => sum + r.precio, 0)
   const mostrarVolver = !isAdmin && serviciosCount > 1
@@ -112,6 +181,9 @@ export default function ServicePage() {
   const columnas = isAdmin
     ? ['Fecha', 'Hora', 'Cliente', 'Tratamiento', 'Empleado', 'Notas', 'Método', 'Precio', '']
     : ['Fecha', 'Hora', 'Cliente', 'Tratamiento', 'Notas', 'Método', 'Precio']
+
+  const labelAccion = registroModal.registro ? 'Guardar cambios' : 'Crear registro'
+  const confirmLabel = rGuardando ? 'Guardando...' : labelAccion
 
   return (
     <div className="min-h-screen bg-gray-50 pb-16">
@@ -162,46 +234,12 @@ export default function ServicePage() {
 
         {tab === 'registros' && (
           <>
-            {/* Filtros */}
-            <div className="bg-white rounded-xl border border-gray-200 p-4 mb-4 flex flex-wrap gap-3">
-              <input
-                type="text"
-                placeholder="Buscar cliente..."
-                value={filtroCliente}
-                onChange={e => setFiltroCliente(e.target.value)}
-                className="px-3 py-2 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-accent w-48"
-              />
-              <input
-                type="date"
-                value={filtroFecha}
-                onChange={e => setFiltroFecha(e.target.value)}
-                className="px-3 py-2 rounded-lg border border-gray-200 text-sm text-gray-500 focus:outline-none focus:ring-2 focus:ring-accent"
-              />
-              <input
-                type="text"
-                placeholder="Tratamiento..."
-                value={filtroTratamiento}
-                onChange={e => setFiltroTratamiento(e.target.value)}
-                className="px-3 py-2 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-accent w-44"
-              />
-              <select
-                value={filtroMetodo}
-                onChange={e => setFiltroMetodo(e.target.value)}
-                className="px-3 py-2 rounded-lg border border-gray-200 text-sm text-gray-600 focus:outline-none focus:ring-2 focus:ring-accent"
-              >
-                <option value="">Método de pago</option>
-                <option value="efectivo">Efectivo</option>
-                <option value="tarjeta">Tarjeta</option>
-              </select>
-              {(filtroCliente || filtroFecha || filtroTratamiento || filtroMetodo) && (
-                <button
-                  onClick={() => { setFiltroCliente(''); setFiltroFecha(''); setFiltroTratamiento(''); setFiltroMetodo('') }}
-                  className="px-3 py-2 rounded-lg border border-gray-200 text-sm text-gray-400 hover:text-gray-600 hover:border-gray-300 transition-colors"
-                >
-                  Limpiar filtros
-                </button>
-              )}
-            </div>
+            {/* Filtros — rango de fechas + precio mín/máx + texto parcial */}
+            <FilterBar
+              filtros={filtros}
+              onChange={handleFiltroChange}
+              onReset={() => setFiltros(FILTROS_VACIOS)}
+            />
 
             {/* Tabla */}
             <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
@@ -234,7 +272,7 @@ export default function ServicePage() {
                     {!cargando && registrosFiltrados.length === 0 && (
                       <tr>
                         <td colSpan={columnas.length} className="px-4 py-10 text-center text-sm text-gray-400">
-                          No hay registros para mostrar.
+                          No hay registros con estos filtros.
                         </td>
                       </tr>
                     )}
@@ -270,7 +308,10 @@ export default function ServicePage() {
                               >
                                 Editar
                               </button>
-                              <button className="px-2.5 py-1 rounded-md border border-red-100 text-xs text-red-500 hover:bg-red-50 transition-colors">
+                              <button
+                                onClick={() => eliminarRegistro(r.id)}
+                                className="px-2.5 py-1 rounded-md border border-red-100 text-xs text-red-500 hover:bg-red-50 transition-colors"
+                              >
                                 Eliminar
                               </button>
                             </div>
@@ -319,12 +360,13 @@ export default function ServicePage() {
 
       </main>
 
-      {/* Modal nuevo / editar registro — funcionalidad real en VER-26 */}
+      {/* Modal nuevo / editar registro */}
       {registroModal.open && (
         <Modal
           title={registroModal.registro ? 'Editar registro' : 'Nuevo registro'}
-          confirmLabel={registroModal.registro ? 'Guardar cambios' : 'Crear registro'}
-          onConfirm={() => { recargar(); setRegistroModal({ open: false, registro: null }) }}
+          confirmLabel={confirmLabel}
+          confirmDisabled={rGuardando}
+          onConfirm={guardarRegistro}
           onClose={() => setRegistroModal({ open: false, registro: null })}
         >
           <div className="grid grid-cols-2 gap-3">
@@ -344,9 +386,19 @@ export default function ServicePage() {
             <input id="r-tratamiento" value={rTratamiento} onChange={e => setRTratamiento(e.target.value)} placeholder="Ej: Quiropodia" className={inputCls} />
           </FormField>
 
+          {/* Selector de empleado — muestra solo los activos asignados a este servicio */}
+          <FormField id="r-empleado" label="Empleado">
+            <select id="r-empleado" value={rEmpleado} onChange={e => setREmpleado(e.target.value)} className={inputCls}>
+              <option value="">Selecciona un empleado</option>
+              {empleados.map(emp => (
+                <option key={emp.id} value={emp.id}>{emp.nombre}</option>
+              ))}
+            </select>
+          </FormField>
+
           <div className="grid grid-cols-2 gap-3">
             <FormField id="r-metodo" label="Método de pago">
-              <select id="r-metodo" value={rMetodo} onChange={e => setRMetodo(e.target.value)} className={inputCls}>
+              <select id="r-metodo" value={rMetodo} onChange={e => setRMetodo(e.target.value as 'efectivo' | 'tarjeta')} className={inputCls}>
                 <option value="tarjeta">Tarjeta</option>
                 <option value="efectivo">Efectivo</option>
               </select>
@@ -359,6 +411,10 @@ export default function ServicePage() {
           <FormField id="r-notas" label="Notas" optional>
             <textarea id="r-notas" value={rNotas} onChange={e => setRNotas(e.target.value)} placeholder="Observaciones..." rows={2} className={`${inputCls} resize-none`} />
           </FormField>
+
+          {rError && (
+            <p className="text-xs text-red-600 bg-red-50 rounded-lg px-3 py-2">{rError}</p>
+          )}
         </Modal>
       )}
 
