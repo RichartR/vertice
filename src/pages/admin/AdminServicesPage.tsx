@@ -7,7 +7,6 @@ import SearchInput from '../../components/ui/SearchInput'
 import Modal from '../../components/ui/Modal'
 import FormField from '../../components/ui/FormField'
 import CheckboxGroup from '../../components/ui/CheckboxGroup'
-import SubPageHeader from '../../components/ui/SubPageHeader'
 import { normalizar } from '../../utils/normalizar'
 import { updateServiceEmployees } from '../../utils/assignments'
 
@@ -183,18 +182,14 @@ export default function AdminServicesPage() {
   return (
     <div className="min-h-screen bg-gray-50 pb-16">
 
-      <SubPageHeader
-        backLabel="← Dashboard"
-        onBack={() => navigate('/dashboard')}
-        title="Gestión de servicios"
-        rightSlot={
-          <button onClick={abrirNuevo} className="px-4 py-2 bg-white hover:bg-white/80 text-gray-800 text-sm font-medium rounded-lg transition-colors">
+      <main className="max-w-5xl mx-auto px-6 py-8">
+
+        <div className="flex items-center justify-between mb-6">
+          <h1 className="text-xl font-semibold text-gray-900">Gestión de servicios</h1>
+          <button onClick={abrirNuevo} className="px-4 py-2 bg-accent-dark hover:bg-accent text-gray-800 text-sm font-medium rounded-lg transition-colors">
             + Nuevo servicio
           </button>
-        }
-      />
-
-      <main className="max-w-5xl mx-auto px-6 py-8">
+        </div>
 
         <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
 
