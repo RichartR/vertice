@@ -7,6 +7,7 @@ import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
 import { useRecords, type Registro } from '../hooks/useRecords'
 import { useFilteredRecords, FILTROS_VACIOS, type Filtros } from '../hooks/useFilteredRecords'
+import { useStats } from '../hooks/useStats'
 import FilterBar from '../components/ui/FilterBar'
 import Tooltip from '../components/ui/Tooltip'
 import StatCard from '../components/ui/StatCard'
@@ -31,6 +32,13 @@ type Tab = 'registros' | 'estadisticas'
 
 type Empleado = { id: string; nombre: string }
 
+const MESES = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+               'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre']
+
+// Rango de años disponibles en el selector: 5 años atrás hasta el año actual
+const CURRENT_YEAR = new Date().getFullYear()
+const YEARS = Array.from({ length: 6 }, (_, i) => CURRENT_YEAR - 5 + i)
+
 export default function ServicePage() {
   const { id: serviceId } = useParams<{ id: string }>()
   const navigate = useNavigate()
@@ -47,9 +55,15 @@ export default function ServicePage() {
   // Tabs
   const [tab, setTab] = useState<Tab>('registros')
 
+  // Selector de mes/año para la pestaña de estadísticas (por defecto el mes actual)
+  const hoy = new Date()
+  const [mesSel, setMesSel]   = useState(hoy.getMonth() + 1)  // 1–12
+  const [yearSel, setYearSel] = useState(hoy.getFullYear())
+
   // Filtros — gestionados como un objeto plano para facilitar el reset
   const [filtros, setFiltros] = useState<Filtros>(FILTROS_VACIOS)
   const registrosFiltrados = useFilteredRecords(registros, filtros)
+  const { statsMes, resumenAnual } = useStats(registros, mesSel, yearSel)
 
   function handleFiltroChange(key: keyof Filtros, value: string) {
     setFiltros(prev => ({ ...prev, [key]: value }))
@@ -328,33 +342,116 @@ export default function ServicePage() {
 
         {tab === 'estadisticas' && (
           <div className="space-y-6">
-            <div className="flex items-center justify-between">
-              <p className="text-sm text-gray-400">Las estadísticas detalladas se implementarán próximamente.</p>
+
+            {/* Selector de mes y año */}
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => {
+                  if (mesSel === 1) { setMesSel(12); setYearSel(y => y - 1) }
+                  else setMesSel(m => m - 1)
+                }}
+                className="p-1.5 rounded-lg border border-gray-200 text-gray-500 hover:border-accent hover:bg-accent/10 transition-colors"
+              >
+                ←
+              </button>
+
+              <select
+                value={mesSel}
+                onChange={e => setMesSel(Number(e.target.value))}
+                className="px-3 py-1.5 rounded-lg border border-gray-200 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-accent"
+              >
+                {MESES.map((nombre, i) => (
+                  <option key={i + 1} value={i + 1}>{nombre}</option>
+                ))}
+              </select>
+
+              <select
+                value={yearSel}
+                onChange={e => setYearSel(Number(e.target.value))}
+                className="px-3 py-1.5 rounded-lg border border-gray-200 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-accent"
+              >
+                {YEARS.map(y => (
+                  <option key={y} value={y}>{y}</option>
+                ))}
+              </select>
+
+              <button
+                onClick={() => {
+                  if (mesSel === 12) { setMesSel(1); setYearSel(y => y + 1) }
+                  else setMesSel(m => m + 1)
+                }}
+                className="p-1.5 rounded-lg border border-gray-200 text-gray-500 hover:border-accent hover:bg-accent/10 transition-colors"
+              >
+                →
+              </button>
             </div>
 
-            {/* KPIs básicos calculados desde los registros actuales */}
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+            {/* KPIs del mes seleccionado */}
+            <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
               <StatCard
                 label="Ingresos totales"
-                value={`${registros.reduce((s, r) => s + r.precio, 0).toFixed(2)} €`}
-                sub="Todos los registros"
+                value={`${statsMes.totalIngresos.toFixed(2)} €`}
+                sub={`${MESES[mesSel - 1]} ${yearSel}`}
               />
               <StatCard
                 label="Sesiones"
-                value={String(registros.length)}
-                sub="Todos los registros"
+                value={String(statsMes.numSesiones)}
+                sub={`${MESES[mesSel - 1]} ${yearSel}`}
+              />
+              <StatCard
+                label="Efectivo"
+                value={`${statsMes.totalEfectivo.toFixed(2)} €`}
+                sub="Ingresos en efectivo"
+              />
+              <StatCard
+                label="Tarjeta"
+                value={`${statsMes.totalTarjeta.toFixed(2)} €`}
+                sub="Ingresos con tarjeta"
               />
               <StatCard
                 label="Ticket medio"
-                value={registros.length > 0 ? `${(registros.reduce((s, r) => s + r.precio, 0) / registros.length).toFixed(2)} €` : '—'}
+                value={statsMes.numSesiones > 0 ? `${statsMes.ticketMedio.toFixed(2)} €` : '—'}
                 sub="Por sesión"
               />
-              <StatCard
-                label="Efectivo / Tarjeta"
-                value={`${registros.filter(r => r.metodo_pago === 'efectivo').length} / ${registros.filter(r => r.metodo_pago === 'tarjeta').length}`}
-                sub="Número de pagos"
-              />
             </div>
+
+            {/* Tabla resumen anual */}
+            <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+              <div className="px-5 py-3 border-b border-gray-100">
+                <span className="text-sm font-medium text-gray-700">Resumen {yearSel}</span>
+              </div>
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead className="bg-accent/10 border-b border-accent/20">
+                    <tr>
+                      {['Mes', 'Total (€)', 'Efectivo (€)', 'Tarjeta (€)', 'Sesiones', 'Ticket medio'].map(h => (
+                        <th key={h} className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                          {h}
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-50">
+                    {resumenAnual.map(s => (
+                      <tr
+                        key={s.mes}
+                        className={`transition-colors ${s.mes === mesSel ? 'bg-accent/10' : 'hover:bg-accent/5'}`}
+                      >
+                        <td className="px-4 py-3 text-gray-700 font-medium">{MESES[s.mes - 1]}</td>
+                        <td className="px-4 py-3 text-gray-900 font-medium">{s.totalIngresos.toFixed(2)} €</td>
+                        <td className="px-4 py-3 text-gray-600">{s.totalEfectivo.toFixed(2)} €</td>
+                        <td className="px-4 py-3 text-gray-600">{s.totalTarjeta.toFixed(2)} €</td>
+                        <td className="px-4 py-3 text-gray-600">{s.numSesiones}</td>
+                        <td className="px-4 py-3 text-gray-600">
+                          {s.numSesiones > 0 ? `${s.ticketMedio.toFixed(2)} €` : '—'}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
           </div>
         )}
 
