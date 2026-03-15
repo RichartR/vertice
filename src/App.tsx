@@ -2,6 +2,7 @@ import { Routes, Route, Navigate } from 'react-router-dom'
 import ProtectedRoute from './components/layout/ProtectedRoute'
 import LoginPage from './pages/LoginPage'
 import AccesoDenegadoPage from './pages/AccesoDenegadoPage'
+import ResetPasswordPage from './pages/ResetPasswordPage'
 import DashboardPage from './pages/DashboardPage'
 import DashboardAdminPage from './pages/admin/DashboardAdminPage'
 import ServicePage from './pages/ServicePage'
@@ -24,6 +25,7 @@ export default function App() {
       {/* Rutas públicas */}
       <Route path="/login"           element={<LoginPage />} />
       <Route path="/acceso-denegado" element={<AccesoDenegadoPage />} />
+      <Route path="/reset-password"  element={<ResetPasswordPage />} />
 
       {/* Rutas protegidas — empleado y admin */}
       <Route path="/dashboard" element={
