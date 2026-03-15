@@ -9,7 +9,7 @@ type Servicio = { id: string; nombre: string; descripcion: string }
 
 export default function DashboardPage() {
   const navigate = useNavigate()
-  const { user, profile } = useAuth()
+  const { user, profile, isAdmin } = useAuth()
   const [servicios, setServicios] = useState<Servicio[]>([])
   const [cargando, setCargando] = useState(true)
 
@@ -32,13 +32,15 @@ export default function DashboardPage() {
     setCargando(false)
   }
 
+  const primerNombre = profile?.nombre?.split(' ')[0]
+  const saludo = primerNombre ? `Bienvenido, ${primerNombre}` : 'Bienvenido'
+  const titulo = isAdmin ? 'Gestión Servicios' : saludo
+
   return (
     <div className="min-h-screen bg-gray-50 pb-16">
       <main className="max-w-4xl mx-auto px-6 py-10">
         <div className="mb-8">
-          <h1 className="text-xl font-semibold text-gray-900">
-            {profile?.nombre ? `Bienvenido, ${profile.nombre.split(' ')[0]}` : 'Bienvenido'}
-          </h1>
+          <h1 className="text-xl font-semibold text-gray-900">{titulo}</h1>
           <p className="text-sm text-gray-500 mt-1">Selecciona un servicio para ver sus registros</p>
         </div>
 
