@@ -3,9 +3,17 @@ import ProtectedRoute from './components/layout/ProtectedRoute'
 import LoginPage from './pages/LoginPage'
 import AccesoDenegadoPage from './pages/AccesoDenegadoPage'
 import DashboardPage from './pages/DashboardPage'
+import DashboardAdminPage from './pages/admin/DashboardAdminPage'
 import ServicePage from './pages/ServicePage'
 import AdminUsersPage from './pages/admin/AdminUsersPage'
 import AdminServicesPage from './pages/admin/AdminServicesPage'
+import { useAuth } from './context/AuthContext'
+
+// Renderiza el dashboard correcto según el rol del usuario.
+function DashboardRouter() {
+  const { isAdmin } = useAuth()
+  return isAdmin ? <DashboardAdminPage /> : <DashboardPage />
+}
 
 export default function App() {
   return (
@@ -17,7 +25,7 @@ export default function App() {
       {/* Rutas protegidas — empleado y admin */}
       <Route path="/dashboard" element={
         <ProtectedRoute>
-          <DashboardPage />
+          <DashboardRouter />
         </ProtectedRoute>
       } />
 
