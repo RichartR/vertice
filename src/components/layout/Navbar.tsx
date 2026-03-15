@@ -82,13 +82,6 @@ export default function Navbar() {
       {/* Menú desplegable móvil */}
       {menuAbierto && (
         <div className="md:hidden absolute top-full left-0 right-0 bg-accent border-b border-accent-dark shadow-md z-50">
-          {/* Nombre del usuario */}
-          {profile?.nombre && (
-            <div className="px-4 py-3 border-b border-accent-dark/30">
-              <p className="text-sm font-semibold text-gray-800">{profile.nombre}</p>
-            </div>
-          )}
-
           {/* Links de navegación */}
           {isAdmin && (
             <Link to="/dashboard" onClick={cerrarMenu} className={menuLinkCls}>
