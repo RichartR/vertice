@@ -1,13 +1,11 @@
 // Vista de registros de un servicio — con filtros, tabla y pestaña de estadísticas.
 // En producción: empleado ve solo lectura, admin ve edición. Aquí mostramos la vista completa.
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
 import Tooltip from '../components/ui/Tooltip'
 import StatCard from '../components/ui/StatCard'
 import Badge from '../components/ui/Badge'
 import Modal from '../components/ui/Modal'
 import FormField from '../components/ui/FormField'
-import SubPageHeader from '../components/ui/SubPageHeader'
 import { normalizar } from '../utils/normalizar'
 
 // Clase reutilizable para inputs del formulario
@@ -20,7 +18,6 @@ const REGISTROS: Registro[] = []
 type Tab = 'registros' | 'estadisticas'
 
 export default function ServicePage() {
-  const navigate = useNavigate()
   const [tab, setTab] = useState<Tab>('registros')
   const [filtroCliente, setFiltroCliente] = useState('')
   const [filtroMetodo, setFiltroMetodo] = useState('')
@@ -61,17 +58,16 @@ export default function ServicePage() {
   return (
     <div className="min-h-screen bg-gray-50 pb-16">
 
-      <SubPageHeader
-        backLabel="← Volver"
-        onBack={() => navigate('/dashboard')}
-        title="Podología"
-        subtitle="Ana García López"
-        rightSlot={
-          <button className="flex items-center gap-2 px-4 py-2 rounded-lg bg-white border border-white/60 text-sm text-gray-700 hover:bg-white/80 transition-colors">
-            <span>↓</span> Exportar Excel
-          </button>
-        }
-      />
+      {/* Cabecera de página */}
+      <div className="bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between">
+        <div>
+          <h1 className="font-semibold text-gray-900">Podología</h1>
+          <p className="text-xs text-gray-500 mt-0.5">Ana García López</p>
+        </div>
+        <button className="flex items-center gap-2 px-4 py-2 rounded-lg bg-gray-100 text-sm text-gray-700 hover:bg-gray-200 transition-colors">
+          <span>↓</span> Exportar Excel
+        </button>
+      </div>
 
       {/* Tabs */}
       <div className="bg-white border-b border-gray-200 px-6">

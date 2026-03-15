@@ -1,13 +1,11 @@
 // Panel de gestión de usuarios (admin) — tabla de empleados + modal de creación/edición.
 import { useEffect, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
 import SearchInput from '../../components/ui/SearchInput'
 import Modal from '../../components/ui/Modal'
 import Badge from '../../components/ui/Badge'
 import FormField from '../../components/ui/FormField'
 import CheckboxGroup from '../../components/ui/CheckboxGroup'
-import SubPageHeader from '../../components/ui/SubPageHeader'
 import { normalizar } from '../../utils/normalizar'
 import { updateEmployeeServices } from '../../utils/assignments'
 
@@ -26,7 +24,6 @@ type Servicio = {
 }
 
 export default function AdminUsersPage() {
-  const navigate = useNavigate()
 
   // --- Datos ---
   const [empleados, setEmpleados] = useState<Empleado[]>([])
@@ -214,18 +211,14 @@ export default function AdminUsersPage() {
   return (
     <div className="min-h-screen bg-gray-50 pb-16">
 
-      <SubPageHeader
-        backLabel="← Dashboard"
-        onBack={() => navigate('/dashboard')}
-        title="Gestión de usuarios"
-        rightSlot={
-          <button onClick={abrirNuevo} className="px-4 py-2 bg-white hover:bg-white/80 text-gray-800 text-sm font-medium rounded-lg transition-colors">
+      <main className="max-w-5xl mx-auto px-6 py-8">
+
+        <div className="flex items-center justify-between mb-6">
+          <h1 className="text-xl font-semibold text-gray-900">Gestión de usuarios</h1>
+          <button onClick={abrirNuevo} className="px-4 py-2 bg-accent-dark hover:bg-accent text-gray-800 text-sm font-medium rounded-lg transition-colors">
             + Nuevo empleado
           </button>
-        }
-      />
-
-      <main className="max-w-5xl mx-auto px-6 py-8">
+        </div>
 
         {/* Mensaje de éxito */}
         {exito && (
