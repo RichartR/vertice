@@ -87,6 +87,7 @@ export default function AdminIncidenciasPage() {
   const [formAviso, setFormAviso] = useState(false)
   const [formHoraAviso, setFormHoraAviso] = useState('')
   const [formObs, setFormObs] = useState('')
+  const [formSesionRecuperada, setFormSesionRecuperada] = useState('')
   const [guardando, setGuardando] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -182,6 +183,7 @@ export default function AdminIncidenciasPage() {
     setFormAviso(i.aviso)
     setFormHoraAviso(i.hora_aviso ?? '')
     setFormObs(i.observaciones ?? '')
+    setFormSesionRecuperada(i.fecha_nueva_clase ?? '')
     setError(null)
     setModalOpen(true)
   }
@@ -191,15 +193,22 @@ export default function AdminIncidenciasPage() {
       setError('Fecha, nombre del socio y sesión son obligatorios')
       return
     }
+    if (editando && pestanya === 'resuelta' && !formSesionRecuperada.trim()) {
+      setError('La sesión recuperada es obligatoria')
+      return
+    }
     setGuardando(true)
     setError(null)
-    const payload = {
+    const payload: Record<string, unknown> = {
       fecha: formFecha,
       nombre_socio: formSocio.trim(),
       sesion: formSesion.trim(),
       aviso: formAviso,
       hora_aviso: formAviso && formHoraAviso ? formHoraAviso : null,
       observaciones: formObs.trim() || null,
+    }
+    if (editando && pestanya === 'resuelta') {
+      payload.fecha_nueva_clase = formSesionRecuperada.trim() || null
     }
     if (editando) {
       await supabase.from('incidencias').update(payload).eq('id', editando.id)
@@ -215,8 +224,8 @@ export default function AdminIncidenciasPage() {
   // --- Transiciones de estado ---
 
   async function marcarResuelta() {
-    if (!popupResuelta || !fechaNuevaClase) {
-      setErrTransicion('La fecha de nueva clase es obligatoria')
+    if (!popupResuelta || !fechaNuevaClase.trim()) {
+      setErrTransicion('La sesión recuperada es obligatoria')
       return
     }
     setGuardandoT(true)
@@ -296,8 +305,8 @@ export default function AdminIncidenciasPage() {
       <tr key={i.id} className="hover:bg-accent/5 transition-colors">
         <td className="px-4 py-3 text-gray-700 whitespace-nowrap">{formatFecha(i.fecha)}</td>
         <td className="px-4 py-3 text-gray-900 font-medium">{i.nombre_socio}</td>
-        <td className="px-4 py-3 text-gray-700">{i.sesion}</td>
-        <td className="px-4 py-3">
+        <td className="px-4 py-3 text-gray-700 whitespace-nowrap">{i.sesion}</td>
+        <td className="px-4 py-3 text-center">
           <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
             i.aviso ? 'bg-green-50 text-green-700' : 'bg-gray-100 text-gray-500'
           }`}>
@@ -312,7 +321,7 @@ export default function AdminIncidenciasPage() {
         </td>
         {pestanya === 'resuelta' && (
           <td className="px-4 py-3 text-gray-700 whitespace-nowrap">
-            {i.fecha_nueva_clase ? formatFecha(i.fecha_nueva_clase) : '—'}
+            {i.fecha_nueva_clase || '—'}
           </td>
         )}
         <td className="px-4 py-3 text-right">
@@ -474,15 +483,15 @@ export default function AdminIncidenciasPage() {
 
               {/* Tabla */}
               <div className="overflow-x-auto">
-                <table className="w-full text-sm table-fixed min-w-[980px]">
+                <table className="w-full text-sm table-fixed min-w-[1020px]">
                   <colgroup>
                     <col className="w-[90px]" />
                     <col className="w-[110px]" />
-                    <col className="w-[120px]" />
+                    <col className="w-[150px]" />
                     <col className="w-[70px]" />
                     <col className="w-[85px]" />
                     <col />{/* Observaciones — toma el espacio restante */}
-                    {pestanya === 'resuelta' && <col className="w-[130px]" />}
+                    {pestanya === 'resuelta' && <col className="w-[150px]" />}
                     <col className="w-[260px]" />
                   </colgroup>
                   <thead className="bg-accent/10 border-b border-accent/20">
@@ -490,11 +499,11 @@ export default function AdminIncidenciasPage() {
                       <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Fecha</th>
                       <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Socio</th>
                       <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Sesión</th>
-                      <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">¿Avisó?</th>
+                      <th className="text-center px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">¿Avisó?</th>
                       <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Hora aviso</th>
                       <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Observaciones</th>
                       {pestanya === 'resuelta' && (
-                        <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Fecha nueva clase</th>
+                        <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Sesión recuperada</th>
                       )}
                       <th className="text-right px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide"></th>
                     </tr>
@@ -648,6 +657,19 @@ export default function AdminIncidenciasPage() {
             </FormField>
           )}
 
+          {editando && pestanya === 'resuelta' && (
+            <FormField id="i-sesion-rec" label="Sesión recuperada">
+              <input
+                id="i-sesion-rec"
+                type="text"
+                placeholder="Ej: Fisio lunes 10:00"
+                value={formSesionRecuperada}
+                onChange={e => setFormSesionRecuperada(e.target.value)}
+                className={`w-full ${inputCls}`}
+              />
+            </FormField>
+          )}
+
           <FormField id="i-obs" label="Observaciones" optional>
             <textarea
               id="i-obs"
@@ -674,10 +696,11 @@ export default function AdminIncidenciasPage() {
           onConfirm={marcarResuelta}
           onClose={() => setPopupResuelta(null)}
         >
-          <FormField id="p-fecha-nueva" label="Fecha de la nueva clase">
+          <FormField id="p-fecha-nueva" label="Sesión recuperada">
             <input
               id="p-fecha-nueva"
-              type="date"
+              type="text"
+              placeholder="Ej: Fisio Lunes 10:00"
               value={fechaNuevaClase}
               onChange={e => { setFechaNuevaClase(e.target.value); setErrTransicion(null) }}
               className={`w-full ${inputCls}`}
