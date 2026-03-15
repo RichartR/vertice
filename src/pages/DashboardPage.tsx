@@ -26,7 +26,7 @@ export default function DashboardPage() {
 
     setServicios(
       data
-        ?.map(row => row.services as Servicio | null)
+        ?.map(row => row.services as unknown as Servicio | null)
         .filter((s): s is Servicio => s !== null) ?? []
     )
     setCargando(false)
