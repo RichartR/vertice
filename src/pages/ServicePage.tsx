@@ -14,6 +14,7 @@ import Badge from '../components/ui/Badge'
 import Modal from '../components/ui/Modal'
 import Select from '../components/ui/Select'
 import FormField from '../components/ui/FormField'
+import { exportToExcel } from '../utils/exportExcel'
 
 const inputCls = 'w-full px-3 py-2 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-accent'
 
@@ -70,6 +71,12 @@ export default function ServicePage() {
     enRegistros.add(CURRENT_YEAR)
     return Array.from(enRegistros).sort((a, b) => a - b)
   }, [registros])
+
+  // Registros del año seleccionado — usados para exportar desde la pestaña de estadísticas
+  const registrosAnio = useMemo(
+    () => registros.filter(r => Number(r.fecha.split('-')[0]) === yearSel),
+    [registros, yearSel]
+  )
 
   function handleFiltroChange(key: keyof Filtros, value: string) {
     setFiltros(prev => ({ ...prev, [key]: value }))
@@ -226,7 +233,10 @@ export default function ServicePage() {
             )}
           </div>
         </div>
-        <button className="flex items-center gap-2 px-4 py-2 rounded-lg bg-gray-100 text-sm text-gray-700 hover:bg-gray-200 transition-colors">
+        <button
+          onClick={() => exportToExcel(registrosFiltrados, nombreServicio)}
+          className="flex items-center gap-2 px-4 py-2 rounded-lg bg-gray-100 text-sm text-gray-700 hover:bg-gray-200 transition-colors"
+        >
           <span>↓</span> Exportar Excel
         </button>
       </div>
@@ -360,8 +370,14 @@ export default function ServicePage() {
 
             {/* Tabla resumen anual — clic en una fila para destacarla */}
             <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-              <div className="px-5 py-3 border-b border-gray-100">
+              <div className="px-5 py-3 border-b border-gray-100 flex items-center justify-between">
                 <span className="text-sm font-medium text-gray-700">Resumen {yearSel}</span>
+                <button
+                  onClick={() => exportToExcel(registrosAnio, nombreServicio)}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gray-100 text-xs text-gray-700 hover:bg-gray-200 transition-colors"
+                >
+                  <span>↓</span> Exportar año
+                </button>
               </div>
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
