@@ -42,7 +42,7 @@ const CURRENT_YEAR = new Date().getFullYear()
 export default function ServicePage() {
   const { id: serviceId } = useParams<{ id: string }>()
   const navigate = useNavigate()
-  const { profile, isAdmin, user } = useAuth()
+  const { isAdmin, user } = useAuth()
 
   const { registros, cargando, recargar } = useRecords(serviceId ?? '')
 
@@ -110,6 +110,9 @@ export default function ServicePage() {
       .eq('id', serviceId)
       .single()
       .then(({ data }) => setNombreServicio(data?.nombre ?? ''))
+
+    // Empleados del servicio (para el header y el modal)
+    cargarEmpleados()
 
     // Conteo de servicios del empleado (para mostrar botón volver)
     if (!isAdmin && user) {
@@ -240,8 +243,8 @@ export default function ServicePage() {
           <div>
             <h1 className="font-semibold text-gray-900">
               {nombreServicio || '…'}
-              {!isAdmin && profile?.nombre && (
-                <span className="font-normal text-gray-500"> — {profile.nombre}</span>
+              {empleados.length === 1 && (
+                <span className="font-normal text-gray-500"> — {empleados[0].nombre}</span>
               )}
             </h1>
           </div>
