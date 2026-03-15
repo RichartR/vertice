@@ -1,7 +1,7 @@
 // Exportación a Excel usando la plantilla corporativa.
 // ExcelJS preserva correctamente estilos, colores, bordes y fórmulas en el round-trip
 // (leer plantilla → insertar datos → descargar), a diferencia de SheetJS community.
-import ExcelJS from 'exceljs'
+import type ExcelJS from 'exceljs'
 import templateUrl from '../assets/templates/plantilla-registros.xlsx?url'
 
 const DIAS = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado']
@@ -29,11 +29,15 @@ function reemplazarNombre(ws: ExcelJS.Worksheet, servicio: string) {
 }
 
 export async function exportToExcel(registros: Registro[], nombreServicio: string) {
+  // ExcelJS se carga dinámicamente para que no forme parte del bundle principal —
+  // solo se descarga cuando el usuario pulsa "Exportar Excel".
+  const { default: ExcelJSDyn } = await import('exceljs')
+
   // 1. Cargar la plantilla — ExcelJS mantiene intactos estilos y fórmulas al leer
   const response = await fetch(templateUrl)
   const arrayBuffer = await response.arrayBuffer()
 
-  const wb = new ExcelJS.Workbook()
+  const wb = new ExcelJSDyn.Workbook()
   await wb.xlsx.load(arrayBuffer)
 
   // Fuerza a Excel a recalcular todas las fórmulas al abrir el archivo.
