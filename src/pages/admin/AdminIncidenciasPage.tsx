@@ -253,7 +253,7 @@ export default function AdminIncidenciasPage() {
           </span>
         </td>
         <td className="px-4 py-3 text-gray-500">{i.hora_aviso ? i.hora_aviso.substring(0, 5) : '—'}</td>
-        <td className="px-4 py-3 text-gray-500 max-w-[180px]">
+        <td className="px-4 py-3 text-gray-500 overflow-hidden">
           <span className="block truncate" title={i.observaciones ?? undefined}>
             {i.observaciones || '—'}
           </span>
@@ -263,8 +263,8 @@ export default function AdminIncidenciasPage() {
             {i.fecha_nueva_clase ? formatFecha(i.fecha_nueva_clase) : '—'}
           </td>
         )}
-        <td className="px-4 py-3">
-          <div className="flex gap-1 whitespace-nowrap">
+        <td className="px-4 py-3 text-right">
+          <div className="flex gap-1 whitespace-nowrap justify-end">
             <button
               onClick={() => abrirEditar(i)}
               className={`${btnAccion} border-gray-200 text-gray-600 hover:border-accent hover:bg-accent/10`}
@@ -361,33 +361,31 @@ export default function AdminIncidenciasPage() {
               value={filtros.socio}
               onChange={e => setFiltros(f => ({ ...f, socio: e.target.value }))}
               placeholder="Buscar socio..."
-              className={`${inputCls} w-full md:w-40`}
+              className={`${inputCls} w-full md:flex-1`}
             />
             <input
               type="text"
               value={filtros.sesion}
               onChange={e => setFiltros(f => ({ ...f, sesion: e.target.value }))}
               placeholder="Buscar sesión..."
-              className={`${inputCls} w-full md:w-40`}
+              className={`${inputCls} w-full md:flex-1`}
             />
-            <div className="flex gap-2">
-              <input
-                type="date"
-                value={filtros.fechaDesde}
-                onChange={e => setFiltros(f => ({ ...f, fechaDesde: e.target.value }))}
-                className={`${inputCls} flex-1 md:w-36`}
-              />
-              <input
-                type="date"
-                value={filtros.fechaHasta}
-                onChange={e => setFiltros(f => ({ ...f, fechaHasta: e.target.value }))}
-                className={`${inputCls} flex-1 md:w-36`}
-              />
-            </div>
+            <input
+              type="date"
+              value={filtros.fechaDesde}
+              onChange={e => setFiltros(f => ({ ...f, fechaDesde: e.target.value }))}
+              className={`${inputCls} w-full md:flex-1`}
+            />
+            <input
+              type="date"
+              value={filtros.fechaHasta}
+              onChange={e => setFiltros(f => ({ ...f, fechaHasta: e.target.value }))}
+              className={`${inputCls} w-full md:flex-1`}
+            />
             <select
               value={filtros.aviso}
               onChange={e => setFiltros(f => ({ ...f, aviso: e.target.value as 'todos' | 'si' | 'no' }))}
-              className={`${inputCls} w-full md:w-28`}
+              className={`${inputCls} w-full md:flex-1`}
             >
               <option value="todos">¿Avisó? Todos</option>
               <option value="si">Sí avisó</option>
@@ -405,7 +403,17 @@ export default function AdminIncidenciasPage() {
 
           {/* Tabla */}
           <div className="overflow-x-auto">
-            <table className="w-full text-sm min-w-[800px]">
+            <table className="w-full text-sm table-fixed min-w-[980px]">
+              <colgroup>
+                <col className="w-[90px]" />
+                <col className="w-[110px]" />
+                <col className="w-[120px]" />
+                <col className="w-[70px]" />
+                <col className="w-[85px]" />
+                <col />{/* Observaciones — toma el espacio restante */}
+                {pestaña === 'resuelta' && <col className="w-[130px]" />}
+                <col className="w-[260px]" />
+              </colgroup>
               <thead className="bg-accent/10 border-b border-accent/20">
                 <tr>
                   <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Fecha</th>
@@ -417,7 +425,7 @@ export default function AdminIncidenciasPage() {
                   {pestaña === 'resuelta' && (
                     <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Fecha nueva clase</th>
                   )}
-                  <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide"></th>
+                  <th className="text-right px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide"></th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-50">
