@@ -50,6 +50,9 @@ export default function Navbar() {
         {isAdmin && (
           <Link to="/dashboard" className={`hidden md:block ${navLinkCls}`}>Gestión Servicios</Link>
         )}
+        {isAdmin && (
+          <Link to="/admin/incidencias" className={`hidden md:block ${navLinkCls}`}>Incidencias de Asistencia</Link>
+        )}
         {!isAdmin && serviciosCount > 1 && (
           <Link to="/dashboard" className={`hidden md:block ${navLinkCls}`}>Mis servicios</Link>
         )}
@@ -86,6 +89,11 @@ export default function Navbar() {
           {isAdmin && (
             <Link to="/dashboard" onClick={cerrarMenu} className={menuLinkCls}>
               Gestión Servicios
+            </Link>
+          )}
+          {isAdmin && (
+            <Link to="/admin/incidencias" onClick={cerrarMenu} className={menuLinkCls}>
+              Incidencias
             </Link>
           )}
           {!isAdmin && serviciosCount > 1 && (

@@ -24,7 +24,7 @@ type Servicio = {
   nombre: string
 }
 
-type Pestaña = 'activos' | 'inactivos'
+type Pestanya = 'activos' | 'inactivos'
 
 export default function AdminUsersPage() {
 
@@ -33,8 +33,8 @@ export default function AdminUsersPage() {
   const [servicios, setServicios] = useState<Servicio[]>([])
   const [cargando, setCargando] = useState(true)
 
-  // --- Pestañas y búsqueda ---
-  const [pestañaActiva, setPestañaActiva] = useState<Pestaña>('activos')
+  // --- Pestanyas y búsqueda ---
+  const [pestanyaActiva, setPestanyaActiva] = useState<Pestanya>('activos')
   const [busqueda, setBusqueda] = useState('')
 
   // --- Modal ---
@@ -225,7 +225,7 @@ export default function AdminUsersPage() {
     normalizar(e.nombre).includes(normalizar(busqueda)) ||
     normalizar(e.email).includes(normalizar(busqueda))
   ))
-  const lista = pestañaActiva === 'activos' ? activos : inactivos
+  const lista = pestanyaActiva === 'activos' ? activos : inactivos
 
   return (
     <div className="min-h-screen bg-gray-50 pb-16">
@@ -234,7 +234,7 @@ export default function AdminUsersPage() {
 
         <div className="flex items-center justify-between mb-6">
           <h1 className="text-xl font-semibold text-gray-900">Gestión de usuarios</h1>
-          {pestañaActiva === 'activos' && (
+          {pestanyaActiva === 'activos' && (
             <button onClick={abrirNuevo} className="px-4 py-2 bg-accent-dark hover:bg-accent text-gray-800 text-sm font-medium rounded-lg transition-colors">
               + Nuevo empleado
             </button>
@@ -252,12 +252,12 @@ export default function AdminUsersPage() {
           {/* Cabecera con pestañas y búsqueda */}
           <div className="px-4 sm:px-5 py-4 border-b border-gray-100 flex flex-wrap items-center justify-between gap-3">
             <div className="flex gap-1 bg-gray-100 rounded-lg p-1">
-              {(['activos', 'inactivos'] as Pestaña[]).map(tab => (
+              {(['activos', 'inactivos'] as Pestanya[]).map(tab => (
                 <button
                   key={tab}
-                  onClick={() => { setPestañaActiva(tab); setBusqueda('') }}
+                  onClick={() => { setPestanyaActiva(tab); setBusqueda('') }}
                   className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors capitalize ${
-                    pestañaActiva === tab
+                    pestanyaActiva === tab
                       ? 'bg-white text-gray-900 shadow-sm'
                       : 'text-gray-500 hover:text-gray-700'
                   }`}
@@ -268,7 +268,7 @@ export default function AdminUsersPage() {
             </div>
             <div className="flex items-center gap-4">
               <p className="text-sm text-gray-400">
-                {cargando ? 'Cargando...' : `${lista.length} ${pestañaActiva}`}
+                {cargando ? 'Cargando...' : `${lista.length} ${pestanyaActiva}`}
               </p>
               <SearchInput value={busqueda} onChange={setBusqueda} placeholder="Buscar empleado..." />
             </div>
@@ -281,7 +281,7 @@ export default function AdminUsersPage() {
                 <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Nombre</th>
                 <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Email</th>
                 <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Rol</th>
-                {pestañaActiva === 'activos' && (
+                {pestanyaActiva === 'activos' && (
                   <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Servicios asignados</th>
                 )}
                 <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide"></th>
@@ -302,7 +302,7 @@ export default function AdminUsersPage() {
                   <td className="px-5 py-4">
                     <Badge variant={emp.rol === 'admin' ? 'admin' : 'empleado'} />
                   </td>
-                  {pestañaActiva === 'activos' && (
+                  {pestanyaActiva === 'activos' && (
                     <td className="px-5 py-4 text-gray-500">
                       {emp.servicios.length > 0
                         ? emp.servicios
@@ -314,7 +314,7 @@ export default function AdminUsersPage() {
                   )}
                   <td className="px-5 py-4">
                     <div className="flex gap-2 whitespace-nowrap">
-                      {pestañaActiva === 'activos' ? (
+                      {pestanyaActiva === 'activos' ? (
                         <>
                           <button
                             onClick={() => abrirEditar(emp)}

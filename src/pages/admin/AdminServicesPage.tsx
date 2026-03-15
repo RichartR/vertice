@@ -23,7 +23,7 @@ type Empleado = {
   nombre: string
 }
 
-type Pestaña = 'activos' | 'inactivos'
+type Pestanya = 'activos' | 'inactivos'
 
 export default function AdminServicesPage() {
   const navigate = useNavigate()
@@ -33,8 +33,8 @@ export default function AdminServicesPage() {
   const [empleadosActivos, setEmpleadosActivos] = useState<Empleado[]>([])
   const [cargando, setCargando] = useState(true)
 
-  // --- Pestañas y búsqueda ---
-  const [pestañaActiva, setPestañaActiva] = useState<Pestaña>('activos')
+  // --- Pestanyas y búsqueda ---
+  const [pestanyaActiva, setPestanyaActiva] = useState<Pestanya>('activos')
   const [busqueda, setBusqueda] = useState('')
 
   // --- Modal ---
@@ -177,7 +177,7 @@ export default function AdminServicesPage() {
 
   const activos = servicios.filter(s => s.activo && normalizar(s.nombre).includes(normalizar(busqueda)))
   const inactivos = servicios.filter(s => !s.activo && normalizar(s.nombre).includes(normalizar(busqueda)))
-  const lista = pestañaActiva === 'activos' ? activos : inactivos
+  const lista = pestanyaActiva === 'activos' ? activos : inactivos
 
   return (
     <div className="min-h-screen bg-gray-50 pb-16">
@@ -196,12 +196,12 @@ export default function AdminServicesPage() {
           {/* Cabecera con pestañas y búsqueda */}
           <div className="px-4 sm:px-5 py-4 border-b border-gray-100 flex flex-wrap items-center justify-between gap-3">
             <div className="flex gap-1 bg-gray-100 rounded-lg p-1">
-              {(['activos', 'inactivos'] as Pestaña[]).map(tab => (
+              {(['activos', 'inactivos'] as Pestanya[]).map(tab => (
                 <button
                   key={tab}
-                  onClick={() => { setPestañaActiva(tab); setBusqueda('') }}
+                  onClick={() => { setPestanyaActiva(tab); setBusqueda('') }}
                   className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors capitalize ${
-                    pestañaActiva === tab
+                    pestanyaActiva === tab
                       ? 'bg-white text-gray-900 shadow-sm'
                       : 'text-gray-500 hover:text-gray-700'
                   }`}
@@ -212,7 +212,7 @@ export default function AdminServicesPage() {
             </div>
             <div className="flex items-center gap-4">
               <p className="text-sm text-gray-400">
-                {cargando ? 'Cargando...' : `${lista.length} ${pestañaActiva}`}
+                {cargando ? 'Cargando...' : `${lista.length} ${pestanyaActiva}`}
               </p>
               <SearchInput value={busqueda} onChange={setBusqueda} placeholder="Buscar servicio..." />
             </div>
@@ -223,14 +223,14 @@ export default function AdminServicesPage() {
             <colgroup>
               <col className="w-[22%]" />
               <col className="w-[32%]" />
-              {pestañaActiva === 'activos' && <col className="w-[26%]" />}
-              <col className={pestañaActiva === 'activos' ? 'w-[20%]' : 'w-[46%]'} />
+              {pestanyaActiva === 'activos' && <col className="w-[26%]" />}
+              <col className={pestanyaActiva === 'activos' ? 'w-[20%]' : 'w-[46%]'} />
             </colgroup>
             <thead className="bg-accent/10 border-b border-accent/20">
               <tr>
                 <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Servicio</th>
                 <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Descripción</th>
-                {pestañaActiva === 'activos' && (
+                {pestanyaActiva === 'activos' && (
                   <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Empleados asignados</th>
                 )}
                 <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide"></th>
@@ -259,7 +259,7 @@ export default function AdminServicesPage() {
                         : <span className="text-gray-300">—</span>
                       }
                     </td>
-                    {pestañaActiva === 'activos' && (
+                    {pestanyaActiva === 'activos' && (
                       <td className="px-4 py-4 text-gray-500 overflow-hidden">
                         {nombresEmpleados
                           ? <Tooltip text={nombresEmpleados}>{nombresEmpleados}</Tooltip>
@@ -269,7 +269,7 @@ export default function AdminServicesPage() {
                     )}
                     <td className="px-4 py-4">
                       <div className="flex gap-1.5 whitespace-nowrap">
-                        {pestañaActiva === 'activos' ? (
+                        {pestanyaActiva === 'activos' ? (
                           <>
                             <button
                               onClick={() => navigate(`/services/${s.id}`)}

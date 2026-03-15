@@ -8,6 +8,7 @@ import DashboardAdminPage from './pages/admin/DashboardAdminPage'
 import ServicePage from './pages/ServicePage'
 import AdminUsersPage from './pages/admin/AdminUsersPage'
 import AdminServicesPage from './pages/admin/AdminServicesPage'
+import AdminIncidenciasPage from './pages/admin/AdminIncidenciasPage'
 import { useAuth } from './context/AuthContext'
 import IosBanner from './components/ui/IosBanner'
 
@@ -56,6 +57,12 @@ export default function App() {
       <Route path="/admin/services/:id" element={
         <ProtectedRoute requireAdmin>
           <ServicePage />
+        </ProtectedRoute>
+      } />
+
+      <Route path="/admin/incidencias" element={
+        <ProtectedRoute requireAdmin>
+          <AdminIncidenciasPage />
         </ProtectedRoute>
       } />
 
