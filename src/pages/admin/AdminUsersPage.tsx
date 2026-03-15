@@ -230,7 +230,7 @@ export default function AdminUsersPage() {
   return (
     <div className="min-h-screen bg-gray-50 pb-16">
 
-      <main className="max-w-5xl mx-auto px-6 py-8">
+      <main className="max-w-5xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
 
         <div className="flex items-center justify-between mb-6">
           <h1 className="text-xl font-semibold text-gray-900">Gestión de usuarios</h1>
@@ -250,7 +250,7 @@ export default function AdminUsersPage() {
         <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
 
           {/* Cabecera con pestañas y búsqueda */}
-          <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between gap-4">
+          <div className="px-4 sm:px-5 py-4 border-b border-gray-100 flex flex-wrap items-center justify-between gap-3">
             <div className="flex gap-1 bg-gray-100 rounded-lg p-1">
               {(['activos', 'inactivos'] as Pestaña[]).map(tab => (
                 <button
@@ -274,7 +274,8 @@ export default function AdminUsersPage() {
             </div>
           </div>
 
-          <table className="w-full text-sm">
+          <div className="overflow-x-auto">
+          <table className="w-full text-sm min-w-[700px]">
             <thead className="bg-accent/10 border-b border-accent/20">
               <tr>
                 <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Nombre</th>
@@ -348,6 +349,7 @@ export default function AdminUsersPage() {
               ))}
             </tbody>
           </table>
+          </div>
         </div>
       </main>
 
@@ -375,7 +377,7 @@ export default function AdminUsersPage() {
           onConfirm={esEdicion ? handleEditar : handleCrear}
           onClose={() => setModalOpen(false)}
         >
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <FormField id="u-nombre" label="Nombre">
               <input
                 id="u-nombre"

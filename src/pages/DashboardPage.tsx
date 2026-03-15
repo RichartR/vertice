@@ -38,7 +38,7 @@ export default function DashboardPage() {
 
   return (
     <div className="min-h-screen bg-gray-50 pb-16">
-      <main className="max-w-4xl mx-auto px-6 py-10">
+      <main className="max-w-4xl mx-auto px-4 sm:px-6 py-6 sm:py-10">
         <div className="mb-8">
           <h1 className="text-xl font-semibold text-gray-900">{titulo}</h1>
           <p className="text-sm text-gray-500 mt-1">Selecciona un servicio para ver sus registros</p>

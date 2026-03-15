@@ -230,7 +230,7 @@ export default function ServicePage() {
     <div className="min-h-screen bg-gray-50 pb-16">
 
       {/* Cabecera de página */}
-      <div className="bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between">
+      <div className="bg-white border-b border-gray-200 px-4 sm:px-6 py-3 sm:py-4 flex items-center justify-between">
         <div className="flex items-center gap-4">
           {mostrarVolver && (
             <button
@@ -251,14 +251,14 @@ export default function ServicePage() {
         </div>
         <button
           onClick={() => exportToExcel(registrosFiltrados, nombreServicio)}
-          className="flex items-center gap-2 px-4 py-2 rounded-lg bg-gray-100 text-sm text-gray-700 hover:bg-gray-200 transition-colors"
+          className="flex items-center gap-1.5 px-3 sm:px-4 py-2 rounded-lg bg-gray-100 text-sm text-gray-700 hover:bg-gray-200 transition-colors"
         >
           <span>↓</span> Exportar Excel
         </button>
       </div>
 
       {/* Tabs */}
-      <div className="bg-white border-b border-gray-200 px-6">
+      <div className="bg-white border-b border-gray-200 px-4 sm:px-6">
         <div className="flex gap-6">
           {(['registros', 'estadisticas'] as Tab[]).map(t => (
             <button
@@ -276,7 +276,7 @@ export default function ServicePage() {
         </div>
       </div>
 
-      <main className="max-w-6xl mx-auto px-6 py-6">
+      <main className="max-w-6xl mx-auto px-4 sm:px-6 py-4 sm:py-6">
 
         {tab === 'registros' && (
           <>
