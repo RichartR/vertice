@@ -9,6 +9,7 @@ import FormField from '../../components/ui/FormField'
 import CheckboxGroup from '../../components/ui/CheckboxGroup'
 import SubPageHeader from '../../components/ui/SubPageHeader'
 import { normalizar } from '../../utils/normalizar'
+import { updateEmployeeServices } from '../../utils/assignments'
 
 type Empleado = {
   id: string
@@ -156,10 +157,8 @@ export default function AdminUsersPage() {
       const { user: nuevoUsuario } = await response.json()
 
       // Asignar servicios si se seleccionaron
-      if (serviciosAsignados.length > 0 && nuevoUsuario?.id) {
-        await supabase.from('service_employees').insert(
-          serviciosAsignados.map(sid => ({ employee_id: nuevoUsuario.id, service_id: sid }))
-        )
+      if (nuevoUsuario?.id) {
+        await updateEmployeeServices(nuevoUsuario.id, serviciosAsignados)
       }
 
       setModalOpen(false)
@@ -186,14 +185,8 @@ export default function AdminUsersPage() {
         .update({ nombre: `${nombre} ${apellidos}`.trim(), rol })
         .eq('id', empleadoEdicion.id)
 
-      // Reemplazar asignaciones: borrar las actuales e insertar las nuevas
-      await supabase.from('service_employees').delete().eq('employee_id', empleadoEdicion.id)
-
-      if (serviciosAsignados.length > 0) {
-        await supabase.from('service_employees').insert(
-          serviciosAsignados.map(sid => ({ employee_id: empleadoEdicion.id, service_id: sid }))
-        )
-      }
+      // Reemplazar asignaciones via helper reutilizable (VER-22)
+      await updateEmployeeServices(empleadoEdicion.id, serviciosAsignados)
 
       setModalOpen(false)
       cargarDatos()
