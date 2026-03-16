@@ -326,8 +326,10 @@ export default function ServicePage() {
                       <tr key={r.id} className="hover:bg-accent/5 transition-colors">
                         <td className="px-4 py-3 text-gray-700 whitespace-nowrap">{formatFecha(r.fecha)}</td>
                         <td className="px-4 py-3 text-gray-500 whitespace-nowrap">{formatHora(r.hora)}</td>
-                        <td className="px-4 py-3 text-gray-900 font-medium whitespace-nowrap">{r.cliente}</td>
-                        <td className="px-4 py-3 text-gray-700 whitespace-nowrap">{r.tratamiento}</td>
+                        <td className="px-4 py-3 text-gray-900 font-medium">{r.cliente}</td>
+                        <td className="px-4 py-3 text-gray-700 overflow-hidden">
+                          <span className="block truncate" title={r.tratamiento}>{r.tratamiento}</span>
+                        </td>
                         <td className="px-4 py-3 text-gray-400 max-w-48 overflow-hidden">
                           {r.notas
                             ? <Tooltip text={r.notas}>{r.notas}</Tooltip>
