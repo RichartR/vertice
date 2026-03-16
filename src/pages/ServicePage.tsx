@@ -62,7 +62,11 @@ export default function ServicePage() {
 
   // Filtros — gestionados como un objeto plano para facilitar el reset
   const [filtros, setFiltros] = useState<Filtros>(FILTROS_VACIOS)
+  const [sortDesc, setSortDesc] = useState(true)
   const registrosFiltrados = useFilteredRecords(registros, filtros)
+  const registrosOrdenados = [...registrosFiltrados].sort((a, b) =>
+    sortDesc ? b.fecha.localeCompare(a.fecha) : a.fecha.localeCompare(b.fecha)
+  )
   const { resumenAnual } = useStats(registros, mesSel, yearSel)
 
   // Años disponibles: años con al menos un registro + el año actual siempre presente
@@ -308,26 +312,32 @@ export default function ServicePage() {
                   <thead className="bg-accent/10 border-b border-accent/20">
                     <tr>
                       {columnas.map(h => (
-                        <th key={h} className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">
-                          {h}
+                        <th key={h} className={`text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide ${h === 'Fecha' ? 'cursor-pointer select-none hover:text-gray-700' : ''}`}
+                          onClick={h === 'Fecha' ? () => setSortDesc(d => !d) : undefined}
+                        >
+                          {h === 'Fecha' ? (
+                            <span className="flex items-center gap-1">{h} {sortDesc ? '↓' : '↑'}</span>
+                          ) : h}
                         </th>
                       ))}
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-50">
-                    {!cargando && registrosFiltrados.length === 0 && (
+                    {!cargando && registrosOrdenados.length === 0 && (
                       <tr>
                         <td colSpan={columnas.length} className="px-4 py-10 text-center text-sm text-gray-400">
                           No hay registros con estos filtros.
                         </td>
                       </tr>
                     )}
-                    {registrosFiltrados.map(r => (
+                    {registrosOrdenados.map(r => (
                       <tr key={r.id} className="hover:bg-accent/5 transition-colors">
                         <td className="px-4 py-3 text-gray-700 whitespace-nowrap">{formatFecha(r.fecha)}</td>
                         <td className="px-4 py-3 text-gray-500 whitespace-nowrap">{formatHora(r.hora)}</td>
-                        <td className="px-4 py-3 text-gray-900 font-medium whitespace-nowrap">{r.cliente}</td>
-                        <td className="px-4 py-3 text-gray-700 whitespace-nowrap">{r.tratamiento}</td>
+                        <td className="px-4 py-3 text-gray-900 font-medium">{r.cliente}</td>
+                        <td className="px-4 py-3 text-gray-700 overflow-hidden">
+                          <span className="block truncate" title={r.tratamiento}>{r.tratamiento}</span>
+                        </td>
                         <td className="px-4 py-3 text-gray-400 max-w-48 overflow-hidden">
                           {r.notas
                             ? <Tooltip text={r.notas}>{r.notas}</Tooltip>
@@ -418,6 +428,25 @@ export default function ServicePage() {
                         </td>
                       </tr>
                     ))}
+                    {(() => {
+                      const totalIngresos = resumenAnual.reduce((s, r) => s + r.totalIngresos, 0)
+                      const totalEfectivo = resumenAnual.reduce((s, r) => s + r.totalEfectivo, 0)
+                      const totalTarjeta = resumenAnual.reduce((s, r) => s + r.totalTarjeta, 0)
+                      const totalSesiones = resumenAnual.reduce((s, r) => s + r.numSesiones, 0)
+                      const ticketMedioAnual = totalSesiones > 0 ? totalIngresos / totalSesiones : 0
+                      return (
+                        <tr className="bg-accent/10 border-t-2 border-accent/30 font-semibold">
+                          <td className="px-4 py-3 text-gray-800">Total anual</td>
+                          <td className="px-4 py-3 text-gray-900">{totalIngresos.toFixed(2)} €</td>
+                          <td className="px-4 py-3 text-gray-700">{totalEfectivo.toFixed(2)} €</td>
+                          <td className="px-4 py-3 text-gray-700">{totalTarjeta.toFixed(2)} €</td>
+                          <td className="px-4 py-3 text-gray-700">{totalSesiones}</td>
+                          <td className="px-4 py-3 text-gray-700">
+                            {totalSesiones > 0 ? `${ticketMedioAnual.toFixed(2)} €` : '—'}
+                          </td>
+                        </tr>
+                      )
+                    })()}
                   </tbody>
                 </table>
               </div>
