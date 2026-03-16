@@ -489,6 +489,7 @@ export default function AdminIncidenciasPage() {
                 )}
               </div>
 
+
               {/* Tabla */}
               <div className="overflow-x-auto">
                 <table className="w-full text-sm table-fixed min-w-[1020px]">
