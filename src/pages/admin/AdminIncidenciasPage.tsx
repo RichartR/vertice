@@ -77,6 +77,7 @@ export default function AdminIncidenciasPage() {
   // --- Pestanyas y filtros ---
   const [pestanya, setPestanya] = useState<Vista>('pendiente')
   const [filtros, setFiltros] = useState<Filtros>(FILTROS_VACIO)
+  const [sortDesc, setSortDesc] = useState(true)
 
   // --- Modal crear/editar (VER-47) ---
   const [modalOpen, setModalOpen] = useState(false)
@@ -145,8 +146,8 @@ export default function AdminIncidenciasPage() {
     setTodasIncidencias((data as IncidenciaStat[]) ?? [])
   }
 
-  // --- Filtrado en frontend ---
-  const lista = incidencias.filter(i => {
+  // --- Filtrado y ordenación en frontend ---
+  const listaFiltrada = incidencias.filter(i => {
     if (filtros.socio && !normalizar(i.nombre_socio).includes(normalizar(filtros.socio))) return false
     if (filtros.sesion && !normalizar(i.sesion).includes(normalizar(filtros.sesion))) return false
     if (filtros.fechaDesde && i.fecha < filtros.fechaDesde) return false
@@ -155,6 +156,9 @@ export default function AdminIncidenciasPage() {
     if (filtros.aviso === 'no' && i.aviso) return false
     return true
   })
+  const lista = [...listaFiltrada].sort((a, b) =>
+    sortDesc ? b.fecha.localeCompare(a.fecha) : a.fecha.localeCompare(b.fecha)
+  )
 
   function cambiarPestanya(tab: Vista) {
     setPestanya(tab)
@@ -500,7 +504,9 @@ export default function AdminIncidenciasPage() {
                   </colgroup>
                   <thead className="bg-accent/10 border-b border-accent/20">
                     <tr>
-                      <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Fecha</th>
+                      <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide cursor-pointer select-none hover:text-gray-700" onClick={() => setSortDesc(d => !d)}>
+                        <span className="flex items-center gap-1">Fecha {sortDesc ? '↓' : '↑'}</span>
+                      </th>
                       <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Socio</th>
                       <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Sesión</th>
                       <th className="text-center px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">¿Avisó?</th>
