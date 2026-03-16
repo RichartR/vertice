@@ -418,6 +418,25 @@ export default function ServicePage() {
                         </td>
                       </tr>
                     ))}
+                    {(() => {
+                      const totalIngresos = resumenAnual.reduce((s, r) => s + r.totalIngresos, 0)
+                      const totalEfectivo = resumenAnual.reduce((s, r) => s + r.totalEfectivo, 0)
+                      const totalTarjeta = resumenAnual.reduce((s, r) => s + r.totalTarjeta, 0)
+                      const totalSesiones = resumenAnual.reduce((s, r) => s + r.numSesiones, 0)
+                      const ticketMedioAnual = totalSesiones > 0 ? totalIngresos / totalSesiones : 0
+                      return (
+                        <tr className="bg-accent/10 border-t-2 border-accent/30 font-semibold">
+                          <td className="px-4 py-3 text-gray-800">Total anual</td>
+                          <td className="px-4 py-3 text-gray-900">{totalIngresos.toFixed(2)} €</td>
+                          <td className="px-4 py-3 text-gray-700">{totalEfectivo.toFixed(2)} €</td>
+                          <td className="px-4 py-3 text-gray-700">{totalTarjeta.toFixed(2)} €</td>
+                          <td className="px-4 py-3 text-gray-700">{totalSesiones}</td>
+                          <td className="px-4 py-3 text-gray-700">
+                            {totalSesiones > 0 ? `${ticketMedioAnual.toFixed(2)} €` : '—'}
+                          </td>
+                        </tr>
+                      )
+                    })()}
                   </tbody>
                 </table>
               </div>
