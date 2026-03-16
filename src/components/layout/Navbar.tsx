@@ -2,7 +2,7 @@
 // Desktop: logo + links de navegación + nombre + cerrar sesión.
 // Móvil: logo + botón hamburger que despliega menú con links y cerrar sesión.
 import { useEffect, useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, NavLink, useNavigate } from 'react-router-dom'
 import logo from '../../assets/logo.webp'
 import { useAuth } from '../../context/AuthContext'
 import { supabase } from '../../lib/supabase'
@@ -28,8 +28,18 @@ export default function Navbar() {
 
   function cerrarMenu() { setMenuAbierto(false) }
 
-  const navLinkCls = 'px-3 py-1.5 rounded-lg text-sm font-medium text-gray-700 hover:bg-white/50 hover:text-gray-900 transition-colors'
-  const menuLinkCls = 'block px-4 py-3 text-sm font-medium text-gray-700 hover:bg-accent-dark/20 transition-colors'
+  const navLinkCls = ({ isActive }: { isActive: boolean }) =>
+    `hidden md:block px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+      isActive
+        ? 'bg-white/70 text-gray-900 shadow-sm font-semibold'
+        : 'text-gray-700 hover:bg-white/50 hover:text-gray-900'
+    }`
+  const menuLinkCls = ({ isActive }: { isActive: boolean }) =>
+    `block px-4 py-3 text-sm font-medium transition-colors ${
+      isActive
+        ? 'bg-white/50 text-gray-900 font-semibold border-l-2 border-accent-dark'
+        : 'text-gray-700 hover:bg-accent-dark/20'
+    }`
 
   const tieneLinks = isAdmin || (!isAdmin && serviciosCount > 1)
 
@@ -48,13 +58,13 @@ export default function Navbar() {
 
         {/* Links de navegación — visibles en md+ */}
         {isAdmin && (
-          <Link to="/dashboard" className={`hidden md:block ${navLinkCls}`}>Gestión Servicios</Link>
+          <NavLink to="/dashboard" end className={navLinkCls}>Gestión Servicios</NavLink>
         )}
         {isAdmin && (
-          <Link to="/admin/incidencias" className={`hidden md:block ${navLinkCls}`}>Incidencias de Asistencia</Link>
+          <NavLink to="/admin/incidencias" className={navLinkCls}>Incidencias de Asistencia</NavLink>
         )}
         {!isAdmin && serviciosCount > 1 && (
-          <Link to="/dashboard" className={`hidden md:block ${navLinkCls}`}>Mis servicios</Link>
+          <NavLink to="/dashboard" end className={navLinkCls}>Mis servicios</NavLink>
         )}
       </div>
 
@@ -87,19 +97,19 @@ export default function Navbar() {
         <div className="md:hidden absolute top-full left-0 right-0 bg-accent border-b border-accent-dark shadow-md z-50">
           {/* Links de navegación */}
           {isAdmin && (
-            <Link to="/dashboard" onClick={cerrarMenu} className={menuLinkCls}>
+            <NavLink to="/dashboard" end onClick={cerrarMenu} className={menuLinkCls}>
               Gestión Servicios
-            </Link>
+            </NavLink>
           )}
           {isAdmin && (
-            <Link to="/admin/incidencias" onClick={cerrarMenu} className={menuLinkCls}>
+            <NavLink to="/admin/incidencias" onClick={cerrarMenu} className={menuLinkCls}>
               Incidencias
-            </Link>
+            </NavLink>
           )}
           {!isAdmin && serviciosCount > 1 && (
-            <Link to="/dashboard" onClick={cerrarMenu} className={menuLinkCls}>
+            <NavLink to="/dashboard" end onClick={cerrarMenu} className={menuLinkCls}>
               Mis servicios
-            </Link>
+            </NavLink>
           )}
 
           {/* Separador solo si hay links */}
