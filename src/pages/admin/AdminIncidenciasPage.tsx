@@ -305,7 +305,9 @@ export default function AdminIncidenciasPage() {
       <tr key={i.id} className="hover:bg-accent/5 transition-colors">
         <td className="px-4 py-3 text-gray-700 whitespace-nowrap">{formatFecha(i.fecha)}</td>
         <td className="px-4 py-3 text-gray-900 font-medium">{i.nombre_socio}</td>
-        <td className="px-4 py-3 text-gray-700 whitespace-nowrap">{i.sesion}</td>
+        <td className="px-4 py-3 text-gray-700 overflow-hidden">
+          <span className="block truncate" title={i.sesion}>{i.sesion}</span>
+        </td>
         <td className="px-4 py-3 text-center">
           <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
             i.aviso ? 'bg-green-50 text-green-700' : 'bg-gray-100 text-gray-500'
@@ -320,8 +322,10 @@ export default function AdminIncidenciasPage() {
           </span>
         </td>
         {pestanya === 'resuelta' && (
-          <td className="px-4 py-3 text-gray-700 whitespace-nowrap">
-            {i.fecha_nueva_clase || '—'}
+          <td className="px-4 py-3 text-gray-700 overflow-hidden">
+            <span className="block truncate" title={i.fecha_nueva_clase ?? undefined}>
+              {i.fecha_nueva_clase || '—'}
+            </span>
           </td>
         )}
         <td className="px-4 py-3 text-right">
