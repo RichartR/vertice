@@ -1,6 +1,8 @@
 // Select custom con dropdown estilizado — reemplaza los <select> nativos del navegador.
-// Acepta un placeholder opcional para el estado vacío (value = '').
+// El dropdown se renderiza en document.body via portal para escapar de overflow:hidden/auto
+// en modales y contenedores con scroll.
 import { useEffect, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 
 interface Option {
   value: string
@@ -17,24 +19,44 @@ interface SelectProps {
 
 export default function Select({ value, onChange, options, placeholder, className = '' }: SelectProps) {
   const [open, setOpen] = useState(false)
-  const ref = useRef<HTMLDivElement>(null)
+  const [dropdownStyle, setDropdownStyle] = useState<React.CSSProperties>({})
+  const triggerRef = useRef<HTMLDivElement>(null)
+  const dropdownRef = useRef<HTMLUListElement>(null)
 
   const selectedLabel = options.find(o => o.value === value)?.label
 
-  // Cierra el dropdown al hacer clic fuera
   useEffect(() => {
     function handleOutside(e: MouseEvent) {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false)
+      const target = e.target as Node
+      if (
+        triggerRef.current?.contains(target) ||
+        dropdownRef.current?.contains(target)
+      ) return
+      setOpen(false)
     }
     document.addEventListener('mousedown', handleOutside)
     return () => document.removeEventListener('mousedown', handleOutside)
   }, [])
 
+  function handleToggle() {
+    if (!open && triggerRef.current) {
+      const rect = triggerRef.current.getBoundingClientRect()
+      setDropdownStyle({
+        position: 'fixed',
+        top: rect.bottom + 4,
+        left: rect.left,
+        minWidth: rect.width,
+        zIndex: 9999,
+      })
+    }
+    setOpen(o => !o)
+  }
+
   return (
-    <div ref={ref} className={`relative ${className}`}>
+    <div ref={triggerRef} className={`relative ${className}`}>
       <button
         type="button"
-        onClick={() => setOpen(o => !o)}
+        onClick={handleToggle}
         className="w-full flex items-center justify-between gap-2 px-3 py-2 rounded-lg border border-gray-200 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-accent"
       >
         <span className={selectedLabel ? 'text-gray-700' : 'text-gray-400'}>
@@ -43,8 +65,8 @@ export default function Select({ value, onChange, options, placeholder, classNam
         <span className={`text-gray-400 text-xs shrink-0 transition-transform ${open ? 'rotate-180' : ''}`}>▾</span>
       </button>
 
-      {open && (
-        <ul className="absolute z-30 mt-1 w-full min-w-max bg-white rounded-lg border border-gray-200 shadow-lg overflow-hidden">
+      {open && createPortal(
+        <ul ref={dropdownRef} style={dropdownStyle} className="bg-white rounded-lg border border-gray-200 shadow-lg overflow-hidden">
           {placeholder && (
             <li
               onClick={() => { onChange(''); setOpen(false) }}
@@ -66,7 +88,8 @@ export default function Select({ value, onChange, options, placeholder, classNam
               {o.label}
             </li>
           ))}
-        </ul>
+        </ul>,
+        document.body
       )}
     </div>
   )

@@ -220,7 +220,7 @@ export default function ServicePage() {
 
   // Columnas de la tabla según rol
   const columnas = isAdmin
-    ? ['Fecha', 'Hora', 'Cliente', 'Tratamiento', 'Empleado', 'Notas', 'Método', 'Precio', '']
+    ? ['Fecha', 'Hora', 'Cliente', 'Tratamiento', 'Notas', 'Método', 'Precio', '']
     : ['Fecha', 'Hora', 'Cliente', 'Tratamiento', 'Notas', 'Método', 'Precio']
 
   const labelAccion = registroModal.registro ? 'Guardar cambios' : 'Crear registro'
@@ -328,11 +328,6 @@ export default function ServicePage() {
                         <td className="px-4 py-3 text-gray-500 whitespace-nowrap">{formatHora(r.hora)}</td>
                         <td className="px-4 py-3 text-gray-900 font-medium whitespace-nowrap">{r.cliente}</td>
                         <td className="px-4 py-3 text-gray-700 whitespace-nowrap">{r.tratamiento}</td>
-                        {isAdmin && (
-                          <td className="px-4 py-3 text-gray-500 whitespace-nowrap">
-                            {r.profiles?.nombre ?? <span className="text-gray-300">—</span>}
-                          </td>
-                        )}
                         <td className="px-4 py-3 text-gray-400 max-w-48 overflow-hidden">
                           {r.notas
                             ? <Tooltip text={r.notas}>{r.notas}</Tooltip>
