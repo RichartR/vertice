@@ -17,7 +17,12 @@ export default function ResetPasswordPage() {
   const [guardando, setGuardando] = useState(false)
 
   useEffect(() => {
-    // Supabase emite PASSWORD_RECOVERY cuando procesa el token del email.
+    // Capturar el tipo de enlace del hash ANTES de que Supabase lo procese y limpie la URL.
+    // Los enlaces de invitación tienen type=invite; los de reset tienen type=recovery.
+    const hashParams = new URLSearchParams(globalThis.location.hash.slice(1))
+    const isInvite = hashParams.get('type') === 'invite'
+
+    // Supabase emite PASSWORD_RECOVERY (reset) o SIGNED_IN (invite) según el tipo de enlace.
     // Si el token ya fue procesado antes de montar (SPA recarga), getSession() lo detecta.
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session) setEstado('listo')
@@ -25,6 +30,7 @@ export default function ResetPasswordPage() {
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
       if (event === 'PASSWORD_RECOVERY') setEstado('listo')
+      if (event === 'SIGNED_IN' && isInvite) setEstado('listo')
       if (event === 'SIGNED_OUT') setEstado('expirado')
     })
 
