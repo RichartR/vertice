@@ -5,6 +5,7 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import logo from '../assets/logo.webp'
 import { supabase } from '../lib/supabase'
+import PasswordInput from '../components/ui/PasswordInput'
 
 type Estado = 'esperando' | 'listo' | 'expirado'
 
@@ -70,8 +71,6 @@ export default function ResetPasswordPage() {
     navigate('/login', { state: { message: 'Contraseña actualizada correctamente. Inicia sesión.' } })
   }
 
-  const inputCls = 'w-full px-3.5 py-2.5 rounded-lg border border-gray-200 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-accent focus:border-transparent transition'
-
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
       <div className="w-full max-w-sm">
@@ -115,15 +114,13 @@ export default function ResetPasswordPage() {
                     <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1.5">
                       Nueva contraseña
                     </label>
-                    <input
+                    <PasswordInput
                       id="password"
-                      type="password"
                       value={password}
-                      onChange={e => setPassword(e.target.value)}
+                      onChange={setPassword}
                       placeholder="Mínimo 6 caracteres"
                       required
                       autoComplete="new-password"
-                      className={inputCls}
                     />
                   </div>
 
@@ -131,15 +128,13 @@ export default function ResetPasswordPage() {
                     <label htmlFor="confirm" className="block text-sm font-medium text-gray-700 mb-1.5">
                       Confirmar contraseña
                     </label>
-                    <input
+                    <PasswordInput
                       id="confirm"
-                      type="password"
                       value={confirm}
-                      onChange={e => setConfirm(e.target.value)}
+                      onChange={setConfirm}
                       placeholder="Repite la contraseña"
                       required
                       autoComplete="new-password"
-                      className={inputCls}
                     />
                   </div>
 
