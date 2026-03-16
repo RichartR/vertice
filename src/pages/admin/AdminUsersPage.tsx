@@ -139,6 +139,7 @@ export default function AdminUsersPage() {
             nombre: `${nombre} ${apellidos}`.trim(),
             email,
             rol,
+            redirectTo: `${globalThis.location.origin}/reset-password`,
           }),
         }
       )
