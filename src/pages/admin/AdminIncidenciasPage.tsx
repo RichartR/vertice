@@ -11,6 +11,7 @@ import FormField from '../../components/ui/FormField'
 import { normalizar } from '../../utils/normalizar'
 import { useIncidenciasStats } from '../../hooks/useIncidenciasStats'
 import Select from '../../components/ui/Select'
+import Tooltip from '../../components/ui/Tooltip'
 
 type Estado = 'pendiente' | 'resuelta' | 'caducada'
 type Vista = Estado | 'estadisticas'
@@ -310,7 +311,7 @@ export default function AdminIncidenciasPage() {
         <td className="px-4 py-3 text-gray-700 whitespace-nowrap">{formatFecha(i.fecha)}</td>
         <td className="px-4 py-3 text-gray-900 font-medium">{i.nombre_socio}</td>
         <td className="px-4 py-3 text-gray-700 overflow-hidden">
-          <span className="block truncate" title={i.sesion}>{i.sesion}</span>
+          <Tooltip text={i.sesion}>{i.sesion}</Tooltip>
         </td>
         <td className="px-4 py-3 text-center">
           <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
@@ -321,15 +322,11 @@ export default function AdminIncidenciasPage() {
         </td>
         <td className="px-4 py-3 text-gray-500">{i.hora_aviso ? i.hora_aviso.substring(0, 5) : '—'}</td>
         <td className="px-4 py-3 text-gray-500 overflow-hidden">
-          <span className="block truncate" title={i.observaciones ?? undefined}>
-            {i.observaciones || '—'}
-          </span>
+          <Tooltip text={i.observaciones ?? ''}>{i.observaciones || '—'}</Tooltip>
         </td>
         {pestanya === 'resuelta' && (
           <td className="px-4 py-3 text-gray-700 overflow-hidden">
-            <span className="block truncate" title={i.fecha_nueva_clase ?? undefined}>
-              {i.fecha_nueva_clase || '—'}
-            </span>
+            <Tooltip text={i.fecha_nueva_clase ?? ''}>{i.fecha_nueva_clase || '—'}</Tooltip>
           </td>
         )}
         <td className="px-4 py-3 text-right">
@@ -492,7 +489,7 @@ export default function AdminIncidenciasPage() {
 
               {/* Tabla */}
               <div className="overflow-x-auto">
-                <table className="w-full text-sm table-fixed min-w-[1020px]">
+                <table className="w-full text-sm table-fixed min-w-[1040px]">
                   <colgroup>
                     <col className="w-[90px]" />
                     <col className="w-[110px]" />
@@ -501,7 +498,7 @@ export default function AdminIncidenciasPage() {
                     <col className="w-[85px]" />
                     <col />{/* Observaciones — toma el espacio restante */}
                     {pestanya === 'resuelta' && <col className="w-[150px]" />}
-                    <col className="w-[260px]" />
+                    <col className="w-[280px]" />
                   </colgroup>
                   <thead className="bg-accent/10 border-b border-accent/20">
                     <tr>

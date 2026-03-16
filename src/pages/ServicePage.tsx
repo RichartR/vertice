@@ -336,7 +336,7 @@ export default function ServicePage() {
                         <td className="px-4 py-3 text-gray-500 whitespace-nowrap">{formatHora(r.hora)}</td>
                         <td className="px-4 py-3 text-gray-900 font-medium">{r.cliente}</td>
                         <td className="px-4 py-3 text-gray-700 overflow-hidden">
-                          <span className="block truncate" title={r.tratamiento}>{r.tratamiento}</span>
+                          <Tooltip text={r.tratamiento}>{r.tratamiento}</Tooltip>
                         </td>
                         <td className="px-4 py-3 text-gray-400 max-w-48 overflow-hidden">
                           {r.notas
