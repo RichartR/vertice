@@ -292,8 +292,8 @@ export default function AdminUsersPage() {
                 <tr key={emp.id} className="hover:bg-accent/5 transition-colors">
                   <td className="px-5 py-4">
                     <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-full bg-accent/40 flex items-center justify-center text-xs font-semibold text-gray-700">
-                        {emp.nombre.split(' ').map(n => n[0]).slice(0, 2).join('')}
+                      <div className="w-8 h-8 rounded-full bg-accent/40 flex items-center justify-center text-xs font-semibold text-gray-700 shrink-0 overflow-hidden">
+                        {(emp.nombre || '').split(' ').filter(Boolean).map(n => n[0]).slice(0, 2).join('').toUpperCase()}
                       </div>
                       <span className="font-medium text-gray-900">{emp.nombre}</span>
                     </div>
