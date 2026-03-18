@@ -173,7 +173,7 @@ const ExerciseRowComponent = React.memo(function ExerciseRowComponent({
             <td key={`${w}-${campo}`} className="px-1 py-1 text-center">
               <input
                 type="text"
-                defaultValue={weekData[campo] ?? ''}
+                defaultValue={(weekData as any)[campo] ?? ''}
                 onChange={e => debouncedWeek(w, campo, e.target.value)}
                 className="w-10 text-xs text-center bg-transparent border-0 outline-none focus:bg-gray-50 rounded py-0.5"
               />

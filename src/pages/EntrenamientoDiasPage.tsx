@@ -22,7 +22,6 @@ export default function EntrenamientoDiasPage() {
   const navigate = useNavigate()
   const { days, loading, createDay, getDayCount } = useTrainingDays(mesocycleId ?? '')
 
-  const [blockName, setBlockName] = useState('')
   const [clientName, setClientName] = useState('')
   const [mesoName, setMesoName] = useState('')
   const [mesoStart, setMesoStart] = useState('')
@@ -33,13 +32,6 @@ export default function EntrenamientoDiasPage() {
   const [errModal, setErrModal] = useState('')
 
   useEffect(() => {
-    supabase
-      .from('training_blocks')
-      .select('name')
-      .eq('id', blockId)
-      .single()
-      .then(({ data }) => setBlockName(data?.name ?? ''))
-
     supabase
       .from('training_clients')
       .select('full_name')
