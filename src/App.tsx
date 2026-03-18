@@ -13,6 +13,8 @@ import EntrenamientosPage from './pages/EntrenamientosPage'
 import EntrenamientoBloquesPage from './pages/EntrenamientoBloquesPage'
 import EntrenamientoClientesPage from './pages/EntrenamientoClientesPage'
 import EntrenamientoMesociclosPage from './pages/EntrenamientoMesociclosPage'
+import EntrenamientoDiasPage from './pages/EntrenamientoDiasPage'
+import EntrenamientoDiaPage from './pages/EntrenamientoDiaPage'
 import { useAuth } from './context/AuthContext'
 import IosBanner from './components/ui/IosBanner'
 
@@ -92,6 +94,18 @@ export default function App() {
       <Route path="/entrenamientos/bloques/:blockId/clientes/:clientId/mesociclos" element={
         <ProtectedRoute>
           <EntrenamientoMesociclosPage />
+        </ProtectedRoute>
+      } />
+
+      <Route path="/entrenamientos/bloques/:blockId/clientes/:clientId/mesociclos/:mesocycleId/dias" element={
+        <ProtectedRoute>
+          <EntrenamientoDiasPage />
+        </ProtectedRoute>
+      } />
+
+      <Route path="/entrenamientos/bloques/:blockId/clientes/:clientId/mesociclos/:mesocycleId/dias/:dayId" element={
+        <ProtectedRoute>
+          <EntrenamientoDiaPage />
         </ProtectedRoute>
       } />
 
