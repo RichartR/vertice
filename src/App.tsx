@@ -11,6 +11,8 @@ import AdminServicesPage from './pages/admin/AdminServicesPage'
 import AdminIncidenciasPage from './pages/admin/AdminIncidenciasPage'
 import EntrenamientosPage from './pages/EntrenamientosPage'
 import EntrenamientoBloquesPage from './pages/EntrenamientoBloquesPage'
+import EntrenamientoClientesPage from './pages/EntrenamientoClientesPage'
+import EntrenamientoMesociclosPage from './pages/EntrenamientoMesociclosPage'
 import { useAuth } from './context/AuthContext'
 import IosBanner from './components/ui/IosBanner'
 
@@ -78,6 +80,18 @@ export default function App() {
       <Route path="/entrenamientos/bloques" element={
         <ProtectedRoute>
           <EntrenamientoBloquesPage />
+        </ProtectedRoute>
+      } />
+
+      <Route path="/entrenamientos/bloques/:blockId/clientes" element={
+        <ProtectedRoute>
+          <EntrenamientoClientesPage />
+        </ProtectedRoute>
+      } />
+
+      <Route path="/entrenamientos/bloques/:blockId/clientes/:clientId/mesociclos" element={
+        <ProtectedRoute>
+          <EntrenamientoMesociclosPage />
         </ProtectedRoute>
       } />
 

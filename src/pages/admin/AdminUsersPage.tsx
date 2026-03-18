@@ -24,6 +24,12 @@ type Servicio = {
   nombre: string
 }
 
+type BloqueEntrenamiento = {
+  id: string
+  name: string
+  employee_id: string | null
+}
+
 type Pestanya = 'activos' | 'inactivos'
 
 export default function AdminUsersPage() {
@@ -31,6 +37,7 @@ export default function AdminUsersPage() {
   // --- Datos ---
   const [empleados, setEmpleados] = useState<Empleado[]>([])
   const [servicios, setServicios] = useState<Servicio[]>([])
+  const [bloques, setBloques] = useState<BloqueEntrenamiento[]>([])
   const [cargando, setCargando] = useState(true)
 
   // --- Pestanyas y búsqueda ---
@@ -45,6 +52,7 @@ export default function AdminUsersPage() {
   const [email, setEmail] = useState('')
   const [rol, setRol] = useState('employee')
   const [serviciosAsignados, setServiciosAsignados] = useState<string[]>([])
+  const [bloquesAsignados, setBloquesAsignados] = useState<string[]>([])
   const [guardando, setGuardando] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [exito, setExito] = useState<string | null>(null)
@@ -60,10 +68,11 @@ export default function AdminUsersPage() {
   async function cargarDatos() {
     setCargando(true)
 
-    const [{ data: perfiles }, { data: svcs }, { data: asignaciones }] = await Promise.all([
+    const [{ data: perfiles }, { data: svcs }, { data: asignaciones }, { data: blqs }] = await Promise.all([
       supabase.from('profiles').select('*').order('nombre'),
       supabase.from('services').select('id, nombre').eq('activo', true).order('nombre'),
       supabase.from('service_employees').select('employee_id, service_id'),
+      supabase.from('training_blocks').select('id, name, employee_id').order('name'),
     ])
 
     const asignacionesPorEmpleado = new Map<string, string[]>()
@@ -80,6 +89,7 @@ export default function AdminUsersPage() {
       })) ?? []
     )
     setServicios(svcs ?? [])
+    setBloques(blqs ?? [])
     setCargando(false)
   }
 
@@ -87,7 +97,7 @@ export default function AdminUsersPage() {
 
   function abrirNuevo() {
     setEmpleadoEdicion(null)
-    setNombre(''); setApellidos(''); setEmail(''); setRol('employee'); setServiciosAsignados([])
+    setNombre(''); setApellidos(''); setEmail(''); setRol('employee'); setServiciosAsignados([]); setBloquesAsignados([])
     setError(null)
     setModalOpen(true)
   }
@@ -100,6 +110,7 @@ export default function AdminUsersPage() {
     setEmail(emp.email)
     setRol(emp.rol)
     setServiciosAsignados([...emp.servicios])
+    setBloquesAsignados(bloques.filter(b => b.employee_id === emp.id).map(b => b.id))
     setError(null)
     setModalOpen(true)
   }
@@ -117,6 +128,30 @@ export default function AdminUsersPage() {
   const nombresSeleccionados = serviciosAsignados
     .map(id => servicios.find(s => s.id === id)?.nombre ?? '')
     .filter(Boolean)
+
+  const nombresBloquesSeleccionados = bloquesAsignados
+    .map(id => bloques.find(b => b.id === id)?.name ?? '')
+    .filter(Boolean)
+
+  function toggleBloque(nombreBloque: string) {
+    const bloque = bloques.find(b => b.name === nombreBloque)
+    if (!bloque) return
+    setBloquesAsignados(prev =>
+      prev.includes(bloque.id)
+        ? prev.filter(id => id !== bloque.id)
+        : [...prev, bloque.id]
+    )
+  }
+
+  async function updateEmployeeBlocks(empleadoId: string) {
+    const prevIds = bloques.filter(b => b.employee_id === empleadoId).map(b => b.id)
+    const toUnassign = prevIds.filter(id => !bloquesAsignados.includes(id))
+    const toAssign = bloquesAsignados.filter(id => !prevIds.includes(id))
+    if (toUnassign.length > 0)
+      await supabase.from('training_blocks').update({ employee_id: null }).in('id', toUnassign)
+    if (toAssign.length > 0)
+      await supabase.from('training_blocks').update({ employee_id: empleadoId }).in('id', toAssign)
+  }
 
   // --- Crear usuario (via Edge Function) ---
 
@@ -153,6 +188,7 @@ export default function AdminUsersPage() {
 
       if (nuevoUsuario?.id) {
         await updateEmployeeServices(nuevoUsuario.id, serviciosAsignados)
+        await updateEmployeeBlocks(nuevoUsuario.id)
       }
 
       setModalOpen(false)
@@ -180,6 +216,7 @@ export default function AdminUsersPage() {
         .eq('id', empleadoEdicion.id)
 
       await updateEmployeeServices(empleadoEdicion.id, serviciosAsignados)
+      await updateEmployeeBlocks(empleadoEdicion.id)
 
       setModalOpen(false)
       cargarDatos()
@@ -276,35 +313,38 @@ export default function AdminUsersPage() {
           </div>
 
           <div className="overflow-x-auto">
-          <table className="w-full text-sm min-w-[700px]">
+          <table className="w-full text-sm">
             <thead className="bg-accent/10 border-b border-accent/20">
               <tr>
-                <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Nombre</th>
-                <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Email</th>
-                <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Rol</th>
+                <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Nombre</th>
+                <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Email</th>
+                <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Rol</th>
                 {pestanyaActiva === 'activos' && (
-                  <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Servicios asignados</th>
+                  <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Servicios</th>
                 )}
-                <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide"></th>
+                {pestanyaActiva === 'activos' && (
+                  <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Bloques</th>
+                )}
+                <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide"></th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-50">
               {lista.map(emp => (
                 <tr key={emp.id} className="hover:bg-accent/5 transition-colors">
-                  <td className="px-5 py-4">
-                    <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-full bg-accent/40 flex items-center justify-center text-xs font-semibold text-gray-700 shrink-0 overflow-hidden">
+                  <td className="px-4 py-3">
+                    <div className="flex items-center gap-2">
+                      <div className="w-7 h-7 rounded-full bg-accent/40 flex items-center justify-center text-xs font-semibold text-gray-700 shrink-0 overflow-hidden">
                         {(emp.nombre || '').split(' ').filter(Boolean).map(n => n[0]).slice(0, 2).join('').toUpperCase()}
                       </div>
                       <span className="font-medium text-gray-900">{emp.nombre}</span>
                     </div>
                   </td>
-                  <td className="px-5 py-4 text-gray-500">{emp.email}</td>
-                  <td className="px-5 py-4">
+                  <td className="px-4 py-3 text-gray-500">{emp.email}</td>
+                  <td className="px-4 py-3">
                     <Badge variant={emp.rol === 'admin' ? 'admin' : 'empleado'} />
                   </td>
                   {pestanyaActiva === 'activos' && (
-                    <td className="px-5 py-4 text-gray-500">
+                    <td className="px-4 py-3 text-gray-500 text-xs">
                       {emp.servicios.length > 0
                         ? emp.servicios
                             .map(id => servicios.find(s => s.id === id)?.nombre ?? id)
@@ -313,25 +353,33 @@ export default function AdminUsersPage() {
                       }
                     </td>
                   )}
-                  <td className="px-5 py-4">
-                    <div className="flex gap-2 whitespace-nowrap">
+                  {pestanyaActiva === 'activos' && (
+                    <td className="px-4 py-3 text-gray-500 text-xs">
+                      {(() => {
+                        const nombres = bloques.filter(b => b.employee_id === emp.id).map(b => b.name)
+                        return nombres.length > 0 ? nombres.join(', ') : <span className="text-gray-300">—</span>
+                      })()}
+                    </td>
+                  )}
+                  <td className="px-4 py-3">
+                    <div className="flex gap-1.5 whitespace-nowrap">
                       {pestanyaActiva === 'activos' ? (
                         <>
                           <button
                             onClick={() => abrirEditar(emp)}
-                            className="px-2.5 py-1 rounded-md border border-gray-200 text-xs text-gray-600 hover:border-accent hover:bg-accent/10 transition-colors"
+                            className="px-2 py-1 rounded-md border border-gray-200 text-xs text-gray-600 hover:border-accent hover:bg-accent/10 transition-colors"
                           >
                             Editar
                           </button>
                           <button
                             onClick={() => setResetEmail(emp.email)}
-                            className="px-2.5 py-1 rounded-md border border-blue-100 text-xs text-blue-600 hover:bg-blue-50 transition-colors"
+                            className="px-2 py-1 rounded-md border border-blue-100 text-xs text-blue-600 hover:bg-blue-50 transition-colors leading-tight"
                           >
-                            Restablecer contraseña
+                            Restablecer<br />contraseña
                           </button>
                           <button
                             onClick={() => setActivo(emp, false)}
-                            className="px-2.5 py-1 rounded-md border border-red-100 text-xs text-red-500 hover:bg-red-50 transition-colors"
+                            className="px-2 py-1 rounded-md border border-red-100 text-xs text-red-500 hover:bg-red-50 transition-colors"
                           >
                             Desactivar
                           </button>
@@ -339,7 +387,7 @@ export default function AdminUsersPage() {
                       ) : (
                         <button
                           onClick={() => setActivo(emp, true)}
-                          className="px-2.5 py-1 rounded-md border border-green-100 text-xs text-green-600 hover:bg-green-50 transition-colors"
+                          className="px-2 py-1 rounded-md border border-green-100 text-xs text-green-600 hover:bg-green-50 transition-colors"
                         >
                           Reactivar
                         </button>
@@ -427,6 +475,14 @@ export default function AdminUsersPage() {
             options={servicios.map(s => s.nombre)}
             selected={nombresSeleccionados}
             onToggle={toggleServicio}
+            placeholder="Sin asignar"
+          />
+
+          <MultiSelect
+            label="Bloques de entrenamiento"
+            options={bloques.map(b => b.name)}
+            selected={nombresBloquesSeleccionados}
+            onToggle={toggleBloque}
             placeholder="Sin asignar"
           />
 

@@ -26,7 +26,7 @@ export function useTrainingBlocks() {
         name,
         employee_id,
         created_at,
-        profiles:employee_id ( full_name ),
+        profiles:employee_id ( nombre ),
         training_block_clients ( count )
       `)
       .order('created_at', { ascending: false })
@@ -41,7 +41,7 @@ export function useTrainingBlocks() {
       id: b.id,
       name: b.name,
       employee_id: b.employee_id,
-      employee_name: b.profiles?.full_name ?? '—',
+      employee_name: b.profiles?.nombre ?? '—',
       client_count: b.training_block_clients?.[0]?.count ?? 0,
       created_at: b.created_at,
     }))
@@ -52,11 +52,11 @@ export function useTrainingBlocks() {
 
   useEffect(() => { fetchBlocks() }, [fetchBlocks])
 
-  async function createBlock(name: string, employeeId: string) {
+  async function createBlock(name: string, employeeId: string | null) {
     const { data: { user } } = await supabase.auth.getUser()
     const { error: err } = await supabase.from('training_blocks').insert({
       name,
-      employee_id: employeeId,
+      employee_id: employeeId ?? null,
       created_by: user?.id,
     })
     if (err) throw new Error(err.message)

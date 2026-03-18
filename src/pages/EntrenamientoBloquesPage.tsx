@@ -9,9 +9,8 @@ import { useTrainingBlocks } from '../hooks/useTrainingBlocks'
 import Modal from '../components/ui/Modal'
 import FormField from '../components/ui/FormField'
 import Select from '../components/ui/Select'
-import SubPageHeader from '../components/ui/SubPageHeader'
 
-type Empleado = { id: string; full_name: string }
+type Empleado = { id: string; nombre: string }
 
 export default function EntrenamientoBloquesPage() {
   const navigate = useNavigate()
@@ -29,10 +28,10 @@ export default function EntrenamientoBloquesPage() {
     if (!isAdmin) return
     supabase
       .from('profiles')
-      .select('id, full_name')
-      .eq('is_active', true)
-      .eq('is_admin', false)
-      .order('full_name')
+      .select('id, nombre')
+      .eq('activo', true)
+      .neq('rol', 'admin')
+      .order('nombre')
       .then(({ data }) => setEmpleados(data ?? []))
   }, [isAdmin])
 
@@ -45,10 +44,9 @@ export default function EntrenamientoBloquesPage() {
 
   async function guardar() {
     if (!nombre.trim()) { setErrModal('El nombre del bloque es obligatorio'); return }
-    if (!empleadoId) { setErrModal('Selecciona un empleado'); return }
     setGuardando(true)
     try {
-      await createBlock(nombre.trim(), empleadoId)
+      await createBlock(nombre.trim(), empleadoId || null)
       setModalAbierto(false)
     } catch (e: any) {
       setErrModal(e.message ?? 'Error al guardar')
@@ -96,25 +94,20 @@ export default function EntrenamientoBloquesPage() {
     )
   }
 
-  const nuevoBoton = isAdmin ? (
-    <button
-      onClick={abrirModal}
-      className="px-4 py-2 bg-accent-dark hover:bg-accent text-gray-800 text-sm font-medium rounded-lg transition-colors"
-    >
-      + Nuevo bloque
-    </button>
-  ) : undefined
-
   return (
     <div className="min-h-screen bg-gray-50 pb-16">
-      <SubPageHeader
-        backLabel="← Entrenamientos"
-        onBack={() => navigate('/entrenamientos')}
-        title="Bloques de Entrenamiento"
-        rightSlot={nuevoBoton}
-      />
-
-      <main className="max-w-5xl mx-auto px-4 sm:px-6 py-6 sm:py-10">
+      <main className="max-w-5xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
+        <div className="flex items-center justify-between mb-6">
+          <h1 className="text-xl font-semibold text-gray-900">Bloques de Entrenamiento</h1>
+          {isAdmin && (
+            <button
+              onClick={abrirModal}
+              className="px-4 py-2 bg-accent-dark hover:bg-accent text-gray-800 text-sm font-medium rounded-lg transition-colors"
+            >
+              + Nuevo bloque
+            </button>
+          )}
+        </div>
         {renderContenido()}
       </main>
 
@@ -141,7 +134,7 @@ export default function EntrenamientoBloquesPage() {
             <Select
               value={empleadoId}
               onChange={v => { setEmpleadoId(v); setErrModal('') }}
-              options={empleados.map(e => ({ value: e.id, label: e.full_name }))}
+              options={empleados.map(e => ({ value: e.id, label: e.nombre }))}
               placeholder="Seleccionar empleado..."
             />
           </FormField>
