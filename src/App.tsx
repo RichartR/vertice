@@ -9,6 +9,8 @@ import ServicePage from './pages/ServicePage'
 import AdminUsersPage from './pages/admin/AdminUsersPage'
 import AdminServicesPage from './pages/admin/AdminServicesPage'
 import AdminIncidenciasPage from './pages/admin/AdminIncidenciasPage'
+import EntrenamientosPage from './pages/EntrenamientosPage'
+import EntrenamientoBloquesPage from './pages/EntrenamientoBloquesPage'
 import { useAuth } from './context/AuthContext'
 import IosBanner from './components/ui/IosBanner'
 
@@ -63,6 +65,19 @@ export default function App() {
       <Route path="/admin/incidencias" element={
         <ProtectedRoute requireAdmin>
           <AdminIncidenciasPage />
+        </ProtectedRoute>
+      } />
+
+      {/* Rutas protegidas — admin y empleado */}
+      <Route path="/entrenamientos" element={
+        <ProtectedRoute>
+          <EntrenamientosPage />
+        </ProtectedRoute>
+      } />
+
+      <Route path="/entrenamientos/bloques" element={
+        <ProtectedRoute>
+          <EntrenamientoBloquesPage />
         </ProtectedRoute>
       } />
 

@@ -66,6 +66,7 @@ export default function Navbar() {
         {!isAdmin && serviciosCount > 1 && (
           <NavLink to="/dashboard" end className={navLinkCls}>Mis servicios</NavLink>
         )}
+        <NavLink to="/entrenamientos" className={navLinkCls}>Entrenamientos</NavLink>
       </div>
 
       <div className="flex items-center gap-3">
@@ -111,6 +112,9 @@ export default function Navbar() {
               Mis servicios
             </NavLink>
           )}
+          <NavLink to="/entrenamientos" onClick={cerrarMenu} className={menuLinkCls}>
+            Entrenamientos
+          </NavLink>
 
           {/* Separador solo si hay links */}
           {tieneLinks && <div className="border-t border-accent-dark/30" />}
