@@ -16,6 +16,19 @@ type PanelConfig = {
   dayName: string
 }
 
+// Fullscreen API con soporte para webkit (Safari/iOS PWA) y fallback silencioso
+function enterFullscreen() {
+  const el = document.documentElement as any
+  const fn = el.requestFullscreen ?? el.webkitRequestFullscreen
+  fn?.call(el)?.catch(() => {})
+}
+
+function exitFullscreen() {
+  const doc = document as any
+  const fn = doc.exitFullscreen ?? doc.webkitExitFullscreen
+  fn?.call(doc)?.catch(() => {})
+}
+
 // Columnas de grid según número de paneles
 function gridCols(n: number): string {
   if (n <= 1) return 'grid-cols-1'
@@ -135,7 +148,7 @@ export default function IniciarEntrenamientoPage() {
             <h1 className="text-sm font-semibold text-gray-900">Sesión de entrenamiento</h1>
           </div>
           <button
-            onClick={() => setPhase('setup')}
+            onClick={() => { exitFullscreen(); setPhase('setup') }}
             className="px-3 py-1.5 text-xs text-white bg-red-600 hover:bg-red-700 rounded-lg transition-colors"
           >
             Terminar sesión
@@ -256,7 +269,7 @@ export default function IniciarEntrenamientoPage() {
           <p className="text-sm font-semibold text-gray-900">{selectedBlockName}</p>
         </div>
         <button
-          onClick={() => setPhase('session')}
+          onClick={() => { enterFullscreen(); setPhase('session') }}
           disabled={!allConfigured}
           className="px-4 py-2 text-sm font-medium rounded-lg transition-colors disabled:cursor-not-allowed bg-accent-dark hover:bg-accent text-gray-800 disabled:bg-gray-200 disabled:text-gray-400"
         >
