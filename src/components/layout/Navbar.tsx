@@ -29,7 +29,7 @@ export default function Navbar() {
   function cerrarMenu() { setMenuAbierto(false) }
 
   const navLinkCls = ({ isActive }: { isActive: boolean }) =>
-    `hidden md:block px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+    `hidden lg:block px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
       isActive
         ? 'bg-white/70 text-gray-900 shadow-sm font-semibold'
         : 'text-gray-700 hover:bg-white/50 hover:text-gray-900'
@@ -70,22 +70,22 @@ export default function Navbar() {
       </div>
 
       <div className="flex items-center gap-3">
-        {/* Nombre — visible en sm+ en desktop */}
-        <span className="hidden md:inline text-sm text-gray-700 font-medium">{profile?.nombre ?? ''}</span>
+        {/* Nombre — visible en lg+ */}
+        <span className="hidden lg:inline text-sm text-gray-700 font-medium">{profile?.nombre ?? ''}</span>
 
-        {/* Cerrar sesión — visible en md+ */}
+        {/* Cerrar sesión — visible en lg+ */}
         <button
           onClick={handleLogout}
-          className="hidden md:block px-3 py-1.5 rounded-lg text-sm text-gray-600 hover:bg-white/50 hover:text-gray-900 transition-colors"
+          className="hidden lg:block px-3 py-1.5 rounded-lg text-sm text-gray-600 hover:bg-white/50 hover:text-gray-900 transition-colors"
         >
           Cerrar sesión
         </button>
 
-        {/* Botón hamburger — visible solo en móvil */}
+        {/* Botón hamburger — visible en móvil y tablet vertical */}
         <button
           onClick={() => setMenuAbierto(v => !v)}
           aria-label="Menú"
-          className="md:hidden flex flex-col gap-1.5 p-2 rounded-lg hover:bg-white/30 transition-colors"
+          className="lg:hidden flex flex-col gap-1.5 p-2 rounded-lg hover:bg-white/30 transition-colors"
         >
           <span className={`block w-5 h-0.5 bg-gray-700 transition-transform duration-200 ${menuAbierto ? 'translate-y-2 rotate-45' : ''}`} />
           <span className={`block w-5 h-0.5 bg-gray-700 transition-opacity duration-200 ${menuAbierto ? 'opacity-0' : ''}`} />
@@ -93,9 +93,9 @@ export default function Navbar() {
         </button>
       </div>
 
-      {/* Menú desplegable móvil */}
+      {/* Menú desplegable móvil y tablet vertical */}
       {menuAbierto && (
-        <div className="md:hidden absolute top-full left-0 right-0 bg-accent border-b border-accent-dark shadow-md z-50">
+        <div className="lg:hidden absolute top-full left-0 right-0 bg-accent border-b border-accent-dark shadow-md z-50">
           {/* Links de navegación */}
           {isAdmin && (
             <NavLink to="/dashboard" end onClick={cerrarMenu} className={menuLinkCls}>
