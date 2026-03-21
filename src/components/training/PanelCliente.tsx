@@ -8,10 +8,11 @@ import { calcularKgMovidos, calcularTotalKgMovidos } from '../../utils/trainingU
 
 type Section = 'warmup' | 'main' | 'metabolic'
 
-const SECTIONS: { key: Section; label: string }[] = [
-  { key: 'warmup',    label: 'Calentamiento' },
-  { key: 'main',      label: 'Principal' },
-  { key: 'metabolic', label: 'Metabólico' },
+// Mismos colores que en EntrenamientoDiaPage para consistencia visual
+const SECTIONS: { key: Section; label: string; activeClass: string; headerBg: string }[] = [
+  { key: 'warmup',    label: 'Calentamiento', activeClass: 'bg-gray-200 text-gray-800',   headerBg: 'bg-gray-200' },
+  { key: 'main',      label: 'Principal',     activeClass: 'bg-red-200 text-red-900',     headerBg: 'bg-red-200'  },
+  { key: 'metabolic', label: 'Metabólico',    activeClass: 'bg-green-200 text-green-900', headerBg: 'bg-green-200'},
 ]
 
 function useDebounce<T extends (...args: any[]) => any>(fn: T, delay: number): T {
@@ -265,10 +266,12 @@ export default function PanelCliente({ clientName, dayId, mesocycleId }: PanelCl
     }
   }
 
+  const activeSectionDef = SECTIONS.find(s => s.key === activeSection) ?? SECTIONS[0]
+
   return (
     <div className="flex flex-col h-full min-w-0">
       {/* Cabecera: nombre + tabs de sección */}
-      <div className="px-3 py-2.5 border-b border-gray-200 bg-gray-50 shrink-0">
+      <div className={`px-3 py-2.5 border-b border-gray-200 shrink-0 transition-colors ${activeSectionDef.headerBg}`}>
         <h2 className="font-semibold text-gray-900 text-sm truncate">{clientName}</h2>
         <div className="flex gap-1 mt-1.5 flex-wrap">
           {SECTIONS.map(s => (
@@ -277,8 +280,8 @@ export default function PanelCliente({ clientName, dayId, mesocycleId }: PanelCl
               onClick={() => setActiveSection(s.key)}
               className={`text-xs px-2 py-0.5 rounded-full transition-colors ${
                 activeSection === s.key
-                  ? 'bg-gray-800 text-white'
-                  : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
+                  ? `${s.activeClass} font-semibold ring-1 ring-inset ring-black/10`
+                  : 'bg-white/60 text-gray-500 hover:bg-white/90'
               }`}
             >
               {s.label}
