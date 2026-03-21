@@ -76,6 +76,7 @@ export default function IniciarEntrenamientoPage() {
   // ── Chromecast / Presentation API ─────────────────────────────────────────
   const [tvSection, setTvSection] = useState<Section>('warmup')
   const [panelDataMap, setPanelDataMap] = useState<Map<string, TVPanelData>>(new Map())
+  const [isCasting, setIsCasting] = useState(false)
   const connectionRef = useRef<{ send: (s: string) => void } | null>(null)
   const selectedBlockNameRef = useRef(selectedBlockName)
   selectedBlockNameRef.current = selectedBlockName
@@ -104,7 +105,8 @@ export default function IniciarEntrenamientoPage() {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const conn: any = await request.start()
       connectionRef.current = conn
-      conn.addEventListener('close', () => { connectionRef.current = null })
+      setIsCasting(true)
+      conn.addEventListener('close', () => { connectionRef.current = null; setIsCasting(false) })
       // Dar tiempo a que la TV cargue la página antes de enviar datos
       setTimeout(() => sendToTV(panelDataMap, tvSection), 2000)
     } catch { /* usuario canceló el diálogo de cast */ }
@@ -206,7 +208,7 @@ export default function IniciarEntrenamientoPage() {
 
           <div className="flex items-center gap-2">
             {/* Botones de sección para TV — solo si hay conexión activa */}
-            {connectionRef.current && (
+            {isCasting && (
               <div className="flex gap-1">
                 {SECTIONS.map(s => (
                   <button
@@ -230,7 +232,7 @@ export default function IniciarEntrenamientoPage() {
                 onClick={handleCast}
                 title="Proyectar en TV"
                 className={`p-1.5 rounded-lg transition-colors ${
-                  connectionRef.current
+                  isCasting
                     ? 'bg-green-100 text-green-700'
                     : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
                 }`}
