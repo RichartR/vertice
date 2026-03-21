@@ -29,12 +29,20 @@ function exitFullscreen() {
   fn?.call(doc)?.catch(() => {})
 }
 
-// Columnas de grid según número de paneles
+// Columnas de grid para la sesión (fullscreen, siempre dividido)
 function gridCols(n: number): string {
   if (n <= 1) return 'grid-cols-1'
   if (n === 2) return 'grid-cols-2'
   if (n === 3) return 'grid-cols-3'
   return 'grid-cols-2' // 4 → 2×2
+}
+
+// Columnas de grid para la fase de configuración (se apila en móvil)
+function setupGridCls(n: number): string {
+  if (n <= 1) return 'grid-cols-1'
+  if (n === 2) return 'grid-cols-1 sm:grid-cols-2'
+  if (n === 3) return 'grid-cols-1 sm:grid-cols-3'
+  return 'grid-cols-1 sm:grid-cols-2' // 4 → 2×2 en sm+
 }
 
 export default function IniciarEntrenamientoPage() {
@@ -278,11 +286,8 @@ export default function IniciarEntrenamientoPage() {
 
       {/* Paneles de configuración */}
       <div
-        className={`grid ${gridCols(panelCount)} flex-1 bg-gray-200 gap-[1px]`}
-        style={{
-          gridTemplateRows: panelCount === 4 ? '1fr 1fr' : '1fr',
-          minHeight: 'calc(100vh - 140px)',
-        }}
+        className={`grid ${setupGridCls(panelCount)} flex-1 bg-gray-200 gap-[1px]`}
+        style={{ minHeight: 'calc(100vh - 140px)' }}
       >
         {configs.map((config, idx) => {
           const isEditing = editingIdx === idx
