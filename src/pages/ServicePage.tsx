@@ -466,7 +466,7 @@ export default function ServicePage() {
           onConfirm={guardarRegistro}
           onClose={() => setRegistroModal({ open: false, registro: null })}
         >
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <FormField id="r-fecha" label="Fecha">
               <input id="r-fecha" type="date" value={rFecha} onChange={e => setRFecha(e.target.value)} className={inputCls} />
             </FormField>
@@ -495,7 +495,7 @@ export default function ServicePage() {
             </FormField>
           )}
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <FormField id="r-metodo" label="Método de pago">
               <Select
                 value={rMetodo}
