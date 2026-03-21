@@ -40,44 +40,48 @@ export default function LoginPage() {
       return
     }
 
-    // 2. Obtener el usuario recién autenticado
-    const { data: { user: loggedUser } } = await supabase.auth.getUser()
-    if (!loggedUser) return
+    try {
+      // 2. Obtener el usuario recién autenticado
+      const { data: { user: loggedUser } } = await supabase.auth.getUser()
+      if (!loggedUser) { setError('Error al obtener el usuario'); return }
 
-    // 3. Leer su perfil para saber rol y estado
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('rol, activo')
-      .eq('id', loggedUser.id)
-      .single()
+      // 3. Leer su perfil para saber rol y estado
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('rol, activo')
+        .eq('id', loggedUser.id)
+        .single()
 
-    // Empleado desactivado → pantalla de acceso restringido
-    if (!profile?.activo && profile?.rol !== 'admin') {
-      navigate('/acceso-denegado', { replace: true })
-      return
+      // Empleado desactivado → pantalla de acceso restringido
+      if (!profile?.activo && profile?.rol !== 'admin') {
+        navigate('/acceso-denegado', { replace: true })
+        return
+      }
+
+      // Admin → siempre al dashboard
+      if (profile?.rol === 'admin') {
+        navigate('/dashboard', { replace: true })
+        return
+      }
+
+      // Empleado activo → comprobar cuántos servicios tiene asignados
+      const { data: assignments } = await supabase
+        .from('service_employees')
+        .select('service_id')
+        .eq('employee_id', loggedUser.id)
+
+      if (assignments?.length === 1) {
+        // Un solo servicio → ir directo sin pasar por el dashboard
+        navigate(`/services/${assignments[0].service_id}`, { replace: true })
+      } else {
+        // Varios servicios (o ninguno) → dashboard para elegir
+        navigate('/dashboard', { replace: true })
+      }
+    } catch {
+      setError('Error al iniciar sesión. Inténtalo de nuevo.')
+    } finally {
+      setSubmitting(false)
     }
-
-    // Admin → siempre al dashboard
-    if (profile?.rol === 'admin') {
-      navigate('/dashboard', { replace: true })
-      return
-    }
-
-    // Empleado activo → comprobar cuántos servicios tiene asignados
-    const { data: assignments } = await supabase
-      .from('service_employees')
-      .select('service_id')
-      .eq('employee_id', loggedUser.id)
-
-    if (assignments?.length === 1) {
-      // Un solo servicio → ir directo sin pasar por el dashboard
-      navigate(`/services/${assignments[0].service_id}`, { replace: true })
-    } else {
-      // Varios servicios (o ninguno) → dashboard para elegir
-      navigate('/dashboard', { replace: true })
-    }
-
-    setSubmitting(false)
   }
 
   // Mientras AuthContext verifica la sesión, no renderizar nada para evitar flash

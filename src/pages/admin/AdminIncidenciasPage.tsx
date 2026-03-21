@@ -215,15 +215,22 @@ export default function AdminIncidenciasPage() {
     if (editando && pestanya === 'resuelta') {
       payload.fecha_nueva_clase = formSesionRecuperada.trim() || null
     }
-    if (editando) {
-      await supabase.from('incidencias').update(payload).eq('id', editando.id)
-    } else {
-      await supabase.from('incidencias').insert({ ...payload, estado: 'pendiente' })
+    try {
+      if (editando) {
+        const { error } = await supabase.from('incidencias').update(payload).eq('id', editando.id)
+        if (error) throw error
+      } else {
+        const { error } = await supabase.from('incidencias').insert({ ...payload, estado: 'pendiente' })
+        if (error) throw error
+      }
+      setModalOpen(false)
+      cargar()
+      cargarStats()
+    } catch (err: any) {
+      setError(err.message ?? 'Error al guardar')
+    } finally {
+      setGuardando(false)
     }
-    setGuardando(false)
-    setModalOpen(false)
-    cargar()
-    cargarStats()
   }
 
   // --- Transiciones de estado ---
