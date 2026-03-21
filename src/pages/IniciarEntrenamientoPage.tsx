@@ -109,7 +109,12 @@ export default function IniciarEntrenamientoPage() {
       conn.addEventListener('close', () => { connectionRef.current = null; setIsCasting(false) })
       // Dar tiempo a que la TV cargue la página antes de enviar datos
       setTimeout(() => sendToTV(panelDataMap, tvSection), 2000)
-    } catch { /* usuario canceló el diálogo de cast */ }
+    } catch (err) {
+      // NotAllowedError = usuario canceló; cualquier otro error lo mostramos
+      if (err instanceof Error && err.name !== 'NotAllowedError') {
+        alert(`Cast error: ${err.name} — ${err.message}`)
+      }
+    }
   }
 
   // IDs de clientes ya asignados (para evitar duplicados entre paneles)
