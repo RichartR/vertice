@@ -1,14 +1,11 @@
 // Página para iniciar una sesión de entrenamiento.
 // Flujo: Bloque → Cantidad de clientes (1-4) → Configuración de paneles → Sesión en pantalla completa.
-import { useEffect, useRef, useState } from 'react'
+import { useState } from 'react'
 import { useTrainingBlocks } from '../hooks/useTrainingBlocks'
 import { useTrainingSession } from '../hooks/useTrainingSession'
 import PanelCliente from '../components/training/PanelCliente'
-import type { TVPanelData } from './SesionTVPage'
 
 type Phase = 'block' | 'count' | 'setup' | 'session'
-
-type Section = 'warmup' | 'main' | 'metabolic'
 
 type PanelConfig = {
   clientId: string
@@ -18,14 +15,6 @@ type PanelConfig = {
   dayId: string
   dayName: string
 }
-
-const SECTIONS: { key: Section; label: string }[] = [
-  { key: 'warmup',    label: 'Calentamiento' },
-  { key: 'main',      label: 'Principal'     },
-  { key: 'metabolic', label: 'Metabólico'    },
-]
-
-const hasPresentationAPI = typeof globalThis !== 'undefined' && 'PresentationRequest' in globalThis
 
 // Fullscreen API con soporte para webkit (Safari/iOS PWA) y fallback silencioso
 function enterFullscreen() {
@@ -72,50 +61,6 @@ export default function IniciarEntrenamientoPage() {
   const [editingIdx, setEditingIdx] = useState<number | null>(null)
   const [tempClientId, setTempClientId] = useState('')
   const [tempDayId, setTempDayId] = useState('')
-
-  // ── Chromecast / Presentation API ─────────────────────────────────────────
-  const [tvSection, setTvSection] = useState<Section>('warmup')
-  const [panelDataMap, setPanelDataMap] = useState<Map<string, TVPanelData>>(new Map())
-  const [isCasting, setIsCasting] = useState(false)
-  const connectionRef = useRef<{ send: (s: string) => void } | null>(null)
-  const selectedBlockNameRef = useRef(selectedBlockName)
-  selectedBlockNameRef.current = selectedBlockName
-
-  function sendToTV(data: Map<string, TVPanelData>, section: Section) {
-    const conn = connectionRef.current
-    if (!conn) return
-    try {
-      conn.send(JSON.stringify({
-        panels:    [...data.values()],
-        section,
-        blockName: selectedBlockNameRef.current,
-      }))
-    } catch { /* ignorar si la conexión se cerró */ }
-  }
-
-  useEffect(() => {
-    if (connectionRef.current) sendToTV(panelDataMap, tvSection)
-  }, [panelDataMap, tvSection]) // eslint-disable-line
-
-  async function handleCast() {
-    const url = globalThis.location.origin + '/sesion-tv'
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const request = new (globalThis as any).PresentationRequest([url])
-    try {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const conn: any = await request.start()
-      connectionRef.current = conn
-      setIsCasting(true)
-      conn.addEventListener('close', () => { connectionRef.current = null; setIsCasting(false) })
-      // Dar tiempo a que la TV cargue la página antes de enviar datos
-      setTimeout(() => sendToTV(panelDataMap, tvSection), 2000)
-    } catch (err) {
-      // NotAllowedError = usuario canceló; cualquier otro error lo mostramos
-      if (err instanceof Error && err.name !== 'NotAllowedError') {
-        alert(`Cast error: ${err.name} — ${err.message}`)
-      }
-    }
-  }
 
   // IDs de clientes ya asignados (para evitar duplicados entre paneles)
   const usedClientIds = new Set(
@@ -210,52 +155,12 @@ export default function IniciarEntrenamientoPage() {
             <p className="text-xs text-gray-400">{selectedBlockName}</p>
             <h1 className="text-sm font-semibold text-gray-900">Sesión de entrenamiento</h1>
           </div>
-
-          <div className="flex items-center gap-2">
-            {/* Botones de sección para TV — solo si hay conexión activa */}
-            {isCasting && (
-              <div className="flex gap-1">
-                {SECTIONS.map(s => (
-                  <button
-                    key={s.key}
-                    onClick={() => setTvSection(s.key)}
-                    className={`px-2 py-1 text-xs rounded-md transition-colors ${
-                      tvSection === s.key
-                        ? 'bg-gray-800 text-white'
-                        : 'bg-gray-200 text-gray-600 hover:bg-gray-300'
-                    }`}
-                  >
-                    {s.label}
-                  </button>
-                ))}
-              </div>
-            )}
-
-            {/* Botón cast — solo en Chromium */}
-            {hasPresentationAPI && (
-              <button
-                onClick={handleCast}
-                title="Proyectar en TV"
-                className={`p-1.5 rounded-lg transition-colors ${
-                  isCasting
-                    ? 'bg-green-100 text-green-700'
-                    : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
-                }`}
-              >
-                {/* Icono cast */}
-                <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M1 18v3h3c0-1.66-1.34-3-3-3zm0-4v2c2.76 0 5 2.24 5 5h2c0-3.87-3.13-7-7-7zm18-7H5c-1.1 0-2 .9-2 2v3h2v-3h14v10h-5v2h5c1.1 0 2-.9 2-2V9c0-1.1-.9-2-2-2zm-18 3v2c4.97 0 9 4.03 9 9h2c0-6.08-4.93-11-11-11z"/>
-                </svg>
-              </button>
-            )}
-
-            <button
-              onClick={() => { exitFullscreen(); setPhase('setup') }}
-              className="px-3 py-1.5 text-xs text-white bg-red-600 hover:bg-red-700 rounded-lg transition-colors"
-            >
-              Terminar sesión
-            </button>
-          </div>
+          <button
+            onClick={() => { exitFullscreen(); setPhase('setup') }}
+            className="px-3 py-1.5 text-xs text-white bg-red-600 hover:bg-red-700 rounded-lg transition-colors"
+          >
+            Terminar sesión
+          </button>
         </div>
 
         {/* Paneles — gap de 1px sobre fondo gris actúa como separador */}
@@ -269,18 +174,6 @@ export default function IniciarEntrenamientoPage() {
                 <PanelCliente
                   clientName={`${config.clientName} — ${config.dayName}`}
                   dayId={config.dayId}
-                  onDataLoaded={data => {
-                    setPanelDataMap(prev => {
-                      const next = new Map(prev)
-                      next.set(config.clientId, {
-                        clientName:    config.clientName,
-                        dayName:       config.dayName,
-                        sectionBlocks: data.sectionBlocks,
-                        weekStatuses:  data.weekStatuses,
-                      })
-                      return next
-                    })
-                  }}
                 />
               </div>
             )

@@ -1,9 +1,9 @@
 // Panel independiente de un cliente durante la sesión de entrenamiento.
 // Muestra la sección activa (tabs: Calentamiento / Principal / Metabólico) con
 // 2 columnas de semanas: la última completada (solo lectura) y la próxima (editable).
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useTrainingDayDetail } from '../../hooks/useTrainingDayDetail'
-import type { SectionBlock, WeekStatus } from '../../utils/trainingUtils'
+import type { SectionBlock } from '../../utils/trainingUtils'
 import { calcularKgMovidos, calcularTotalKgMovidos } from '../../utils/trainingUtils'
 
 // Vista de solo lectura — no se puede editar ni completar semanas desde la sesión.
@@ -200,10 +200,9 @@ function TotalKgRow({ blocks, lastCompleted, nextWeek }: Readonly<{
 type PanelClienteProps = {
   clientName: string
   dayId: string
-  onDataLoaded?: (data: { sectionBlocks: SectionBlock[]; weekStatuses: WeekStatus[] }) => void
 }
 
-export default function PanelCliente({ clientName, dayId, onDataLoaded }: Readonly<PanelClienteProps>) {
+export default function PanelCliente({ clientName, dayId }: Readonly<PanelClienteProps>) {
   const { sectionBlocks, weekStatuses, loading, fetchDayDetail } = useTrainingDayDetail()
 
   const [activeSection, setActiveSection] = useState<Section>('warmup')
@@ -211,15 +210,6 @@ export default function PanelCliente({ clientName, dayId, onDataLoaded }: Readon
   useEffect(() => {
     fetchDayDetail(dayId)
   }, [dayId, fetchDayDetail])
-
-  // Notifica al padre cuando termina una carga (loading true → false)
-  const wasLoadingRef = useRef(false)
-  useEffect(() => {
-    if (wasLoadingRef.current && !loading) {
-      onDataLoaded?.({ sectionBlocks, weekStatuses })
-    }
-    wasLoadingRef.current = loading
-  })
 
   const sectionStatuses = weekStatuses.filter(s => s.section === activeSection)
   const completedWeeks = sectionStatuses.filter(s => s.completed).map(s => s.week_number)
