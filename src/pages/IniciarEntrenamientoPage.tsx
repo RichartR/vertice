@@ -258,7 +258,7 @@ export default function IniciarEntrenamientoPage() {
         <button
           onClick={() => setPhase('session')}
           disabled={!allConfigured}
-          className="px-3 py-1.5 text-xs text-white bg-accent rounded-lg transition-opacity disabled:opacity-40"
+          className="px-3 py-1.5 text-xs font-semibold text-gray-800 bg-accent hover:bg-accent-dark hover:shadow-sm rounded-lg transition-all disabled:opacity-40 disabled:cursor-not-allowed"
         >
           Iniciar sesión
         </button>
