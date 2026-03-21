@@ -20,6 +20,7 @@ const EntrenamientoMesociclosPage = lazy(() => import('./pages/EntrenamientoMeso
 const EntrenamientoDiasPage   = lazy(() => import('./pages/EntrenamientoDiasPage'))
 const EntrenamientoDiaPage    = lazy(() => import('./pages/EntrenamientoDiaPage'))
 const IniciarEntrenamientoPage = lazy(() => import('./pages/IniciarEntrenamientoPage'))
+const SesionTVPage             = lazy(() => import('./pages/SesionTVPage'))
 
 // Renderiza el dashboard correcto según el rol del usuario.
 function DashboardRouter() {
@@ -41,6 +42,7 @@ export default function App() {
         <Route path="/login"           element={<LoginPage />} />
         <Route path="/acceso-denegado" element={<AccesoDenegadoPage />} />
         <Route path="/reset-password"  element={<ResetPasswordPage />} />
+        <Route path="/sesion-tv"       element={<SesionTVPage />} />
 
         {/* Rutas protegidas — empleado y admin. Navbar se monta una sola vez. */}
         <Route element={<ProtectedRoute />}>
