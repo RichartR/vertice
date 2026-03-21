@@ -17,11 +17,12 @@ function formatFecha(dateStr: string) {
 export default function EntrenamientoMesociclosPage() {
   const { blockId, clientId } = useParams<{ blockId: string; clientId: string }>()
   const navigate = useNavigate()
-  const { mesocycles, loading, createMesocycle, getNextNumber } = useTrainingMesocycles(clientId ?? '', blockId ?? '')
+  const { mesocycles, loading, createMesocycle, getNextNumber, updateMesocycle } = useTrainingMesocycles(clientId ?? '', blockId ?? '')
 
   const [blockName, setBlockName] = useState('')
   const [clientName, setClientName] = useState('')
   const [modalAbierto, setModalAbierto] = useState(false)
+  const [editandoId, setEditandoId] = useState<string | null>(null)
   const [nombreMeso, setNombreMeso] = useState('')
   const [fechaInicio, setFechaInicio] = useState('')
   const [fechaFin, setFechaFin] = useState('')
@@ -46,9 +47,19 @@ export default function EntrenamientoMesociclosPage() {
 
   async function abrirModal() {
     const nextNum = await getNextNumber()
+    setEditandoId(null)
     setNombreMeso(`Mesociclo ${nextNum}`)
     setFechaInicio('')
     setFechaFin('')
+    setErrModal('')
+    setModalAbierto(true)
+  }
+
+  function abrirEditar(meso: { id: string; name: string; start_date: string; end_date: string }) {
+    setEditandoId(meso.id)
+    setNombreMeso(meso.name)
+    setFechaInicio(meso.start_date)
+    setFechaFin(meso.end_date)
     setErrModal('')
     setModalAbierto(true)
   }
@@ -59,7 +70,11 @@ export default function EntrenamientoMesociclosPage() {
     if (fechaFin <= fechaInicio) { setErrModal('La fecha de fin debe ser posterior al inicio'); return }
     setGuardando(true)
     try {
-      await createMesocycle(nombreMeso.trim() || 'Mesociclo', fechaInicio, fechaFin)
+      if (editandoId) {
+        await updateMesocycle(editandoId, nombreMeso.trim() || 'Mesociclo', fechaInicio, fechaFin)
+      } else {
+        await createMesocycle(nombreMeso.trim() || 'Mesociclo', fechaInicio, fechaFin)
+      }
       setModalAbierto(false)
     } catch (e: any) {
       setErrModal(e.message ?? 'Error al guardar')
@@ -88,28 +103,41 @@ export default function EntrenamientoMesociclosPage() {
         {mesocycles.map((meso, idx) => {
           const esActivo = idx === 0
           return (
-            <button
+            <div
               key={meso.id}
-              onClick={() => navigate(`/entrenamientos/bloques/${blockId}/clientes/${clientId}/mesociclos/${meso.id}/dias`)}
-              className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-5 bg-white rounded-2xl border border-gray-200 hover:border-accent hover:shadow-sm transition-all text-left group"
+              className="flex items-stretch bg-white rounded-2xl border border-gray-200 hover:border-accent hover:shadow-sm transition-all group"
             >
-              <div className="flex flex-col gap-1">
-                <div className="flex items-center gap-2">
-                  <p className="font-semibold text-gray-900 group-hover:text-gray-700">{meso.name}</p>
-                  {esActivo
-                    ? <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-green-100 text-green-700">ACTIVO</span>
-                    : <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-gray-100 text-gray-500">HISTORIAL</span>
-                  }
+              <button
+                onClick={() => navigate(`/entrenamientos/bloques/${blockId}/clientes/${clientId}/mesociclos/${meso.id}/dias`)}
+                className="flex-1 flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-5 text-left"
+              >
+                <div className="flex flex-col gap-1">
+                  <div className="flex items-center gap-2">
+                    <p className="font-semibold text-gray-900 group-hover:text-gray-700">{meso.name}</p>
+                    {esActivo
+                      ? <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-green-100 text-green-700">ACTIVO</span>
+                      : <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-gray-100 text-gray-500">HISTORIAL</span>
+                    }
+                  </div>
+                  <p className="text-sm text-gray-500">
+                    {formatFecha(meso.start_date)} — {formatFecha(meso.end_date)}
+                  </p>
                 </div>
-                <p className="text-sm text-gray-500">
-                  {formatFecha(meso.start_date)} — {formatFecha(meso.end_date)}
-                </p>
-              </div>
-              <div className="flex items-center gap-3 text-sm text-gray-400 shrink-0">
-                <span>{meso.day_count} días</span>
-                <span className="text-gray-300 group-hover:text-accent transition-colors">→</span>
-              </div>
-            </button>
+                <div className="flex items-center gap-3 text-sm text-gray-400 shrink-0">
+                  <span>{meso.day_count} días</span>
+                  <span className="text-gray-300 group-hover:text-accent transition-colors">→</span>
+                </div>
+              </button>
+              <button
+                onClick={() => abrirEditar(meso)}
+                className="shrink-0 px-4 border-l border-gray-100 text-gray-300 hover:text-gray-600 hover:bg-gray-50 transition-colors rounded-r-2xl"
+                title="Editar mesociclo"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Z" />
+                </svg>
+              </button>
+            </div>
           )
         })}
       </div>
@@ -141,7 +169,7 @@ export default function EntrenamientoMesociclosPage() {
 
       {modalAbierto && (
         <Modal
-          title="Nuevo mesociclo"
+          title={editandoId ? 'Editar mesociclo' : 'Nuevo mesociclo'}
           confirmLabel={guardando ? 'Guardando…' : 'Guardar'}
           confirmDisabled={guardando}
           onClose={() => setModalAbierto(false)}

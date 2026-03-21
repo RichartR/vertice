@@ -15,9 +15,10 @@ type Empleado = { id: string; nombre: string }
 export default function EntrenamientoBloquesPage() {
   const navigate = useNavigate()
   const { isAdmin } = useAuth()
-  const { blocks, loading, createBlock } = useTrainingBlocks()
+  const { blocks, loading, createBlock, updateBlock } = useTrainingBlocks()
 
   const [modalAbierto, setModalAbierto] = useState(false)
+  const [editandoId, setEditandoId] = useState<string | null>(null)
   const [nombre, setNombre] = useState('')
   const [empleadoId, setEmpleadoId] = useState('')
   const [guardando, setGuardando] = useState(false)
@@ -36,8 +37,17 @@ export default function EntrenamientoBloquesPage() {
   }, [isAdmin])
 
   function abrirModal() {
+    setEditandoId(null)
     setNombre('')
     setEmpleadoId('')
+    setErrModal('')
+    setModalAbierto(true)
+  }
+
+  function abrirEditar(block: { id: string; name: string; employee_id: string }) {
+    setEditandoId(block.id)
+    setNombre(block.name)
+    setEmpleadoId(block.employee_id ?? '')
     setErrModal('')
     setModalAbierto(true)
   }
@@ -46,7 +56,11 @@ export default function EntrenamientoBloquesPage() {
     if (!nombre.trim()) { setErrModal('El nombre del bloque es obligatorio'); return }
     setGuardando(true)
     try {
-      await createBlock(nombre.trim(), empleadoId || null)
+      if (editandoId) {
+        await updateBlock(editandoId, nombre.trim(), empleadoId || null)
+      } else {
+        await createBlock(nombre.trim(), empleadoId || null)
+      }
       setModalAbierto(false)
     } catch (e: any) {
       setErrModal(e.message ?? 'Error al guardar')
@@ -73,22 +87,37 @@ export default function EntrenamientoBloquesPage() {
     return (
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {blocks.map(block => (
-          <button
+          <div
             key={block.id}
-            onClick={() => navigate(`/entrenamientos/bloques/${block.id}/clientes`)}
-            className="flex flex-col gap-3 p-5 bg-white rounded-2xl border border-gray-200 hover:border-accent hover:shadow-sm transition-all text-left group"
+            className="flex items-stretch bg-white rounded-2xl border border-gray-200 hover:border-accent hover:shadow-sm transition-all group"
           >
-            <div className="flex items-start justify-between gap-2">
-              <p className="font-semibold text-gray-900 group-hover:text-gray-700 leading-snug">
-                {block.name}
-              </p>
-              <span className="text-gray-300 group-hover:text-accent transition-colors shrink-0">→</span>
-            </div>
-            <div className="flex items-center justify-between text-sm text-gray-400">
-              <span>{block.employee_name}</span>
-              <span className="font-medium text-gray-600">{block.client_count} clientes</span>
-            </div>
-          </button>
+            <button
+              onClick={() => navigate(`/entrenamientos/bloques/${block.id}/clientes`)}
+              className="flex-1 flex flex-col gap-3 p-5 text-left"
+            >
+              <div className="flex items-start justify-between gap-2">
+                <p className="font-semibold text-gray-900 group-hover:text-gray-700 leading-snug">
+                  {block.name}
+                </p>
+                <span className="text-gray-300 group-hover:text-accent transition-colors shrink-0">→</span>
+              </div>
+              <div className="flex items-center justify-between text-sm text-gray-400">
+                <span>{block.employee_name}</span>
+                <span className="font-medium text-gray-600">{block.client_count} clientes</span>
+              </div>
+            </button>
+            {isAdmin && (
+              <button
+                onClick={() => abrirEditar(block)}
+                className="shrink-0 px-3 border-l border-gray-100 text-gray-300 hover:text-gray-600 hover:bg-gray-50 transition-colors rounded-r-2xl"
+                title="Editar bloque"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Z" />
+                </svg>
+              </button>
+            )}
+          </div>
         ))}
       </div>
     )
@@ -113,7 +142,7 @@ export default function EntrenamientoBloquesPage() {
 
       {isAdmin && modalAbierto && (
         <Modal
-          title="Nuevo bloque"
+          title={editandoId ? 'Editar bloque' : 'Nuevo bloque'}
           confirmLabel={guardando ? 'Guardando…' : 'Guardar'}
           confirmDisabled={guardando}
           onClose={() => setModalAbierto(false)}

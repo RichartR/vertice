@@ -63,5 +63,14 @@ export function useTrainingBlocks() {
     await fetchBlocks()
   }
 
-  return { blocks, loading, error, fetchBlocks, createBlock }
+  async function updateBlock(id: string, name: string, employeeId: string | null) {
+    const { error: err } = await supabase
+      .from('training_blocks')
+      .update({ name, employee_id: employeeId ?? null })
+      .eq('id', id)
+    if (err) throw new Error(err.message)
+    await fetchBlocks()
+  }
+
+  return { blocks, loading, error, fetchBlocks, createBlock, updateBlock }
 }

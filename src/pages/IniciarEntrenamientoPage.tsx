@@ -258,7 +258,7 @@ export default function IniciarEntrenamientoPage() {
         <button
           onClick={() => setPhase('session')}
           disabled={!allConfigured}
-          className="px-3 py-1.5 text-xs font-semibold text-gray-800 bg-accent hover:bg-accent-dark hover:shadow-sm rounded-lg transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+          className="px-4 py-2 text-sm font-medium rounded-lg transition-colors disabled:cursor-not-allowed bg-accent-dark hover:bg-accent text-gray-800 disabled:bg-gray-200 disabled:text-gray-400"
         >
           Iniciar sesión
         </button>
@@ -370,7 +370,7 @@ export default function IniciarEntrenamientoPage() {
                         <button
                           onClick={handleConfirmPanel}
                           disabled={!tempClientId || !tempDayId}
-                          className="flex-1 py-1.5 bg-accent text-white text-xs rounded-lg disabled:opacity-40 transition-opacity"
+                          className="flex-1 py-1.5 text-sm font-medium rounded-lg transition-colors disabled:cursor-not-allowed bg-accent-dark hover:bg-accent text-gray-800 disabled:bg-gray-200 disabled:text-gray-400"
                         >
                           Confirmar
                         </button>
