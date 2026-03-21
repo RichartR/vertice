@@ -44,7 +44,7 @@ export default function Navbar() {
   const tieneLinks = isAdmin || (!isAdmin && serviciosCount > 1)
 
   return (
-    <nav className="bg-accent border-b border-accent-dark px-4 sm:px-6 py-3 flex items-center justify-between relative">
+    <nav className="bg-accent border-b border-accent-dark px-4 sm:px-6 pb-3 flex items-center justify-between relative" style={{ paddingTop: 'calc(env(safe-area-inset-top) + 0.75rem)' }}>
       <div className="flex items-center gap-1 md:gap-2">
         {/* Logo — enlace al dashboard */}
         <Link to="/dashboard" className="flex items-center gap-3 pr-4 mr-2 border-r border-accent-dark/40">
