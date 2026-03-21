@@ -4,7 +4,6 @@ import { useEffect, useRef, useState } from 'react'
 import { useTrainingBlocks } from '../hooks/useTrainingBlocks'
 import { useTrainingSession } from '../hooks/useTrainingSession'
 import PanelCliente from '../components/training/PanelCliente'
-import type { SectionBlock, WeekStatus } from '../utils/trainingUtils'
 import type { TVPanelData } from './SesionTVPage'
 
 type Phase = 'block' | 'count' | 'setup' | 'session'
