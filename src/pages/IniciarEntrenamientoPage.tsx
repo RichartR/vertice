@@ -166,7 +166,6 @@ export default function IniciarEntrenamientoPage() {
                 <PanelCliente
                   clientName={`${config.clientName} — ${config.dayName}`}
                   dayId={config.dayId}
-                  mesocycleId={config.mesocycleId}
                 />
               </div>
             )

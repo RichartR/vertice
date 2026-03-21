@@ -1,10 +1,12 @@
 // Panel independiente de un cliente durante la sesión de entrenamiento.
 // Muestra la sección activa (tabs: Calentamiento / Principal / Metabólico) con
 // 2 columnas de semanas: la última completada (solo lectura) y la próxima (editable).
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useTrainingDayDetail } from '../../hooks/useTrainingDayDetail'
 import type { SectionBlock } from '../../utils/trainingUtils'
 import { calcularKgMovidos, calcularTotalKgMovidos } from '../../utils/trainingUtils'
+
+// Vista de solo lectura — no se puede editar ni completar semanas desde la sesión.
 
 type Section = 'warmup' | 'main' | 'metabolic'
 
@@ -15,41 +17,21 @@ const SECTIONS: { key: Section; label: string; activeClass: string; headerBg: st
   { key: 'metabolic', label: 'Metabólico',    activeClass: 'bg-green-200 text-green-900', headerBg: 'bg-green-200'},
 ]
 
-function useDebounce<T extends (...args: any[]) => any>(fn: T, delay: number): T {
-  const timer = useRef<ReturnType<typeof setTimeout> | null>(null)
-  return useCallback((...args: Parameters<T>) => {
-    if (timer.current) clearTimeout(timer.current)
-    timer.current = setTimeout(() => fn(...args), delay)
-  }, [fn, delay]) as T
-}
-
-// ─── Tabla de un sub-bloque (2 semanas) ──────────────────────────────────────
+// ─── Tabla de un sub-bloque (2 semanas, solo lectura) ────────────────────────
 
 type BlockTableProps = {
   block: SectionBlock
   lastCompleted: number
   nextWeek: number
   isMain: boolean
-  onUpdateWeek: (rowId: string, week: number, campo: string, valor: string) => Promise<void>
-  onUpdateBlockSets: (blockId: string, week: number, value: string) => Promise<void>
 }
 
-function BlockTable({
-  block, lastCompleted, nextWeek, isMain, onUpdateWeek, onUpdateBlockSets,
-}: BlockTableProps) {
+function BlockTable({ block, lastCompleted, nextWeek, isMain }: Readonly<BlockTableProps>) {
   const afterSetsFields = isMain ? ['reps', 'kg', 'r'] : ['watts', 'kg', 'r']
   const showLast = lastCompleted > 0
 
   const lastSets = block.week_sets[String(lastCompleted)] ?? ''
   const nextSets = block.week_sets[String(nextWeek)] ?? ''
-
-  const debouncedWeek = useDebounce(async (rowId: string, week: number, campo: string, valor: string) => {
-    await onUpdateWeek(rowId, week, campo, valor)
-  }, 800)
-
-  const debouncedSets = useDebounce(async (week: number, value: string) => {
-    await onUpdateBlockSets(block.id, week, value)
-  }, 800)
 
   const kgMovidos = (week: number, setsVal: string): string => {
     if (!isMain) return ''
@@ -149,33 +131,18 @@ function BlockTable({
                     </>
                   )}
 
-                  {/* Semana nextWeek — editable */}
-                  <td className="px-0.5 py-0.5 border-l border-gray-200">
-                    <input
-                      type="text"
-                      defaultValue={nextWD['ce'] ?? ''}
-                      onChange={e => debouncedWeek(row.id, nextWeek, 'ce', e.target.value)}
-                      className="w-7 text-center bg-transparent border-0 outline-none focus:bg-gray-50 rounded py-0.5"
-                    />
+                  {/* Semana nextWeek — solo lectura */}
+                  <td className="px-0.5 py-1 text-center text-gray-700 border-l border-gray-200">
+                    {nextWD['ce'] || '—'}
                   </td>
                   {isFirst && (
-                    <td className="px-0.5 py-0.5 bg-gray-50" rowSpan={rowCount}>
-                      <input
-                        type="text"
-                        defaultValue={nextSets}
-                        onChange={e => debouncedSets(nextWeek, e.target.value)}
-                        className="w-7 text-center bg-transparent border-0 outline-none focus:bg-white rounded py-0.5"
-                      />
+                    <td className="px-0.5 py-1 text-center text-gray-700 font-medium bg-gray-50" rowSpan={rowCount}>
+                      {nextSets || '—'}
                     </td>
                   )}
                   {afterSetsFields.map(f => (
-                    <td key={f} className="px-0.5 py-0.5">
-                      <input
-                        type="text"
-                        defaultValue={nextWD[f] ?? ''}
-                        onChange={e => debouncedWeek(row.id, nextWeek, f, e.target.value)}
-                        className="w-7 text-center bg-transparent border-0 outline-none focus:bg-gray-50 rounded py-0.5"
-                      />
+                    <td key={f} className="px-0.5 py-1 text-center text-gray-700">
+                      {nextWD[f] || '—'}
                     </td>
                   ))}
                 </tr>
@@ -205,11 +172,11 @@ function BlockTable({
 
 // ─── Total Kg Movidos (varios sub-bloques) ────────────────────────────────────
 
-function TotalKgRow({ blocks, lastCompleted, nextWeek }: {
+function TotalKgRow({ blocks, lastCompleted, nextWeek }: Readonly<{
   blocks: SectionBlock[]
   lastCompleted: number
   nextWeek: number
-}) {
+}>) {
   const fmt = (week: number) => {
     const val = calcularTotalKgMovidos(blocks, week)
     return val === null ? '—' : val.toFixed(1)
@@ -233,14 +200,10 @@ function TotalKgRow({ blocks, lastCompleted, nextWeek }: {
 type PanelClienteProps = {
   clientName: string
   dayId: string
-  mesocycleId: string
 }
 
-export default function PanelCliente({ clientName, dayId, mesocycleId }: PanelClienteProps) {
-  const {
-    sectionBlocks, weekStatuses, loading, fetchDayDetail,
-    updateWeekData, updateBlockWeekSets, toggleWeekCompleted,
-  } = useTrainingDayDetail()
+export default function PanelCliente({ clientName, dayId }: Readonly<PanelClienteProps>) {
+  const { sectionBlocks, weekStatuses, loading, fetchDayDetail } = useTrainingDayDetail()
 
   const [activeSection, setActiveSection] = useState<Section>('warmup')
 
@@ -255,16 +218,6 @@ export default function PanelCliente({ clientName, dayId, mesocycleId }: PanelCl
 
   const blocksInSection = sectionBlocks.filter(b => b.section === activeSection)
   const mainBlocks = sectionBlocks.filter(b => b.section === 'main')
-
-  const isNextCompleted = sectionStatuses.find(s => s.week_number === nextWeek)?.completed ?? false
-
-  async function handleToggleNext(completed: boolean) {
-    try {
-      await toggleWeekCompleted(dayId, mesocycleId, activeSection, nextWeek, completed)
-    } catch (e) {
-      console.error('Error al marcar semana:', e)
-    }
-  }
 
   const activeSectionDef = SECTIONS.find(s => s.key === activeSection) ?? SECTIONS[0]
 
@@ -298,27 +251,6 @@ export default function PanelCliente({ clientName, dayId, mesocycleId }: PanelCl
           </div>
         ) : (
           <>
-            {/* Barra de estado: última semana + checkbox de completar */}
-            <div className="flex items-center justify-between mb-3 text-xs">
-              <span>
-                {lastCompleted > 0
-                  ? <span className="text-green-600 font-medium">S{lastCompleted} completada</span>
-                  : <span className="text-gray-300">Sin semanas completadas</span>
-                }
-              </span>
-              <label className="flex items-center gap-1.5 cursor-pointer select-none">
-                <input
-                  type="checkbox"
-                  checked={isNextCompleted}
-                  onChange={e => handleToggleNext(e.target.checked)}
-                  className="w-3.5 h-3.5"
-                />
-                <span className={isNextCompleted ? 'text-green-600 font-medium' : 'text-gray-500'}>
-                  S{nextWeek} completada
-                </span>
-              </label>
-            </div>
-
             {/* Sub-bloques */}
             {blocksInSection.length === 0 ? (
               <p className="text-xs text-gray-300 text-center py-6">Sin bloques en esta sección</p>
@@ -330,8 +262,6 @@ export default function PanelCliente({ clientName, dayId, mesocycleId }: PanelCl
                   lastCompleted={lastCompleted}
                   nextWeek={nextWeek}
                   isMain={activeSection === 'main'}
-                  onUpdateWeek={updateWeekData}
-                  onUpdateBlockSets={updateBlockWeekSets}
                 />
               ))
             )}
