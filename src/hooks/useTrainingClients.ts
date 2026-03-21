@@ -81,5 +81,14 @@ export function useTrainingClients(blockId: string) {
     await fetchClients()
   }
 
-  return { clients, loading, error, fetchClients, createClient }
+  async function updateClient(id: string, fullName: string) {
+    const { error: err } = await supabase
+      .from('training_clients')
+      .update({ full_name: fullName })
+      .eq('id', id)
+    if (err) throw new Error(err.message)
+    await fetchClients()
+  }
+
+  return { clients, loading, error, fetchClients, createClient, updateClient }
 }

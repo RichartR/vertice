@@ -15,6 +15,7 @@ import EntrenamientoClientesPage from './pages/EntrenamientoClientesPage'
 import EntrenamientoMesociclosPage from './pages/EntrenamientoMesociclosPage'
 import EntrenamientoDiasPage from './pages/EntrenamientoDiasPage'
 import EntrenamientoDiaPage from './pages/EntrenamientoDiaPage'
+import IniciarEntrenamientoPage from './pages/IniciarEntrenamientoPage'
 import { useAuth } from './context/AuthContext'
 import IosBanner from './components/ui/IosBanner'
 
@@ -76,6 +77,12 @@ export default function App() {
       <Route path="/entrenamientos" element={
         <ProtectedRoute>
           <EntrenamientosPage />
+        </ProtectedRoute>
+      } />
+
+      <Route path="/entrenamientos/iniciar" element={
+        <ProtectedRoute>
+          <IniciarEntrenamientoPage />
         </ProtectedRoute>
       } />
 

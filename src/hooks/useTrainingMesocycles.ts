@@ -68,5 +68,14 @@ export function useTrainingMesocycles(clientId: string, blockId: string) {
     await fetchMesocycles()
   }
 
-  return { mesocycles, loading, error, fetchMesocycles, createMesocycle, getNextNumber }
+  async function updateMesocycle(id: string, name: string, startDate: string, endDate: string) {
+    const { error: err } = await supabase
+      .from('training_mesocycles')
+      .update({ name, start_date: startDate, end_date: endDate })
+      .eq('id', id)
+    if (err) throw new Error(err.message)
+    await fetchMesocycles()
+  }
+
+  return { mesocycles, loading, error, fetchMesocycles, createMesocycle, getNextNumber, updateMesocycle }
 }

@@ -17,12 +17,13 @@ function normalizar(s: string) {
 export default function EntrenamientoClientesPage() {
   const { blockId } = useParams<{ blockId: string }>()
   const navigate = useNavigate()
-  const { clients, loading, createClient } = useTrainingClients(blockId ?? '')
+  const { clients, loading, createClient, updateClient } = useTrainingClients(blockId ?? '')
 
   const [blockName, setBlockName] = useState('')
   const [busqueda, setBusqueda] = useState('')
   const [pagina, setPagina] = useState(1)
   const [modalAbierto, setModalAbierto] = useState(false)
+  const [editandoId, setEditandoId] = useState<string | null>(null)
   const [nombreNuevo, setNombreNuevo] = useState('')
   const [guardando, setGuardando] = useState(false)
   const [errModal, setErrModal] = useState('')
@@ -44,7 +45,15 @@ export default function EntrenamientoClientesPage() {
   const visibles = filtrados.slice((paginaActual - 1) * PAGE_SIZE, paginaActual * PAGE_SIZE)
 
   function abrirModal() {
+    setEditandoId(null)
     setNombreNuevo('')
+    setErrModal('')
+    setModalAbierto(true)
+  }
+
+  function abrirEditar(client: { id: string; full_name: string }) {
+    setEditandoId(client.id)
+    setNombreNuevo(client.full_name)
     setErrModal('')
     setModalAbierto(true)
   }
@@ -53,7 +62,11 @@ export default function EntrenamientoClientesPage() {
     if (!nombreNuevo.trim()) { setErrModal('El nombre es obligatorio'); return }
     setGuardando(true)
     try {
-      await createClient(nombreNuevo.trim())
+      if (editandoId) {
+        await updateClient(editandoId, nombreNuevo.trim())
+      } else {
+        await createClient(nombreNuevo.trim())
+      }
       setModalAbierto(false)
     } catch (e: any) {
       setErrModal(e.message ?? 'Error al guardar')
@@ -88,18 +101,28 @@ export default function EntrenamientoClientesPage() {
       <>
         <div className="divide-y divide-gray-100 bg-white rounded-2xl border border-gray-200 overflow-hidden">
           {visibles.map(client => (
-            <button
-              key={client.id}
-              onClick={() => navigate(`/entrenamientos/bloques/${blockId}/clientes/${client.id}/mesociclos`)}
-              className="w-full flex items-center justify-between px-5 py-4 hover:bg-accent/5 transition-colors text-left group"
-            >
-              <span className="font-medium text-gray-900 group-hover:text-gray-700">
-                {client.full_name}
-              </span>
-              <span className="text-xs font-medium text-accent-dark bg-accent/20 px-2.5 py-1 rounded-full shrink-0">
-                {client.mesocycle_count} mesociclos
-              </span>
-            </button>
+            <div key={client.id} className="flex items-center group hover:bg-accent/5 transition-colors">
+              <button
+                onClick={() => navigate(`/entrenamientos/bloques/${blockId}/clientes/${client.id}/mesociclos`)}
+                className="flex-1 flex items-center justify-between px-5 py-4 text-left"
+              >
+                <span className="font-medium text-gray-900 group-hover:text-gray-700">
+                  {client.full_name}
+                </span>
+                <span className="text-xs font-medium text-accent-dark bg-accent/20 px-2.5 py-1 rounded-full shrink-0">
+                  {client.mesocycle_count} mesociclos
+                </span>
+              </button>
+              <button
+                onClick={() => abrirEditar(client)}
+                className="shrink-0 px-4 py-4 text-gray-300 hover:text-gray-600 transition-colors"
+                title="Editar cliente"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Z" />
+                </svg>
+              </button>
+            </div>
           ))}
         </div>
 
@@ -158,7 +181,7 @@ export default function EntrenamientoClientesPage() {
 
       {modalAbierto && (
         <Modal
-          title="Nuevo cliente"
+          title={editandoId ? 'Editar cliente' : 'Nuevo cliente'}
           confirmLabel={guardando ? 'Guardando…' : 'Guardar'}
           confirmDisabled={guardando}
           onClose={() => setModalAbierto(false)}
