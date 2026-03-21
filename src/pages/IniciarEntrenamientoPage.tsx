@@ -150,7 +150,7 @@ export default function IniciarEntrenamientoPage() {
     return (
       <div className="fixed inset-0 z-50 bg-white flex flex-col">
         {/* Barra superior */}
-        <div className="flex items-center justify-between px-4 py-2.5 border-b border-gray-200 bg-gray-50 shrink-0">
+        <div className="flex items-center justify-between px-4 pb-2.5 border-b border-gray-200 bg-gray-50 shrink-0" style={{ paddingTop: 'calc(env(safe-area-inset-top) + 0.625rem)' }}>
           <div>
             <p className="text-xs text-gray-400">{selectedBlockName}</p>
             <h1 className="text-sm font-semibold text-gray-900">Sesión de entrenamiento</h1>
