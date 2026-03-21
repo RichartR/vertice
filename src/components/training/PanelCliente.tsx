@@ -241,7 +241,7 @@ export default function PanelCliente({ clientName, dayId, mesocycleId }: PanelCl
     updateWeekData, updateBlockWeekSets, toggleWeekCompleted,
   } = useTrainingDayDetail()
 
-  const [activeSection, setActiveSection] = useState<Section>('main')
+  const [activeSection, setActiveSection] = useState<Section>('warmup')
 
   useEffect(() => {
     fetchDayDetail(dayId)
