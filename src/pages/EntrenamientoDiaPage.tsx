@@ -7,6 +7,7 @@ import { supabase } from '../lib/supabase'
 import { useTrainingDayDetail } from '../hooks/useTrainingDayDetail'
 import type { ExerciseRow, SectionBlock, WeekStatus } from '../utils/trainingUtils'
 import { calcularKgMovidos, calcularTotalKgMovidos } from '../utils/trainingUtils'
+import { exportTrainingDay } from '../utils/exportTraining'
 
 // ─── Tipos ───────────────────────────────────────────────────────────────────
 
@@ -185,6 +186,24 @@ const ExerciseRowComponent = React.memo(function ExerciseRowComponent({
   )
 })
 
+// ─── Colgroup compartido — mismo ancho de columnas en block table y total table ──
+
+function TrainingColGroup({ section }: Readonly<{ section: Section }>) {
+  const fields = section === 'metabolic' ? HEADER_FIELDS_METABOLIC : HEADER_FIELDS_NORMAL
+  return (
+    <colgroup>
+      <col style={{ width: '28px' }} />
+      <col style={{ width: '130px' }} />
+      <col style={{ width: '110px' }} />
+      {WEEKS.flatMap(w =>
+        fields.map(campo => (
+          <col key={`${w}-${campo}`} style={{ width: '44px' }} />
+        ))
+      )}
+    </colgroup>
+  )
+}
+
 // ─── Sub-bloque ───────────────────────────────────────────────────────────────
 
 type SectionBlockProps = Readonly<{
@@ -227,7 +246,8 @@ function SectionBlockComponent({
   return (
     <div className="mb-4 rounded-xl border border-gray-200 overflow-hidden">
       <div className="overflow-x-auto">
-        <table className="w-full text-xs">
+        <table className="w-full text-xs table-fixed">
+          <TrainingColGroup section={section} />
           <thead>
             {/* Fila 1: nombre del bloque | checkboxes de semana */}
             <tr className="bg-gray-50 border-b border-gray-100">
@@ -372,6 +392,7 @@ export default function EntrenamientoDiaPage() {
   const [clientName, setClientName] = useState('')
   const [mesoName, setMesoName] = useState('')
   const [saveStatus, setSaveStatus] = useState<SaveStatus>('idle')
+  const [exporting, setExporting] = useState(false)
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   useEffect(() => {
@@ -437,6 +458,13 @@ export default function EntrenamientoDiaPage() {
     } catch { handleSaveEnd(false) }
   }
 
+  async function handleExport() {
+    setExporting(true)
+    try { await exportTrainingDay(dayName, sectionBlocks) }
+    catch { /* errores de exportación no interrumpen la UI */ }
+    finally { setExporting(false) }
+  }
+
   const baseRoute = `/entrenamientos/bloques/${blockId}/clientes/${clientId}/mesociclos/${mesocycleId}`
 
   return (
@@ -455,10 +483,19 @@ export default function EntrenamientoDiaPage() {
             <h1 className="text-xl font-semibold text-gray-900">{dayName || '…'}</h1>
             <p className="text-sm text-gray-400 mt-0.5">{clientName}</p>
           </div>
-          <div className="text-xs shrink-0 mt-1">
-            {saveStatus === 'saving' && <span className="text-gray-400">Guardando...</span>}
-            {saveStatus === 'saved'  && <span className="text-green-600">Guardado ✓</span>}
-            {saveStatus === 'error'  && <span className="text-red-500">Error al guardar</span>}
+          <div className="flex flex-col items-end gap-2 shrink-0 mt-1">
+            <button
+              onClick={handleExport}
+              disabled={exporting || loading || sectionBlocks.length === 0}
+              className="px-3 py-1.5 text-xs font-medium rounded-lg border border-gray-200 text-gray-600 hover:border-accent hover:bg-accent/10 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              {exporting ? 'Exportando...' : '↓ Exportar Excel'}
+            </button>
+            <div className="text-xs">
+              {saveStatus === 'saving' && <span className="text-gray-400">Guardando...</span>}
+              {saveStatus === 'saved'  && <span className="text-green-600">Guardado ✓</span>}
+              {saveStatus === 'error'  && <span className="text-red-500">Error al guardar</span>}
+            </div>
           </div>
         </div>
 
@@ -506,7 +543,8 @@ export default function EntrenamientoDiaPage() {
                     {/* Total kg movidos — solo sección principal */}
                     {key === 'main' && blocksInSection.length > 0 && (
                       <div className="overflow-x-auto">
-                        <table className="w-full text-xs">
+                        <table className="w-full text-xs table-fixed">
+                          <TrainingColGroup section="main" />
                           <tbody>
                             <tr className="bg-red-900 text-white">
                               <td className="px-3 py-1.5 font-semibold" colSpan={3}>Total kg movidos</td>
