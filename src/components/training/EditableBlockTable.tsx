@@ -226,14 +226,14 @@ export default function EditableBlockTable({
                 <td className="px-1.5 py-1 text-left" colSpan={1}>Kg Mov.</td>
                 {lastCompletedWeek > 0 && (
                   <td colSpan={afterSetsFields.length + 2} className="py-1 text-center">
-                    {`${renderKgMovidos().last} KG`}
+                    {renderKgMovidos().last === '—' ? '—' : `${renderKgMovidos().last} KG`}
                   </td>
                 )}
                 <td 
                   colSpan={afterSetsFields.length + 2} 
                   className={`py-1 text-center`}
                 >
-                  {`${renderKgMovidos().current} KG`}
+                  {renderKgMovidos().current === '—' ? '—' : `${renderKgMovidos().current} KG`}
                 </td>
               </tr>
             </tfoot>

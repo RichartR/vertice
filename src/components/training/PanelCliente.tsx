@@ -24,7 +24,8 @@ function TotalKgRow({ blocks, lastCompleted, nextWeek }: Readonly<{
 }>) {
   const formatKg = (week: number) => {
     const val = calcularTotalKgMovidos(blocks, week)
-    return val === null ? '—' : val.toFixed(1)
+    if (val === null) return '—'
+    return `${val.toFixed(1)} KG`
   }
 
   return (
@@ -34,13 +35,13 @@ function TotalKgRow({ blocks, lastCompleted, nextWeek }: Readonly<{
           <tr>
             <td className="px-1.5 py-1 text-left">Total Kg Mov.</td>
             {lastCompleted > 0 && (
-              <td className="py-1 text-center" colSpan={5}>
-                {`${formatKg(lastCompleted)} KG`}
+              <td className="py-1 text-center" colSpan={5} style={{ width: '50%' }}>
+                {formatKg(lastCompleted)}
               </td>
             )}
             <td
               className={`py-1 text-center`}
-              colSpan={5}
+              colSpan={5} style={{ width: '50%' }}
             >
               {`${formatKg(nextWeek)} KG`}
             </td>

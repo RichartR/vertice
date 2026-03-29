@@ -1,20 +1,18 @@
-// Hook que pagina en memoria una lista de registros ya filtrados.
-// Se recalcula solo cuando cambian los registros o los parámetros de paginación.
+// Hook para paginar una lista de registros en el frontend.
 import { useMemo } from 'react'
-import type { Registro } from './useRecords'
 
-export function usePaginatedRecords(
-  registros: Registro[],
+export function usePaginatedRecords<T>(
+  registros: T[],
   pagina: number,
-  registrosPorPagina: number
+  registrosPorPagina: number,
 ) {
-  const [registrosPaginados, totalPaginas] = useMemo(() => {
-    const inicio = (pagina - 1) * registrosPorPagina
-    const fin = inicio + registrosPorPagina
-    const paginated = registros.slice(inicio, fin)
-    const total = Math.ceil(registros.length / registrosPorPagina)
-    return [paginated, total]
-  }, [registros, pagina, registrosPorPagina])
+  const totalPaginas = Math.max(1, Math.ceil(registros.length / registrosPorPagina))
+  const paginaActual = Math.min(pagina, totalPaginas)
 
-  return { registrosPaginados, totalPaginas }
+  const registrosPaginados = useMemo(
+    () => registros.slice((paginaActual - 1) * registrosPorPagina, paginaActual * registrosPorPagina),
+    [registros, paginaActual, registrosPorPagina],
+  )
+
+  return { registrosPaginados, totalPaginas, paginaActual }
 }

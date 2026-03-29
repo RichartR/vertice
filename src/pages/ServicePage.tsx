@@ -80,7 +80,7 @@ export default function ServicePage() {
   // Paginación
   const [pagina, setPagina] = useState(1)
   const [registrosPorPagina, setRegistrosPorPagina] = useState(25)
-  const { registrosPaginados, totalPaginas } = usePaginatedRecords(registrosOrdenados, pagina, registrosPorPagina)
+  const { registrosPaginados, totalPaginas } = usePaginatedRecords<Registro>(registrosOrdenados, pagina, registrosPorPagina)
 
   // Resetear a página 1 cuando cambian los filtros o la ordenación
   useEffect(() => {

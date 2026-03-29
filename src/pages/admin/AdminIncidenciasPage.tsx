@@ -183,7 +183,7 @@ export default function AdminIncidenciasPage() {
   ), [listaFiltrada, sortDesc])
 
   // --- Paginación sobre la lista ordenada ---
-  const { registrosPaginados, totalPaginas } = usePaginatedRecords(listaOrdenada, pagina, registrosPorPagina)
+  const { registrosPaginados, totalPaginas, paginaActual } = usePaginatedRecords<Incidencia>(listaOrdenada, pagina, registrosPorPagina)
 
 
   function cambiarPestanya(tab: Vista) {
@@ -560,7 +560,7 @@ export default function AdminIncidenciasPage() {
               {!cargando && listaOrdenada.length > 0 && (
                 <Pagination
                   totalPaginas={totalPaginas}
-                  paginaActual={pagina}
+                  paginaActual={paginaActual}
                   registrosPorPagina={registrosPorPagina}
                   opcionesRegistrosPorPagina={INCIDENCIAS_POR_PAGINA_OPCIONES}
                   onPaginaChange={setPagina}
