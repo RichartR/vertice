@@ -7,6 +7,8 @@ import { supabase } from '../lib/supabase'
 import { useTrainingDayDetail } from '../hooks/useTrainingDayDetail'
 import type { ExerciseRow, SectionBlock, WeekStatus } from '../utils/trainingUtils'
 import { calcularKgMovidos, calcularTotalKgMovidos } from '../utils/trainingUtils'
+import { exportTrainingDay } from '../utils/exportTraining'
+import Tooltip from '../components/ui/Tooltip'
 
 // ─── Tipos ───────────────────────────────────────────────────────────────────
 
@@ -84,6 +86,7 @@ type ExerciseRowProps = Readonly<{
   onSaveEnd: (ok: boolean) => void
 }>
 
+// eslint-disable-next-line react/display-name
 const ExerciseRowComponent = React.memo(function ExerciseRowComponent({
   row, section, isFirst, rowCount, blockWeekSets,
   onUpdateField, onUpdateWeek, onUpdateBlockSets, onDelete, onSaveStart, onSaveEnd,
@@ -91,6 +94,7 @@ const ExerciseRowComponent = React.memo(function ExerciseRowComponent({
   const afterSetsFields = section === 'metabolic' ? ROW_AFTER_SETS_METABOLIC : ROW_AFTER_SETS_NORMAL
 
   const debouncedField = useDebounce(async (field: 'exercise' | 'notes', value: string) => {
+    if (field === 'exercise' && !value) return // No guardar ejercicio vacío
     onSaveStart()
     try { await onUpdateField(row.id, field, value); onSaveEnd(true) }
     catch { onSaveEnd(false) }
@@ -130,13 +134,15 @@ const ExerciseRowComponent = React.memo(function ExerciseRowComponent({
 
       {/* Observaciones */}
       <td className="px-2 py-1 min-w-[100px]">
-        <input
-          type="text"
-          defaultValue={row.notes}
-          onChange={e => debouncedField('notes', e.target.value)}
-          placeholder="Obs."
-          className="w-full text-xs bg-transparent border-0 outline-none focus:bg-gray-50 rounded px-1 py-0.5"
-        />
+        <Tooltip text={row.notes ?? ''}>
+          <input
+            type="text"
+            defaultValue={row.notes ?? ''}
+            onChange={e => debouncedField('notes', e.target.value)}
+            placeholder="Obs."
+            className="w-full text-xs bg-transparent border-0 outline-none focus:bg-gray-50 rounded px-1 py-0.5"
+          />
+        </Tooltip>
       </td>
 
       {/* Semanas: CE | Sets(rowSpan, solo primera fila) | Reps/Watts | KG | R */}
@@ -158,7 +164,12 @@ const ExerciseRowComponent = React.memo(function ExerciseRowComponent({
 
           // Sets — solo en la primera fila, rowSpan cubre todas las filas del bloque
           ...(isFirst ? [
-            <td key={`${w}-sets`} rowSpan={rowCount} className="px-1 py-1 text-center align-middle bg-gray-50 border-l border-r border-gray-100">
+            <td
+              key={`${w}-sets`}
+              rowSpan={rowCount}
+              className="px-1 py-1 text-center align-middle bg-gray-50 border-l border-r border-gray-100 cursor-text"
+              onClick={(e) => e.currentTarget.querySelector('input')?.focus()}
+            >
               <input
                 type="text"
                 defaultValue={setsValue}
@@ -184,6 +195,24 @@ const ExerciseRowComponent = React.memo(function ExerciseRowComponent({
     </tr>
   )
 })
+
+// ─── Colgroup compartido — mismo ancho de columnas en block table y total table ──
+
+function TrainingColGroup({ section }: Readonly<{ section: Section }>) {
+  const fields = section === 'metabolic' ? HEADER_FIELDS_METABOLIC : HEADER_FIELDS_NORMAL
+  return (
+    <colgroup>
+      <col style={{ width: '28px' }} />
+      <col style={{ width: '130px' }} />
+      <col style={{ width: '110px' }} />
+      {WEEKS.flatMap(w =>
+        fields.map(campo => (
+          <col key={`${w}-${campo}`} style={{ width: '44px' }} />
+        ))
+      )}
+    </colgroup>
+  )
+}
 
 // ─── Sub-bloque ───────────────────────────────────────────────────────────────
 
@@ -227,7 +256,8 @@ function SectionBlockComponent({
   return (
     <div className="mb-4 rounded-xl border border-gray-200 overflow-hidden">
       <div className="overflow-x-auto">
-        <table className="w-full text-xs">
+        <table className="w-full text-xs table-fixed">
+          <TrainingColGroup section={section} />
           <thead>
             {/* Fila 1: nombre del bloque | checkboxes de semana */}
             <tr className="bg-gray-50 border-b border-gray-100">
@@ -320,18 +350,11 @@ function SectionBlockComponent({
               <tr className="bg-red-900 text-white">
                 <td></td>
                 <td colSpan={2} className="px-2 py-1.5 font-semibold">Kg Movidos</td>
-                {WEEKS.map(w =>
-                  headerFields.map((campo, i) => (
-                    <td
-                      key={`kg-${w}-${campo}`}
-                      className={`px-1 py-1.5 text-center ${i === 0 ? 'border-l-2 border-red-700' : ''}`}
-                    >
-                      {campo === 'reps' || campo === 'watts'
-                        ? kgMovidosCell(block.rows, w, block.week_sets[String(w)] ?? '')
-                        : ''}
-                    </td>
-                  ))
-                )}
+                {WEEKS.map(w => (
+                  <td key={`kg-week-${w}`} colSpan={5} className="px-1 py-1.5 text-center">
+                    {kgMovidosCell(block.rows, w, block.week_sets[String(w)] ?? '')}
+                  </td>
+                ))}
               </tr>
             )}
           </tbody>
@@ -372,6 +395,7 @@ export default function EntrenamientoDiaPage() {
   const [clientName, setClientName] = useState('')
   const [mesoName, setMesoName] = useState('')
   const [saveStatus, setSaveStatus] = useState<SaveStatus>('idle')
+  const [exporting, setExporting] = useState(false)
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   useEffect(() => {
@@ -437,6 +461,13 @@ export default function EntrenamientoDiaPage() {
     } catch { handleSaveEnd(false) }
   }
 
+  async function handleExport() {
+    setExporting(true)
+    try { await exportTrainingDay(dayName, sectionBlocks) }
+    catch { /* errores de exportación no interrumpen la UI */ }
+    finally { setExporting(false) }
+  }
+
   const baseRoute = `/entrenamientos/bloques/${blockId}/clientes/${clientId}/mesociclos/${mesocycleId}`
 
   return (
@@ -455,10 +486,19 @@ export default function EntrenamientoDiaPage() {
             <h1 className="text-xl font-semibold text-gray-900">{dayName || '…'}</h1>
             <p className="text-sm text-gray-400 mt-0.5">{clientName}</p>
           </div>
-          <div className="text-xs shrink-0 mt-1">
-            {saveStatus === 'saving' && <span className="text-gray-400">Guardando...</span>}
-            {saveStatus === 'saved'  && <span className="text-green-600">Guardado ✓</span>}
-            {saveStatus === 'error'  && <span className="text-red-500">Error al guardar</span>}
+          <div className="flex flex-col items-end gap-2 shrink-0 mt-1">
+            <button
+              onClick={handleExport}
+              disabled={exporting || loading || sectionBlocks.length === 0}
+              className="px-3 py-1.5 text-xs font-medium rounded-lg border border-gray-200 text-gray-600 hover:border-accent hover:bg-accent/10 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              {exporting ? 'Exportando...' : '↓ Exportar Excel'}
+            </button>
+            <div className="text-xs">
+              {saveStatus === 'saving' && <span className="text-gray-400">Guardando...</span>}
+              {saveStatus === 'saved'  && <span className="text-green-600">Guardado ✓</span>}
+              {saveStatus === 'error'  && <span className="text-red-500">Error al guardar</span>}
+            </div>
           </div>
         </div>
 
@@ -467,11 +507,10 @@ export default function EntrenamientoDiaPage() {
             <div className="w-6 h-6 border-2 border-accent border-t-transparent rounded-full animate-spin" />
           </div>
         ) : (
-          <div className="space-y-8">
+          <div className="flex flex-col gap-8">
             {SECTIONS.map(({ key, label, headerClass }) => {
               const blocksInSection = sectionBlocks.filter(b => b.section === key)
               const sectionWeekStatuses = weekStatuses.filter(s => s.section === key)
-              const headerFields = key === 'metabolic' ? HEADER_FIELDS_METABOLIC : HEADER_FIELDS_NORMAL
 
               return (
                 <div key={key}>
@@ -506,20 +545,20 @@ export default function EntrenamientoDiaPage() {
                     {/* Total kg movidos — solo sección principal */}
                     {key === 'main' && blocksInSection.length > 0 && (
                       <div className="overflow-x-auto">
-                        <table className="w-full text-xs">
+                        <table className="w-full text-xs table-fixed">
+                          <TrainingColGroup section="main" />
                           <tbody>
-                            <tr className="bg-red-900 text-white">
-                              <td className="px-3 py-1.5 font-semibold" colSpan={3}>Total kg movidos</td>
-                              {WEEKS.map(w =>
-                                headerFields.map((campo, i) => (
-                                  <td
-                                    key={`total-${w}-${campo}`}
-                                    className={`px-1 py-1.5 text-center min-w-[40px] ${i === 0 ? 'border-l-2 border-red-700' : ''}`}
-                                  >
-                                    {campo === 'reps' || campo === 'watts' ? totalKgCell(blocksInSection, w) : ''}
-                                  </td>
-                                ))
-                              )}
+                            <tr className="bg-red-900/90 text-white transition-colors">
+                              <td className="px-3 py-1.5 text-center font-bold" colSpan={3}>Total kg movidos</td>
+                              {WEEKS.map(w => (
+                                <td
+                                  key={`total-week-${w}`}
+                                  colSpan={5}
+                                  className="px-1 py-1.5 text-center font-semibold border-l-2 border-red-700/50"
+                                >
+                                  {totalKgCell(blocksInSection, w) === '—' ? '—' : `${totalKgCell(blocksInSection, w)} KG`}
+                                </td>
+                              ))}
                             </tr>
                           </tbody>
                         </table>

@@ -27,11 +27,13 @@ export function AuthProvider({ children }: Readonly<{ children: React.ReactNode 
 
   useEffect(() => {
     // Comprobar sesión activa al cargar
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setUser(session?.user ?? null)
-      if (session?.user) fetchProfile(session.user.id)
-      else setLoading(false)
-    })
+    supabase.auth.getSession()
+      .then(({ data: { session } }) => {
+        setUser(session?.user ?? null)
+        if (session?.user) fetchProfile(session.user.id)
+        else setLoading(false)
+      })
+      .catch(() => setLoading(false))
 
     // Escuchar cambios de sesión
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
@@ -54,14 +56,18 @@ export function AuthProvider({ children }: Readonly<{ children: React.ReactNode 
   }, [])
 
   async function fetchProfile(userId: string) {
-    const { data } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('id', userId)
-      .single()
-
-    setProfile(data)
-    setLoading(false)
+    try {
+      const { data } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', userId)
+        .single()
+      setProfile(data)
+    } catch {
+      setProfile(null)
+    } finally {
+      setLoading(false)
+    }
   }
 
   // useMemo evita que el objeto value sea una referencia nueva en cada render,

@@ -4,7 +4,7 @@
 // Filtros en frontend por socio, sesión, fecha y aviso.
 // Modal de creación/edición inline (VER-47).
 // Popups para transiciones de estado con campos extra.
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { supabase } from '../../lib/supabase'
 import Modal from '../../components/ui/Modal'
 import FormField from '../../components/ui/FormField'
@@ -12,6 +12,8 @@ import { normalizar } from '../../utils/normalizar'
 import { useIncidenciasStats } from '../../hooks/useIncidenciasStats'
 import Select from '../../components/ui/Select'
 import Tooltip from '../../components/ui/Tooltip'
+import { usePaginatedRecords } from '../../hooks/usePaginatedRecords'
+import Pagination from '../../components/ui/Pagination'
 
 type Estado = 'pendiente' | 'resuelta' | 'caducada'
 type Vista = Estado | 'estadisticas'
@@ -51,6 +53,13 @@ const MESES = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', '
 const PESTANYAS_GESTION: Estado[] = ['pendiente', 'resuelta', 'caducada']
 const LABELS: Record<Estado, string> = { pendiente: 'Pendientes', resuelta: 'Resueltas', caducada: 'Caducadas' }
 
+const INCIDENCIAS_POR_PAGINA_OPCIONES = [
+  { value: '10', label: '10 por página' },
+  { value: '25', label: '25 por página' },
+  { value: '50', label: '50 por página' },
+  { value: '100', label: '100 por página' }
+]
+
 function formatFecha(iso: string): string {
   const [y, m, d] = iso.split('-')
   return `${d}/${m}/${y}`
@@ -79,6 +88,11 @@ export default function AdminIncidenciasPage() {
   const [pestanya, setPestanya] = useState<Vista>('pendiente')
   const [filtros, setFiltros] = useState<Filtros>(FILTROS_VACIO)
   const [sortDesc, setSortDesc] = useState(true)
+
+  // --- Paginación ---
+  const [pagina, setPagina] = useState(1)
+  const [registrosPorPagina, setRegistrosPorPagina] = useState(10)
+
 
   // --- Modal crear/editar (VER-47) ---
   const [modalOpen, setModalOpen] = useState(false)
@@ -128,6 +142,12 @@ export default function AdminIncidenciasPage() {
     cargarStats()
   }, [])
 
+  // Resetear a página 1 cuando cambian los filtros, la ordenación o el tamaño de pág.
+  useEffect(() => {
+    setPagina(1)
+  }, [filtros, sortDesc, registrosPorPagina])
+
+
   async function cargar() {
     setCargando(true)
     const { data } = await supabase
@@ -148,7 +168,7 @@ export default function AdminIncidenciasPage() {
   }
 
   // --- Filtrado y ordenación en frontend ---
-  const listaFiltrada = incidencias.filter(i => {
+  const listaFiltrada = useMemo(() => incidencias.filter(i => {
     if (filtros.socio && !normalizar(i.nombre_socio).includes(normalizar(filtros.socio))) return false
     if (filtros.sesion && !normalizar(i.sesion).includes(normalizar(filtros.sesion))) return false
     if (filtros.fechaDesde && i.fecha < filtros.fechaDesde) return false
@@ -156,10 +176,15 @@ export default function AdminIncidenciasPage() {
     if (filtros.aviso === 'si' && !i.aviso) return false
     if (filtros.aviso === 'no' && i.aviso) return false
     return true
-  })
-  const lista = [...listaFiltrada].sort((a, b) =>
+  }), [incidencias, filtros])
+
+  const listaOrdenada = useMemo(() => [...listaFiltrada].sort((a, b) =>
     sortDesc ? b.fecha.localeCompare(a.fecha) : a.fecha.localeCompare(b.fecha)
-  )
+  ), [listaFiltrada, sortDesc])
+
+  // --- Paginación sobre la lista ordenada ---
+  const { registrosPaginados, totalPaginas, paginaActual } = usePaginatedRecords<Incidencia>(listaOrdenada, pagina, registrosPorPagina)
+
 
   function cambiarPestanya(tab: Vista) {
     setPestanya(tab)
@@ -215,15 +240,22 @@ export default function AdminIncidenciasPage() {
     if (editando && pestanya === 'resuelta') {
       payload.fecha_nueva_clase = formSesionRecuperada.trim() || null
     }
-    if (editando) {
-      await supabase.from('incidencias').update(payload).eq('id', editando.id)
-    } else {
-      await supabase.from('incidencias').insert({ ...payload, estado: 'pendiente' })
+    try {
+      if (editando) {
+        const { error } = await supabase.from('incidencias').update(payload).eq('id', editando.id)
+        if (error) throw error
+      } else {
+        const { error } = await supabase.from('incidencias').insert({ ...payload, estado: 'pendiente' })
+        if (error) throw error
+      }
+      setModalOpen(false)
+      cargar()
+      cargarStats()
+    } catch (err: any) {
+      setError(err.message ?? 'Error al guardar')
+    } finally {
+      setGuardando(false)
     }
-    setGuardando(false)
-    setModalOpen(false)
-    cargar()
-    cargarStats()
   }
 
   // --- Transiciones de estado ---
@@ -297,16 +329,19 @@ export default function AdminIncidenciasPage() {
         </tr>
       )
     }
-    if (lista.length === 0) {
+    if (registrosPaginados.length === 0) {
       return (
         <tr>
           <td colSpan={colSpan} className="text-center py-16 text-gray-400 text-sm">
-            No hay incidencias {LABELS[pestanya as Estado].toLowerCase()}
+            {hayFiltrosActivos(filtros)
+              ? `No hay incidencias que coincidan con los filtros.`
+              : `No hay incidencias ${LABELS[pestanya as Estado].toLowerCase()}`
+            }
           </td>
         </tr>
       )
     }
-    return lista.map(i => (
+    return registrosPaginados.map(i => (
       <tr key={i.id} className="hover:bg-accent/5 transition-colors">
         <td className="px-4 py-3 text-gray-700 whitespace-nowrap">{formatFecha(i.fecha)}</td>
         <td className="px-4 py-3 text-gray-900 font-medium">{i.nombre_socio}</td>
@@ -431,7 +466,7 @@ export default function AdminIncidenciasPage() {
             </div>
             {pestanya !== 'estadisticas' && (
               <p className="text-sm text-gray-400">
-                {cargando ? 'Cargando...' : `${lista.length} registros`}
+                {cargando ? 'Cargando...' : `${listaOrdenada.length} registros`}
               </p>
             )}
           </div>
@@ -467,15 +502,16 @@ export default function AdminIncidenciasPage() {
                   onChange={e => setFiltros(f => ({ ...f, fechaHasta: e.target.value }))}
                   className={`${inputCls} w-full md:flex-1`}
                 />
-                <select
+                <Select
                   value={filtros.aviso}
-                  onChange={e => setFiltros(f => ({ ...f, aviso: e.target.value as 'todos' | 'si' | 'no' }))}
-                  className={`${inputCls} w-full md:flex-1`}
-                >
-                  <option value="todos">¿Avisó? Todos</option>
-                  <option value="si">Sí avisó</option>
-                  <option value="no">No avisó</option>
-                </select>
+                  onChange={v => setFiltros(f => ({ ...f, aviso: v as 'todos' | 'si' | 'no' }))}
+                  options={[
+                    { value: 'todos', label: '¿Avisó? Todos' },
+                    { value: 'si', label: 'Sí avisó' },
+                    { value: 'no', label: 'No avisó' }
+                  ]}
+                  className="w-full md:flex-1"
+                />
                 {hayFiltrosActivos(filtros) && (
                   <button
                     onClick={() => setFiltros(FILTROS_VACIO)}
@@ -521,6 +557,17 @@ export default function AdminIncidenciasPage() {
                   </tbody>
                 </table>
               </div>
+              {/* Paginación */}
+              {!cargando && listaOrdenada.length > 0 && (
+                <Pagination
+                  totalPaginas={totalPaginas}
+                  paginaActual={paginaActual}
+                  registrosPorPagina={registrosPorPagina}
+                  opcionesRegistrosPorPagina={INCIDENCIAS_POR_PAGINA_OPCIONES}
+                  onPaginaChange={setPagina}
+                  onRegistrosPorPaginaChange={setRegistrosPorPagina}
+                />
+              )}
             </>
           )}
 

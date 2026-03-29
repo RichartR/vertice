@@ -6,11 +6,12 @@ import { supabase } from '../lib/supabase'
 import { useTrainingClients } from '../hooks/useTrainingClients'
 import Modal from '../components/ui/Modal'
 import FormField from '../components/ui/FormField'
+import type { TrainingClient } from '../hooks/useTrainingClients'
+import Pagination from '../components/ui/Pagination'
 import SearchInput from '../components/ui/SearchInput'
+import { usePaginatedRecords } from '../hooks/usePaginatedRecords'
 
-const PAGE_SIZE = 10
-
-function normalizar(s: string) {
+function normalizar(s: string): string {
   return s.normalize('NFD').replaceAll(/[\u0300-\u036f]/g, '').toLowerCase()
 }
 
@@ -21,7 +22,8 @@ export default function EntrenamientoClientesPage() {
 
   const [blockName, setBlockName] = useState('')
   const [busqueda, setBusqueda] = useState('')
-  const [pagina, setPagina] = useState(1)
+  const [pagina, setPagina] = useState(1) // eslint-disable-line @typescript-eslint/no-unused-vars
+  const [registrosPorPagina, setRegistrosPorPagina] = useState(10)
   const [modalAbierto, setModalAbierto] = useState(false)
   const [editandoId, setEditandoId] = useState<string | null>(null)
   const [nombreNuevo, setNombreNuevo] = useState('')
@@ -40,10 +42,12 @@ export default function EntrenamientoClientesPage() {
   const filtrados = clients.filter(c =>
     normalizar(c.full_name).includes(normalizar(busqueda))
   )
-  const totalPaginas = Math.max(1, Math.ceil(filtrados.length / PAGE_SIZE))
-  const paginaActual = Math.min(pagina, totalPaginas)
-  const visibles = filtrados.slice((paginaActual - 1) * PAGE_SIZE, paginaActual * PAGE_SIZE)
 
+  const { registrosPaginados: visibles, totalPaginas, paginaActual } = usePaginatedRecords<TrainingClient>(
+    filtrados,
+    pagina,
+    registrosPorPagina
+  )
   function abrirModal() {
     setEditandoId(null)
     setNombreNuevo('')
@@ -51,7 +55,7 @@ export default function EntrenamientoClientesPage() {
     setModalAbierto(true)
   }
 
-  function abrirEditar(client: { id: string; full_name: string }) {
+  function abrirEditar(client: TrainingClient) {
     setEditandoId(client.id)
     setNombreNuevo(client.full_name)
     setErrModal('')
@@ -126,24 +130,17 @@ export default function EntrenamientoClientesPage() {
           ))}
         </div>
 
-        {totalPaginas > 1 && (
-          <div className="flex items-center justify-between mt-4 text-sm text-gray-500">
-            <button
-              onClick={() => setPagina(p => Math.max(1, p - 1))}
-              disabled={paginaActual === 1}
-              className="px-3 py-1.5 rounded-lg border border-gray-200 hover:bg-accent/10 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-            >
-              ← Anterior
-            </button>
-            <span>{paginaActual} / {totalPaginas}</span>
-            <button
-              onClick={() => setPagina(p => Math.min(totalPaginas, p + 1))}
-              disabled={paginaActual === totalPaginas}
-              className="px-3 py-1.5 rounded-lg border border-gray-200 hover:bg-accent/10 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-            >
-              Siguiente →
-            </button>
-          </div>
+        {filtrados.length > 0 && (
+          <Pagination
+            totalPaginas={totalPaginas}
+            paginaActual={paginaActual}
+            registrosPorPagina={registrosPorPagina}
+            opcionesRegistrosPorPagina={[
+              { value: '10', label: '10 por página' },
+            ]}
+            onPaginaChange={setPagina}
+            onRegistrosPorPaginaChange={setRegistrosPorPagina}
+          />
         )}
       </>
     )

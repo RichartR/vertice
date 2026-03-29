@@ -14,18 +14,27 @@ export function useTrainingDayDetail() {
     setLoading(true)
     setError(null)
 
-    // 1. Obtener sub-bloques del día (incluye week_sets compartidos)
-    const { data: blocks, error: e1 } = await supabase
-      .from('training_section_blocks')
-      .select('id, day_id, section, name, order_index, week_sets')
-      .eq('day_id', dayId)
-      .order('section')
-      .order('order_index')
+    // Queries 1 y 3 en paralelo — ambas solo necesitan dayId
+    const [blocksResult, statusesResult] = await Promise.all([
+      supabase
+        .from('training_section_blocks')
+        .select('id, day_id, section, name, order_index, week_sets')
+        .eq('day_id', dayId)
+        .order('section')
+        .order('order_index'),
+      supabase
+        .from('training_week_status')
+        .select('id, day_id, mesocycle_id, week_number, section, completed')
+        .eq('day_id', dayId),
+    ])
 
-    if (e1) { setError(e1.message); setLoading(false); return }
+    if (blocksResult.error) { setError(blocksResult.error.message); setLoading(false); return }
+    if (statusesResult.error) { setError(statusesResult.error.message); setLoading(false); return }
 
-    // 2. Obtener filas de ejercicio de todos los sub-bloques
-    const blockIds = (blocks ?? []).map((b: any) => b.id)
+    const blocks = blocksResult.data ?? []
+
+    // Query 2 — necesita los IDs de blocks, va después del Promise.all
+    const blockIds = blocks.map((b: any) => b.id)
     let rowsData: any[] = []
     if (blockIds.length > 0) {
       const { data: rows, error: e2 } = await supabase
@@ -38,16 +47,8 @@ export function useTrainingDayDetail() {
       rowsData = rows ?? []
     }
 
-    // 3. Obtener estados de semanas
-    const { data: statuses, error: e3 } = await supabase
-      .from('training_week_status')
-      .select('id, day_id, mesocycle_id, week_number, section, completed')
-      .eq('day_id', dayId)
-
-    if (e3) { setError(e3.message); setLoading(false); return }
-
     // Montar árbol: sub-bloque → filas
-    const mapped: SectionBlock[] = (blocks ?? []).map((b: any) => ({
+    const mapped: SectionBlock[] = blocks.map((b: any) => ({
       id: b.id,
       day_id: b.day_id,
       section: b.section,
@@ -67,7 +68,7 @@ export function useTrainingDayDetail() {
     }))
 
     setSectionBlocks(mapped)
-    setWeekStatuses(statuses ?? [])
+    setWeekStatuses(statusesResult.data ?? [])
     setLoading(false)
   }, [])
 
