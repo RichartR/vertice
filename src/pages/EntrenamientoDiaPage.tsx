@@ -8,6 +8,7 @@ import { useTrainingDayDetail } from '../hooks/useTrainingDayDetail'
 import type { ExerciseRow, SectionBlock, WeekStatus } from '../utils/trainingUtils'
 import { calcularKgMovidos, calcularTotalKgMovidos } from '../utils/trainingUtils'
 import { exportTrainingDay } from '../utils/exportTraining'
+import Tooltip from '../components/ui/Tooltip'
 
 // ─── Tipos ───────────────────────────────────────────────────────────────────
 
@@ -133,13 +134,15 @@ const ExerciseRowComponent = React.memo(function ExerciseRowComponent({
 
       {/* Observaciones */}
       <td className="px-2 py-1 min-w-[100px]">
-        <input
-          type="text"
-          defaultValue={row.notes}
-          onChange={e => debouncedField('notes', e.target.value)}
-          placeholder="Obs."
-          className="w-full text-xs bg-transparent border-0 outline-none focus:bg-gray-50 rounded px-1 py-0.5"
-        />
+        <Tooltip text={row.notes ?? ''}>
+          <input
+            type="text"
+            defaultValue={row.notes ?? ''}
+            onChange={e => debouncedField('notes', e.target.value)}
+            placeholder="Obs."
+            className="w-full text-xs bg-transparent border-0 outline-none focus:bg-gray-50 rounded px-1 py-0.5"
+          />
+        </Tooltip>
       </td>
 
       {/* Semanas: CE | Sets(rowSpan, solo primera fila) | Reps/Watts | KG | R */}
