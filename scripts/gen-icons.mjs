@@ -18,6 +18,4 @@ for (const size of [192, 512]) {
     .composite([{ input: logoBuffer }])
     .png()
     .toFile(resolve(__dirname, `../public/icons/icon-${size}.png`))
-
-  console.log(`icon-${size}.png generado`)
 }
