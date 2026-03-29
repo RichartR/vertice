@@ -7,8 +7,14 @@ import { useTrainingClients } from '../hooks/useTrainingClients'
 import Modal from '../components/ui/Modal'
 import FormField from '../components/ui/FormField'
 import SearchInput from '../components/ui/SearchInput'
+import { usePaginatedRecords } from '../hooks/usePaginatedRecords'
+import Pagination from '../components/ui/Pagination'
 
-const PAGE_SIZE = 10
+const CLIENTES_POR_PAGINA_OPCIONES = [
+  { value: '10', label: '10 por página' },
+  { value: '25', label: '25 por página' },
+  { value: '50', label: '50 por página' }
+]
 
 function normalizar(s: string) {
   return s.normalize('NFD').replaceAll(/[\u0300-\u036f]/g, '').toLowerCase()
@@ -22,6 +28,7 @@ export default function EntrenamientoClientesPage() {
   const [blockName, setBlockName] = useState('')
   const [busqueda, setBusqueda] = useState('')
   const [pagina, setPagina] = useState(1)
+  const [clientesPorPagina, setClientesPorPagina] = useState(10)
   const [modalAbierto, setModalAbierto] = useState(false)
   const [editandoId, setEditandoId] = useState<string | null>(null)
   const [nombreNuevo, setNombreNuevo] = useState('')
@@ -37,12 +44,15 @@ export default function EntrenamientoClientesPage() {
       .then(({ data }) => setBlockName(data?.name ?? ''))
   }, [blockId])
 
+  useEffect(() => {
+    setPagina(1)
+  }, [busqueda, clientesPorPagina])
+
   const filtrados = clients.filter(c =>
     normalizar(c.full_name).includes(normalizar(busqueda))
   )
-  const totalPaginas = Math.max(1, Math.ceil(filtrados.length / PAGE_SIZE))
-  const paginaActual = Math.min(pagina, totalPaginas)
-  const visibles = filtrados.slice((paginaActual - 1) * PAGE_SIZE, paginaActual * PAGE_SIZE)
+
+  const { registrosPaginados, totalPaginas } = usePaginatedRecords(filtrados, pagina, clientesPorPagina)
 
   function abrirModal() {
     setEditandoId(null)
@@ -100,7 +110,7 @@ export default function EntrenamientoClientesPage() {
     return (
       <>
         <div className="divide-y divide-gray-100 bg-white rounded-2xl border border-gray-200 overflow-hidden">
-          {visibles.map(client => (
+          {registrosPaginados.map(client => (
             <div key={client.id} className="flex items-center group hover:bg-accent/5 transition-colors">
               <button
                 onClick={() => navigate(`/entrenamientos/bloques/${blockId}/clientes/${client.id}/mesociclos`)}
@@ -126,24 +136,15 @@ export default function EntrenamientoClientesPage() {
           ))}
         </div>
 
-        {totalPaginas > 1 && (
-          <div className="flex items-center justify-between mt-4 text-sm text-gray-500">
-            <button
-              onClick={() => setPagina(p => Math.max(1, p - 1))}
-              disabled={paginaActual === 1}
-              className="px-3 py-1.5 rounded-lg border border-gray-200 hover:bg-accent/10 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-            >
-              ← Anterior
-            </button>
-            <span>{paginaActual} / {totalPaginas}</span>
-            <button
-              onClick={() => setPagina(p => Math.min(totalPaginas, p + 1))}
-              disabled={paginaActual === totalPaginas}
-              className="px-3 py-1.5 rounded-lg border border-gray-200 hover:bg-accent/10 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-            >
-              Siguiente →
-            </button>
-          </div>
+        {!loading && filtrados.length > 0 && (
+          <Pagination
+            totalPaginas={totalPaginas}
+            paginaActual={pagina}
+            registrosPorPagina={clientesPorPagina}
+            opcionesRegistrosPorPagina={CLIENTES_POR_PAGINA_OPCIONES}
+            onPaginaChange={setPagina}
+            onRegistrosPorPaginaChange={setClientesPorPagina}
+          />
         )}
       </>
     )

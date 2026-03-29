@@ -1,12 +1,13 @@
 // Vista de registros de un servicio — tabla con filtros + pestaña de estadísticas.
-// Empleado: solo lectura, sin columna Empleado.
-// Admin: columna Empleado visible, botones Editar y Eliminar por fila + CRUD conectado a Supabase.
+// Empleado: solo lectura
+// Admin: botones Editar y Eliminar por fila + CRUD conectado a Supabase.
 import { useEffect, useMemo, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
 import { useRecords, type Registro } from '../hooks/useRecords'
 import { useFilteredRecords, FILTROS_VACIOS, type Filtros } from '../hooks/useFilteredRecords'
+import { usePaginatedRecords } from '../hooks/usePaginatedRecords'
 import { useStats } from '../hooks/useStats'
 import FilterBar from '../components/ui/FilterBar'
 import Tooltip from '../components/ui/Tooltip'
@@ -15,6 +16,7 @@ import Modal from '../components/ui/Modal'
 import Select from '../components/ui/Select'
 import FormField from '../components/ui/FormField'
 import { exportToExcel } from '../utils/exportExcel'
+import Pagination from '../components/ui/Pagination'
 
 const inputCls = 'w-full px-3 py-2 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-accent'
 
@@ -38,6 +40,12 @@ const MESES = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
 
 // Rango de años disponibles en el selector: 5 años atrás hasta el año actual
 const CURRENT_YEAR = new Date().getFullYear()
+
+const REGISTROS_POR_PAGINA_OPCIONES = [
+  { value: '25', label: '25 por página' },
+  { value: '50', label: '50 por página' },
+  { value: '100', label: '100 por página' }
+]
 
 export default function ServicePage() {
   const { id: serviceId } = useParams<{ id: string }>()
@@ -68,6 +76,17 @@ export default function ServicePage() {
     sortDesc ? b.fecha.localeCompare(a.fecha) : a.fecha.localeCompare(b.fecha)
   )
   const { resumenAnual } = useStats(registros, mesSel, yearSel)
+
+  // Paginación
+  const [pagina, setPagina] = useState(1)
+  const [registrosPorPagina, setRegistrosPorPagina] = useState(25)
+  const { registrosPaginados, totalPaginas } = usePaginatedRecords(registrosOrdenados, pagina, registrosPorPagina)
+
+  // Resetear a página 1 cuando cambian los filtros o la ordenación
+  useEffect(() => {
+    setPagina(1)
+  }, [filtros, sortDesc, registrosPorPagina])
+
 
   // Años disponibles: años con al menos un registro + el año actual siempre presente
   const yearsDisponibles = useMemo(() => {
@@ -323,14 +342,14 @@ export default function ServicePage() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-50">
-                    {!cargando && registrosOrdenados.length === 0 && (
+                    {!cargando && registrosPaginados.length === 0 && (
                       <tr>
                         <td colSpan={columnas.length} className="px-4 py-10 text-center text-sm text-gray-400">
-                          No hay registros con estos filtros.
+                          {registros.length === 0 ? 'Todavía no hay registros en este servicio.' : 'No hay registros con estos filtros.'}
                         </td>
                       </tr>
                     )}
-                    {registrosOrdenados.map(r => (
+                    {registrosPaginados.map(r => (
                       <tr key={r.id} className="hover:bg-accent/5 transition-colors">
                         <td className="px-4 py-3 text-gray-700 whitespace-nowrap">{formatFecha(r.fecha)}</td>
                         <td className="px-4 py-3 text-gray-500 whitespace-nowrap">{formatHora(r.hora)}</td>
@@ -373,6 +392,18 @@ export default function ServicePage() {
                   </tbody>
                 </table>
               </div>
+              
+              {/* Paginación */}
+              {!cargando && registrosFiltrados.length > 0 && (
+                <Pagination
+                  totalPaginas={totalPaginas}
+                  paginaActual={pagina}
+                  registrosPorPagina={registrosPorPagina}
+                  opcionesRegistrosPorPagina={REGISTROS_POR_PAGINA_OPCIONES}
+                  onPaginaChange={setPagina}
+                  onRegistrosPorPaginaChange={setRegistrosPorPagina}
+                />
+              )}
             </div>
           </>
         )}
