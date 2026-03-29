@@ -35,15 +35,12 @@ function TotalKgRow({ blocks, lastCompleted, nextWeek }: Readonly<{
           <tr>
             <td className="px-1.5 py-1 text-left">Total Kg Mov.</td>
             {lastCompleted > 0 && (
-              <td className="py-1 text-center" colSpan={5} style={{ width: '50%' }}>
+              <td className="py-1 text-center" colSpan={5}>
                 {formatKg(lastCompleted)}
               </td>
             )}
-            <td
-              className={`py-1 text-center`}
-              colSpan={5} style={{ width: '50%' }}
-            >
-              {`${formatKg(nextWeek)} KG`}
+            <td className="py-1 text-center" colSpan={5}>
+              {formatKg(nextWeek)}
             </td>
           </tr>
         </tbody>

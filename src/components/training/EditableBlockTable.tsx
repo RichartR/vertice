@@ -50,6 +50,7 @@ export default function EditableBlockTable({
   const [setsValue, setSetsValue] = useState(block.week_sets[String(currentWeek)] ?? '')
   const [rowData, setRowData] = useState(block.rows)
   const saveTimer = React.useRef<ReturnType<typeof setTimeout> | null>(null)
+  const setsInputRef = React.useRef<HTMLInputElement>(null)
 
   const handleSaveStart = useCallback(() => {
     setSaveStatus('saving')
@@ -64,8 +65,8 @@ export default function EditableBlockTable({
   // Sincroniza el estado interno si las props cambian de contexto (semana o bloque diferente)
   React.useEffect(() => {
     setSetsValue(block.week_sets[String(currentWeek)] ?? '')
-    setRowData(block.rows)
-  }, [currentWeek, block.id])
+    setRowData(block.rows) // Solo reseteamos al cambiar de semana, no con cada update de block.rows
+  }, [currentWeek, block.week_sets])
 
   const debouncedWeekUpdate = useDebounce(
     useCallback(async (rowId: string, field: string, value: string) => {
@@ -160,7 +161,7 @@ export default function EditableBlockTable({
                   {afterSetsFields.map(f => <th key={`prev-${f}`} className="px-0.5 py-0.5 uppercase text-[10px] w-[10%]">{f === 'watts' ? 'W' : f}</th>)}
                 </>
               )}
-              <th className="px-0.5 py-0.5 border-l-2 border-gray-300 w-[10%]">CE</th>
+              <th className={`px-0.5 py-0.5 w-[10%] ${lastCompletedWeek > 0 ? 'border-l-2 border-gray-300' : ''}`}>CE</th>
               <th className="px-0.5 py-0.5 w-[10%]">Sets</th>
               {afterSetsFields.map(f => {
                 return (
@@ -195,7 +196,7 @@ export default function EditableBlockTable({
                   )}
 
                   {/* Semana Actual (editable) */}
-                  <td className="px-0.5 py-1 text-center border-l-2 border-gray-300">
+                  <td className={`px-0.5 py-1 text-center ${lastCompletedWeek > 0 ? 'border-l-2 border-gray-300' : ''}`}>
                     <input
                       key={`ce-${currentWeek}`}
                       type="text"
@@ -209,12 +210,12 @@ export default function EditableBlockTable({
                     <td 
                       className="px-0.5 py-1 text-center align-middle bg-gray-50 cursor-text" 
                       rowSpan={block.rows.length}
-                      onClick={(e) => e.currentTarget.querySelector('input')?.focus()}
+                      onClick={() => setsInputRef.current?.focus()}
                     >
                       <input
-                        key={`sets-${currentWeek}`}
+                        ref={setsInputRef}
                         type="text"
-                        defaultValue={setsValue}
+                        value={setsValue}
                         onChange={handleSetsChange}
                         className="w-full text-xs text-center font-medium bg-transparent border-0 outline-none focus:bg-white focus:ring-1 focus:ring-accent rounded py-0.5"
                       />
@@ -226,7 +227,7 @@ export default function EditableBlockTable({
                       <input
                         key={`${field}-${currentWeek}`}
                         type="text"
-                        defaultValue={currentWeekData[field as keyof WeekData] ?? ''}
+                        value={currentWeekData[field as keyof WeekData] ?? ''}
                         onChange={e => handleWeekDataChange(row.id, field, e.target.value)}
                         className="w-full text-xs text-center bg-gray-50 border-0 outline-none focus:bg-white focus:ring-1 focus:ring-accent rounded py-0.5"
                       />
@@ -241,14 +242,11 @@ export default function EditableBlockTable({
               <tr>
                 <td className="px-1.5 py-1 text-left" colSpan={1}>Kg Mov.</td>
                 {lastCompletedWeek > 0 && (
-                  <td colSpan={afterSetsFields.length + 2} className="py-1 text-center">
+                  <td colSpan={5} className="py-1 text-center font-semibold">
                     {renderKgMovidos().last === '—' ? '—' : `${renderKgMovidos().last} KG`}
                   </td>
                 )}
-                <td 
-                  colSpan={afterSetsFields.length + 2} 
-                  className={`py-1 text-center`}
-                >
+                <td colSpan={5} className={`py-1 text-center font-semibold ${lastCompletedWeek > 0 ? 'border-l-2 border-red-700' : ''}`}>
                   {renderKgMovidos().current === '—' ? '—' : `${renderKgMovidos().current} KG`}
                 </td>
               </tr>

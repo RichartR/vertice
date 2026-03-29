@@ -351,7 +351,7 @@ function SectionBlockComponent({
                   headerFields.map((campo, i) => (
                     <td
                       key={`kg-${w}-${campo}`}
-                      className={`px-1 py-1.5 text-center ${i === 0 ? 'border-l-2 border-red-700' : ''}`}
+                      className={`px-1 py-1.5 text-center`}
                     >
                       {campo === 'reps' || campo === 'watts'
                         ? kgMovidosCell(block.rows, w, block.week_sets[String(w)] ?? '')
@@ -511,11 +511,10 @@ export default function EntrenamientoDiaPage() {
             <div className="w-6 h-6 border-2 border-accent border-t-transparent rounded-full animate-spin" />
           </div>
         ) : (
-          <div className="space-y-8">
+          <div className="flex flex-col gap-8">
             {SECTIONS.map(({ key, label, headerClass }) => {
               const blocksInSection = sectionBlocks.filter(b => b.section === key)
               const sectionWeekStatuses = weekStatuses.filter(s => s.section === key)
-              const headerFields = key === 'metabolic' ? HEADER_FIELDS_METABOLIC : HEADER_FIELDS_NORMAL
 
               return (
                 <div key={key}>
@@ -553,18 +552,17 @@ export default function EntrenamientoDiaPage() {
                         <table className="w-full text-xs table-fixed">
                           <TrainingColGroup section="main" />
                           <tbody>
-                            <tr className="bg-red-900 text-white">
-                              <td className="px-3 py-1.5 font-semibold" colSpan={3}>Total kg movidos</td>
-                              {WEEKS.map(w =>
-                                headerFields.map((campo, i) => (
-                                  <td
-                                    key={`total-${w}-${campo}`}
-                                    className={`px-1 py-1.5 text-center min-w-[40px] ${i === 0 ? 'border-l-2 border-red-700' : ''}`}
-                                  >
-                                    {campo === 'reps' || campo === 'watts' ? totalKgCell(blocksInSection, w) : ''}
-                                  </td>
-                                ))
-                              )}
+                            <tr className="bg-red-900/90 text-white transition-colors">
+                              <td className="px-3 py-1.5 text-center font-bold" colSpan={3}>Total kg movidos</td>
+                              {WEEKS.map(w => (
+                                <td
+                                  key={`total-week-${w}`}
+                                  colSpan={5}
+                                  className="px-1 py-1.5 text-center font-semibold border-l-2 border-red-700/50"
+                                >
+                                  {totalKgCell(blocksInSection, w) === '—' ? '—' : `${totalKgCell(blocksInSection, w)} KG`}
+                                </td>
+                              ))}
                             </tr>
                           </tbody>
                         </table>
