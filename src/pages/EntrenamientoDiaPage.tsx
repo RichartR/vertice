@@ -347,18 +347,11 @@ function SectionBlockComponent({
               <tr className="bg-red-900 text-white">
                 <td></td>
                 <td colSpan={2} className="px-2 py-1.5 font-semibold">Kg Movidos</td>
-                {WEEKS.map(w =>
-                  headerFields.map((campo, i) => (
-                    <td
-                      key={`kg-${w}-${campo}`}
-                      className={`px-1 py-1.5 text-center`}
-                    >
-                      {campo === 'reps' || campo === 'watts'
-                        ? kgMovidosCell(block.rows, w, block.week_sets[String(w)] ?? '')
-                        : ''}
-                    </td>
-                  ))
-                )}
+                {WEEKS.map(w => (
+                  <td key={`kg-week-${w}`} colSpan={5} className="px-1 py-1.5 text-center">
+                    {kgMovidosCell(block.rows, w, block.week_sets[String(w)] ?? '')}
+                  </td>
+                ))}
               </tr>
             )}
           </tbody>

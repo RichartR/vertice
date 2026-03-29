@@ -246,7 +246,7 @@ export default function EditableBlockTable({
                     {renderKgMovidos().last === '—' ? '—' : `${renderKgMovidos().last} KG`}
                   </td>
                 )}
-                <td colSpan={5} className={`py-1 text-center font-semibold ${lastCompletedWeek > 0 ? 'border-l-2 border-red-700' : ''}`}>
+                <td colSpan={5} className={`py-1 text-center font-semibold`}>
                   {renderKgMovidos().current === '—' ? '—' : `${renderKgMovidos().current} KG`}
                 </td>
               </tr>
