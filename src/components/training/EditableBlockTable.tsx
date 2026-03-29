@@ -48,8 +48,8 @@ export default function EditableBlockTable({
   
   const [saveStatus, setSaveStatus] = useState<SaveStatus>('idle')
   const [setsValue, setSetsValue] = useState(block.week_sets[String(currentWeek)] ?? '')
+  const [rowData, setRowData] = useState(block.rows)
   const saveTimer = React.useRef<ReturnType<typeof setTimeout> | null>(null)
-  const setsInputRef = React.useRef<HTMLInputElement>(null)
 
   const handleSaveStart = useCallback(() => {
     setSaveStatus('saving')
@@ -61,10 +61,11 @@ export default function EditableBlockTable({
     saveTimer.current = setTimeout(() => setSaveStatus('idle'), 1500)
   }, [])
 
-  // Sincroniza el estado interno si las props cambian
+  // Sincroniza el estado interno si las props cambian de contexto (semana o bloque diferente)
   React.useEffect(() => {
     setSetsValue(block.week_sets[String(currentWeek)] ?? '')
-  }, [currentWeek, block.week_sets])
+    setRowData(block.rows)
+  }, [currentWeek, block.id])
 
   const debouncedWeekUpdate = useDebounce(
     useCallback(async (rowId: string, field: string, value: string) => {
@@ -97,6 +98,19 @@ export default function EditableBlockTable({
     debouncedSetsUpdate(e.target.value)
   }
 
+  const handleWeekDataChange = (rowId: string, field: string, value: string) => {
+    setRowData(prevRows => prevRows.map(row => {
+      if (row.id === rowId) {
+        const newWeeks = {
+          ...row.weeks,
+          [String(currentWeek)]: { ...row.weeks[String(currentWeek)], [field]: value }
+        }
+        return { ...row, weeks: newWeeks }
+      }
+      return row
+    }))
+    debouncedWeekUpdate(rowId, field, value)
+  }
   const kgMovidos = (week: number): string => {
     if (!isMain) return ''
     const sets = week === currentWeek ? setsValue : (block.week_sets[String(week)] ?? '')
@@ -158,9 +172,9 @@ export default function EditableBlockTable({
             </tr>
           </thead>
           <tbody>
-            {block.rows.map((row, idx) => {
+            {rowData.map((row, idx) => {
               const isFirst = idx === 0
-              const currentWeekData: WeekData = row.weeks[String(currentWeek)] ?? {}
+              const currentWeekData: WeekData = row.weeks?.[String(currentWeek)] ?? {}
               const lastWeekData: WeekData = row.weeks[String(lastCompletedWeek)] ?? {}
 
               return (
@@ -183,9 +197,10 @@ export default function EditableBlockTable({
                   {/* Semana Actual (editable) */}
                   <td className="px-0.5 py-1 text-center border-l-2 border-gray-300">
                     <input
+                      key={`ce-${currentWeek}`}
                       type="text"
                       defaultValue={currentWeekData['ce'] ?? ''}
-                      onChange={e => debouncedWeekUpdate(row.id, 'ce', e.target.value)}
+                      onChange={e => handleWeekDataChange(row.id, 'ce', e.target.value)}
                       className="w-full text-xs text-center bg-gray-50 border-0 outline-none focus:bg-white focus:ring-1 focus:ring-accent rounded py-0.5"
                     />
                   </td>
@@ -194,12 +209,12 @@ export default function EditableBlockTable({
                     <td 
                       className="px-0.5 py-1 text-center align-middle bg-gray-50 cursor-text" 
                       rowSpan={block.rows.length}
-                      onClick={() => setsInputRef.current?.focus()}
+                      onClick={(e) => e.currentTarget.querySelector('input')?.focus()}
                     >
                       <input
-                        ref={setsInputRef}
+                        key={`sets-${currentWeek}`}
                         type="text"
-                        value={setsValue}
+                        defaultValue={setsValue}
                         onChange={handleSetsChange}
                         className="w-full text-xs text-center font-medium bg-transparent border-0 outline-none focus:bg-white focus:ring-1 focus:ring-accent rounded py-0.5"
                       />
@@ -209,9 +224,10 @@ export default function EditableBlockTable({
                   {afterSetsFields.map(field => (
                     <td key={field} className="px-0.5 py-1 text-center">
                       <input
+                        key={`${field}-${currentWeek}`}
                         type="text"
                         defaultValue={currentWeekData[field as keyof WeekData] ?? ''}
-                        onChange={e => debouncedWeekUpdate(row.id, field, e.target.value)}
+                        onChange={e => handleWeekDataChange(row.id, field, e.target.value)}
                         className="w-full text-xs text-center bg-gray-50 border-0 outline-none focus:bg-white focus:ring-1 focus:ring-accent rounded py-0.5"
                       />
                     </td>

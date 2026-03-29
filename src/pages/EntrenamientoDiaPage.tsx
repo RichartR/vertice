@@ -85,6 +85,7 @@ type ExerciseRowProps = Readonly<{
   onSaveEnd: (ok: boolean) => void
 }>
 
+// eslint-disable-next-line react/display-name
 const ExerciseRowComponent = React.memo(function ExerciseRowComponent({
   row, section, isFirst, rowCount, blockWeekSets,
   onUpdateField, onUpdateWeek, onUpdateBlockSets, onDelete, onSaveStart, onSaveEnd,
@@ -92,6 +93,7 @@ const ExerciseRowComponent = React.memo(function ExerciseRowComponent({
   const afterSetsFields = section === 'metabolic' ? ROW_AFTER_SETS_METABOLIC : ROW_AFTER_SETS_NORMAL
 
   const debouncedField = useDebounce(async (field: 'exercise' | 'notes', value: string) => {
+    if (field === 'exercise' && !value) return // No guardar ejercicio vacío
     onSaveStart()
     try { await onUpdateField(row.id, field, value); onSaveEnd(true) }
     catch { onSaveEnd(false) }
@@ -159,10 +161,15 @@ const ExerciseRowComponent = React.memo(function ExerciseRowComponent({
 
           // Sets — solo en la primera fila, rowSpan cubre todas las filas del bloque
           ...(isFirst ? [
-            <td key={`${w}-sets`} rowSpan={rowCount} className="px-1 py-1 text-center align-middle bg-gray-50 border-l border-r border-gray-100">
+            <td
+              key={`${w}-sets`}
+              rowSpan={rowCount}
+              className="px-1 py-1 text-center align-middle bg-gray-50 border-l border-r border-gray-100 cursor-text"
+              onClick={(e) => e.currentTarget.querySelector('input')?.focus()}
+            >
               <input
                 type="text"
-                value={setsValue}
+                defaultValue={setsValue}
                 onChange={e => debouncedSets(w, e.target.value)}
                 className="w-10 text-xs text-center bg-transparent border-0 outline-none focus:bg-white rounded py-0.5"
               />
