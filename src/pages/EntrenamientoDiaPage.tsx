@@ -90,6 +90,7 @@ const ExerciseRowComponent = React.memo(function ExerciseRowComponent({
   onUpdateField, onUpdateWeek, onUpdateBlockSets, onDelete, onSaveStart, onSaveEnd,
 }: ExerciseRowProps) {
   const afterSetsFields = section === 'metabolic' ? ROW_AFTER_SETS_METABOLIC : ROW_AFTER_SETS_NORMAL
+  const setsInputRefs = useRef<Record<string, HTMLInputElement | null>>({})
 
   const debouncedField = useDebounce(async (field: 'exercise' | 'notes', value: string) => {
     onSaveStart()
@@ -159,8 +160,14 @@ const ExerciseRowComponent = React.memo(function ExerciseRowComponent({
 
           // Sets — solo en la primera fila, rowSpan cubre todas las filas del bloque
           ...(isFirst ? [
-            <td key={`${w}-sets`} rowSpan={rowCount} className="px-1 py-1 text-center align-middle bg-gray-50 border-l border-r border-gray-100">
+            <td 
+              key={`${w}-sets`} 
+              rowSpan={rowCount} 
+              className="px-1 py-1 text-center align-middle bg-gray-50 border-l border-r border-gray-100 cursor-text"
+              onClick={() => setsInputRefs.current[w]?.focus()}
+            >
               <input
+                ref={el => (setsInputRefs.current[w] = el)}
                 type="text"
                 defaultValue={setsValue}
                 onChange={e => debouncedSets(w, e.target.value)}
