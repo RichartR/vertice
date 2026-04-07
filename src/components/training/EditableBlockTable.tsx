@@ -180,7 +180,7 @@ export default function EditableBlockTable({
 
               return (
                 <tr key={row.id} className="border-b border-gray-100 last:border-0">
-                  <td className="px-1.5 py-1 text-gray-700 max-w-[80px] truncate" title={row.exercise ?? undefined}>
+                  <td className="px-1.5 py-1 text-gray-700 w-[80px] break-words" title={row.exercise ?? undefined}>
                     {row.exercise || '—'}
                   </td>
 
