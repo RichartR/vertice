@@ -5,6 +5,7 @@ import { useTrainingBlocks } from '../hooks/useTrainingBlocks'
 import { useTrainingSession } from '../hooks/useTrainingSession'
 import { useWakeLock } from '../hooks/useWakeLock'
 import PanelCliente from '../components/training/PanelCliente'
+import Select from '../components/ui/Select'
 
 type Phase = 'block' | 'count' | 'setup' | 'session'
 
@@ -351,18 +352,13 @@ export default function IniciarEntrenamientoPage() {
                   {!clientsLoading && (availableClients.length > 0 || tempClientId) && (
                     <div className="space-y-3">
                       <div>
-                        <label htmlFor={`select-client-${idx}`} className="text-xs text-gray-500 block mb-1">Cliente</label>
-                        <select
-                          id={`select-client-${idx}`}
+                        <label className="text-xs text-gray-500 block mb-1">Cliente</label>
+                        <Select
                           value={tempClientId}
-                          onChange={e => { setTempClientId(e.target.value); setTempDayId('') }}
-                          className="w-full text-sm border border-gray-200 rounded-lg px-3 py-1.5 bg-white focus:outline-none focus:border-accent"
-                        >
-                          <option value="">Seleccionar cliente…</option>
-                          {availableClients.map(c => (
-                            <option key={c.id} value={c.id}>{c.full_name}</option>
-                          ))}
-                        </select>
+                          onChange={v => { setTempClientId(v); setTempDayId('') }}
+                          placeholder="Seleccionar cliente…"
+                          options={availableClients.map(c => ({ value: c.id, label: c.full_name }))}
+                        />
                       </div>
 
                       {tempLatestMeso && (
@@ -371,18 +367,13 @@ export default function IniciarEntrenamientoPage() {
                             Mesociclo:{' '}
                             <span className="font-medium text-gray-700">{tempLatestMeso.name}</span>
                           </p>
-                          <label htmlFor={`select-day-${idx}`} className="text-xs text-gray-500 block mb-1">Día</label>
-                          <select
-                            id={`select-day-${idx}`}
+                          <label className="text-xs text-gray-500 block mb-1">Día</label>
+                          <Select
                             value={tempDayId}
-                            onChange={e => setTempDayId(e.target.value)}
-                            className="w-full text-sm border border-gray-200 rounded-lg px-3 py-1.5 bg-white focus:outline-none focus:border-accent"
-                          >
-                            <option value="">Seleccionar día…</option>
-                            {tempLatestMeso.days.map(d => (
-                              <option key={d.id} value={d.id}>{d.name}</option>
-                            ))}
-                          </select>
+                            onChange={v => setTempDayId(v)}
+                            placeholder="Seleccionar día…"
+                            options={tempLatestMeso.days.map(d => ({ value: d.id, label: d.name }))}
+                          />
                         </div>
                       )}
 

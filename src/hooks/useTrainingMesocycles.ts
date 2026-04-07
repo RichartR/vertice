@@ -77,5 +77,11 @@ export function useTrainingMesocycles(clientId: string, blockId: string) {
     await fetchMesocycles()
   }
 
-  return { mesocycles, loading, error, fetchMesocycles, createMesocycle, getNextNumber, updateMesocycle }
+  async function deleteMesocycle(id: string) {
+    const { error: err } = await supabase.from('training_mesocycles').delete().eq('id', id)
+    if (err) throw new Error(err.message)
+    await fetchMesocycles()
+  }
+
+  return { mesocycles, loading, error, fetchMesocycles, createMesocycle, getNextNumber, updateMesocycle, deleteMesocycle }
 }

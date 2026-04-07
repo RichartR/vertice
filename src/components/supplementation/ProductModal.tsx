@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import type { SupplementProduct } from '../../hooks/useSupplementProducts'
+import Select from '../ui/Select'
 
 const CATEGORIES = [
   'PROTEINS', 'GAINERS', 'WEIGHT INCREASERS AND MUSCLE MASS', 'CARBOHYDRATES', 
@@ -128,17 +129,15 @@ export default function ProductModal({ product, onClose, onSave }: Readonly<Prod
             </div>
             <div>
               <label className="block text-xs font-medium text-gray-700 mb-1">Categoría</label>
-              <select 
+              <Select 
                 value={selectedCategory} 
-                onChange={e => setSelectedCategory(e.target.value)}
-                className="w-full border-gray-300 rounded-lg shadow-sm focus:ring-accent focus:border-accent text-sm py-2 px-3 border"
-              >
-                <option value="">(Sin categoría)</option>
-                {CATEGORIES.map(cat => (
-                  <option key={cat} value={cat}>{cat}</option>
-                ))}
-                <option value="OTRA">Otra (Especificar)</option>
-              </select>
+                onChange={v => setSelectedCategory(v)}
+                placeholder="(Sin categoría)"
+                options={[
+                  ...CATEGORIES.map(cat => ({ value: cat, label: cat })),
+                  { value: 'OTRA', label: 'Otra (Especificar)' }
+                ]}
+              />
             </div>
           </div>
 

@@ -90,5 +90,16 @@ export function useTrainingClients(blockId: string) {
     await fetchClients()
   }
 
-  return { clients, loading, error, fetchClients, createClient, updateClient }
+  async function removeClientFromBlock(clientId: string) {
+    const { error: err } = await supabase
+      .from('training_block_clients')
+      .delete()
+      .eq('client_id', clientId)
+      .eq('block_id', blockId)
+    
+    if (err) throw new Error(err.message)
+    await fetchClients()
+  }
+
+  return { clients, loading, error, fetchClients, createClient, updateClient, removeClientFromBlock }
 }

@@ -44,10 +44,9 @@ export default function DashboardAdminPage() {
     <div className="min-h-screen bg-gray-50 pb-16">
       <main className="max-w-5xl mx-auto px-4 sm:px-6 py-6 sm:py-10">
 
-        <div className="mb-2">
-          <h1 className="text-xl font-semibold text-gray-900">
-            {profile?.nombre ? `Bienvenido, ${profile.nombre.split(' ')[0]}` : 'Bienvenido'}
-          </h1>
+        <div className="shrink-0 mb-8">
+          <h1 className="text-2xl font-bold text-gray-900">Panel de administración</h1>
+          <p className="text-sm text-gray-500 mt-1">Accesos rápidos a gestión.</p>
         </div>
 
         {/* Accesos rápidos */}

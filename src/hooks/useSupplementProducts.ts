@@ -16,10 +16,13 @@ export type SupplementProduct = {
 
 export function useSupplementProducts() {
   const [products, setProducts] = useState<SupplementProduct[]>([])
-  const [loading, setLoading] = useState(true)
+  const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  const fetchProducts = useCallback(async () => {
+  const fetchProducts = useCallback(async (force = false) => {
+    // Prevent redundant fetches if we already have data and not forcing refresh
+    if (!force && products.length > 0) return
+    
     setLoading(true)
     setError(null)
     try {

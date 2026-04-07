@@ -5,6 +5,7 @@ import { supabase } from '../../lib/supabase'
 import Tooltip from '../../components/ui/Tooltip'
 import SearchInput from '../../components/ui/SearchInput'
 import Modal from '../../components/ui/Modal'
+import ConfirmModal from '../../components/ui/ConfirmModal'
 import FormField from '../../components/ui/FormField'
 import MultiSelect from '../../components/ui/MultiSelect'
 import { normalizar } from '../../utils/normalizar'
@@ -43,6 +44,8 @@ export default function AdminServicesPage() {
   const [nombre, setNombre] = useState('')
   const [descripcion, setDescripcion] = useState('')
   const [empleadosAsignados, setEmpleadosAsignados] = useState<string[]>([])
+  
+  const [confirmDeactivate, setConfirmDeactivate] = useState<Servicio | null>(null)
   const [guardando, setGuardando] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -171,6 +174,7 @@ export default function AdminServicesPage() {
   async function setActivo(s: Servicio, activo: boolean) {
     await supabase.from('services').update({ activo }).eq('id', s.id)
     cargarDatos()
+    setConfirmDeactivate(null)
   }
 
   // --- Listas filtradas por pestaña ---
@@ -284,8 +288,8 @@ export default function AdminServicesPage() {
                               Editar
                             </button>
                             <button
-                              onClick={() => setActivo(s, false)}
-                              className="px-2 py-1 rounded-md border border-red-100 text-xs text-red-500 hover:bg-red-50 transition-colors"
+                              onClick={() => setConfirmDeactivate(s)}
+                              className="px-2.5 py-1 rounded-md border border-red-100 text-xs text-red-500 hover:bg-red-50 transition-colors"
                             >
                               Desactivar
                             </button>
@@ -357,6 +361,15 @@ export default function AdminServicesPage() {
         </Modal>
       )}
 
+      <ConfirmModal
+        isOpen={!!confirmDeactivate}
+        title="Desactivar servicio"
+        message={`¿Estás seguro de que deseas desactivar el servicio "${confirmDeactivate?.nombre}"? Los registros históricos se conservarán siempre.`}
+        confirmLabel="Desactivar"
+        onConfirm={() => confirmDeactivate && setActivo(confirmDeactivate, false)}
+        onClose={() => setConfirmDeactivate(null)}
+        variant="danger"
+      />
     </div>
   )
 }

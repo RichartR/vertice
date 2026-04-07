@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { useSupplementProducts, type SupplementProduct } from '../hooks/useSupplementProducts'
 import ProductModal from '../components/supplementation/ProductModal'
 
@@ -90,32 +90,46 @@ export default function SupplementProductsPage() {
 
   return (
     <div className="p-4 sm:p-8 max-w-screen-2xl mx-auto flex flex-col h-[calc(100vh-64px)]">
-      {/* Breadcrumb & Header */}
+      {/* Header */}
       <div className="shrink-0 mb-6">
-        <nav className="text-sm font-medium text-gray-500 mb-2">
+        <nav className="text-sm text-gray-400 hover:text-gray-600 transition-colors mb-1 block">
+          <span className="mx-2">←</span>
           <Link to="/admin/suplementacion" className="hover:underline text-gray-600">Suplementación</Link>
-          <span className="mx-2">→</span>
-          <span className="text-gray-900">Catálogo de productos</span>
         </nav>
-        
-        <h1 className="text-2xl font-bold text-gray-900">Catálogo de Productos</h1>
+
+        <div className="flex items-center justify-between">
+          <h1 className="text-2xl font-bold text-gray-900">Catálogo de Productos</h1>
+          <button
+            onClick={handleOpenNew}
+            className="px-4 py-2 bg-accent hover:bg-accent-dark text-gray-800 text-sm font-medium rounded-lg transition-colors"
+          >
+            + Nuevo producto
+          </button>
+        </div>
       </div>
 
-      {/* Acciones */}
+      {/* Filtros */}
       <div className="shrink-0 flex flex-col sm:flex-row items-center justify-between gap-4 mb-4">
         <div className="flex flex-col sm:flex-row items-center gap-4 w-full sm:w-auto">
-          <input
-            type="text"
-            placeholder="Buscar por nombre, sabor o código..."
-            value={searchTerm}
-            onChange={e => {
-              setSearchTerm(e.target.value)
-              setCurrentPage(1)
-            }}
-            className="w-full sm:w-80 px-4 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent"
-          />
+          <div className="relative w-full sm:w-80">
+            <input
+              type="text"
+              placeholder="Buscar por nombre, sabor o código..."
+              value={searchTerm}
+              onChange={e => {
+                setSearchTerm(e.target.value)
+                setCurrentPage(1)
+              }}
+              className="w-full pl-10 pr-4 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent"
+            />
+            <div className="absolute left-3 top-2.5 text-gray-400">
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
+            </div>
+          </div>
           
-          <label className="flex items-center gap-2 cursor-pointer w-full sm:w-auto shrink-0">
+          <label className="flex items-center gap-2 cursor-pointer w-full sm:w-auto shrink-0 border border-gray-100 bg-white px-3 py-1.5 rounded-lg shadow-sm">
             <div className="relative">
               <input 
                 type="checkbox" 
@@ -132,31 +146,24 @@ export default function SupplementProductsPage() {
             <span className="text-sm font-medium text-gray-700">Solo activos</span>
           </label>
         </div>
-
-        <button
-          onClick={handleOpenNew}
-          className="w-full sm:w-auto px-4 py-2 bg-accent text-gray-900 text-sm font-medium rounded-lg hover:bg-accent-dark transition-colors shrink-0"
-        >
-          ＋ Nuevo producto
-        </button>
       </div>
 
       {/* Contenido / Tabla */}
       <div className="flex-1 min-h-0 bg-white border border-gray-200 rounded-lg shadow-sm flex flex-col overflow-hidden">
         <div className="flex-1 overflow-auto">
           <table className="min-w-full divide-y divide-gray-200 w-full text-sm text-left">
-            <thead className="bg-gray-50 sticky top-0 z-10">
-              <tr>
-                <th className="px-4 py-3 font-semibold text-gray-900">Código</th>
-                <th className="px-4 py-3 font-semibold text-gray-900">Producto</th>
-                <th className="px-4 py-3 font-semibold text-gray-900">Sabor</th>
-                <th className="px-4 py-3 font-semibold text-gray-900">Categoría</th>
-                <th className="px-4 py-3 font-semibold text-gray-900 whitespace-nowrap">P.B</th>
-                <th className="px-4 py-3 font-semibold text-gray-900 whitespace-nowrap">SRP</th>
-                <th className="px-4 py-3 font-semibold text-gray-900">EAN</th>
-                <th className="px-4 py-3 font-semibold text-gray-900">Stock</th>
-                <th className="px-4 py-3 font-semibold text-gray-900">Estado</th>
-                <th className="px-4 py-3 font-semibold text-gray-900 text-right">Acciones</th>
+            <thead className="sticky top-0 z-10 bg-gray-50/80 backdrop-blur-md border-b border-gray-100">
+              <tr className="text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                <th className="px-4 py-4">Código</th>
+                <th className="px-4 py-4">Producto</th>
+                <th className="px-4 py-4">Sabor</th>
+                <th className="px-4 py-4">Categoría</th>
+                <th className="px-4 py-4 whitespace-nowrap">P.B</th>
+                <th className="px-4 py-4 whitespace-nowrap">SRP</th>
+                <th className="px-4 py-4">EAN</th>
+                <th className="px-4 py-4">Stock</th>
+                <th className="px-4 py-4">Estado</th>
+                <th className="px-4 py-4 text-right">Acciones</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100 bg-white relative">

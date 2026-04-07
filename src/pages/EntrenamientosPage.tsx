@@ -11,11 +11,9 @@ export default function EntrenamientosPage() {
     <div className="min-h-screen bg-gray-50 pb-16">
       <main className="max-w-5xl mx-auto px-4 sm:px-6 py-6 sm:py-10">
 
-        <div className="mb-8">
-          <h1 className="text-xl font-semibold text-gray-900">Entrenamientos</h1>
-          {profile?.nombre && (
-            <p className="text-sm text-gray-400 mt-1">Hola, {profile.nombre.split(' ')[0]}</p>
-          )}
+        <div className="shrink-0 mb-8">
+          <h1 className="text-2xl font-bold text-gray-900">Entrenamientos</h1>
+          <p className="text-sm text-gray-500 mt-1">Gestión de entrenamientos.</p>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">

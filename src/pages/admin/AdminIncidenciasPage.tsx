@@ -7,6 +7,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { supabase } from '../../lib/supabase'
 import Modal from '../../components/ui/Modal'
+import ConfirmModal from '../../components/ui/ConfirmModal'
 import FormField from '../../components/ui/FormField'
 import { normalizar } from '../../utils/normalizar'
 import { useIncidenciasStats } from '../../hooks/useIncidenciasStats'
@@ -422,7 +423,10 @@ export default function AdminIncidenciasPage() {
 
         {/* Cabecera */}
         <div className="flex items-center justify-between mb-6">
-          <h1 className="text-xl font-semibold text-gray-900">Incidencias de clases</h1>
+          <div className="shrink-0 mb-8">
+            <h1 className="text-2xl font-bold text-gray-900">Incidencias de clases</h1>
+            <p className="text-sm text-gray-500 mt-1">Gestión de incidencias de clases.</p>
+          </div>
           {pestanya !== 'estadisticas' && (
             <button
               onClick={abrirNuevo}
@@ -536,14 +540,14 @@ export default function AdminIncidenciasPage() {
                     {pestanya === 'resuelta' && <col className="w-[150px]" />}
                     <col className="w-[280px]" />
                   </colgroup>
-                  <thead className="bg-accent/10 border-b border-accent/20">
+                  <thead className="bg-gray-50 sticky top-0 z-10">
                     <tr>
                       <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide cursor-pointer select-none hover:text-gray-700" onClick={() => setSortDesc(d => !d)}>
                         <span className="flex items-center gap-1">Fecha {sortDesc ? '↓' : '↑'}</span>
                       </th>
                       <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Socio</th>
                       <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Sesión</th>
-                      <th className="text-center px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">¿Avisó?</th>
+                      <th className="text-center px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Aviso</th>
                       <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Hora aviso</th>
                       <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Observaciones</th>
                       {pestanya === 'resuelta' && (
@@ -743,68 +747,63 @@ export default function AdminIncidenciasPage() {
       )}
 
       {/* Popup: marcar como Resuelta */}
-      {popupResuelta && (
-        <Modal
-          title="Marcar como resuelta"
-          confirmLabel={guardandoT ? 'Guardando...' : 'Confirmar'}
-          confirmDisabled={guardandoT}
-          onConfirm={marcarResuelta}
-          onClose={() => setPopupResuelta(null)}
-        >
-          <FormField id="p-fecha-nueva" label="Sesión recuperada">
-            <input
-              id="p-fecha-nueva"
-              type="text"
-              placeholder="Ej: Fisio Lunes 10:00"
-              value={fechaNuevaClase}
-              onChange={e => { setFechaNuevaClase(e.target.value); setErrTransicion(null) }}
-              className={`w-full ${inputCls}`}
-            />
-          </FormField>
-          {errTransicion && (
-            <p className="text-xs text-red-600 bg-red-50 rounded-lg px-3 py-2">{errTransicion}</p>
-          )}
-        </Modal>
-      )}
+      <ConfirmModal
+        isOpen={!!popupResuelta}
+        title="Marcar como resuelta"
+        confirmLabel={guardandoT ? 'Guardando...' : 'Confirmar'}
+        onConfirm={marcarResuelta}
+        onClose={() => setPopupResuelta(null)}
+        variant="primary"
+      >
+        <FormField id="p-fecha-nueva" label="Sesión recuperada">
+          <input
+            id="p-fecha-nueva"
+            type="text"
+            placeholder="Ej: Fisio Lunes 10:00"
+            value={fechaNuevaClase}
+            onChange={e => { setFechaNuevaClase(e.target.value); setErrTransicion(null) }}
+            className={`w-full ${inputCls}`}
+          />
+        </FormField>
+        {errTransicion && (
+          <p className="text-xs text-red-600 bg-red-50 rounded-lg px-3 py-2 mt-2">{errTransicion}</p>
+        )}
+      </ConfirmModal>
 
       {/* Popup: marcar como Caducada */}
-      {popupCaducada && (
-        <Modal
-          title="Marcar como caducada"
-          confirmLabel={guardandoT ? 'Guardando...' : 'Confirmar'}
-          confirmDisabled={guardandoT}
-          onConfirm={marcarCaducada}
-          onClose={() => setPopupCaducada(null)}
-        >
-          <FormField id="p-obs-extra" label="Observaciones adicionales" optional>
-            <textarea
-              id="p-obs-extra"
-              value={obsExtra}
-              onChange={e => setObsExtra(e.target.value)}
-              rows={3}
-              placeholder="Se añadirán al final de las observaciones existentes..."
-              className={`w-full ${inputCls} resize-none`}
-            />
-          </FormField>
-          <p className="text-xs text-gray-400">
-            Si hay observaciones previas, el texto se añadirá a continuación sin sobreescribir nada.
-          </p>
-        </Modal>
-      )}
+      <ConfirmModal
+        isOpen={!!popupCaducada}
+        title="Marcar como caducada"
+        confirmLabel={guardandoT ? 'Guardando...' : 'Confirmar'}
+        onConfirm={marcarCaducada}
+        onClose={() => setPopupCaducada(null)}
+        variant="primary"
+      >
+        <FormField id="p-obs-extra" label="Observaciones adicionales" optional>
+          <textarea
+            id="p-obs-extra"
+            value={obsExtra}
+            onChange={e => setObsExtra(e.target.value)}
+            rows={3}
+            placeholder="Se añadirán al final de las observaciones existentes..."
+            className={`w-full ${inputCls} resize-none`}
+          />
+        </FormField>
+        <p className="text-xs text-gray-400 mt-2">
+          Si hay observaciones previas, el texto se añadirá a continuación sin sobreescribir nada.
+        </p>
+      </ConfirmModal>
 
       {/* Confirmación eliminar */}
-      {confirmDeleteId && (
-        <Modal
-          title="Eliminar incidencia"
-          confirmLabel="Eliminar definitivamente"
-          onConfirm={() => eliminar(confirmDeleteId)}
-          onClose={() => setConfirmDeleteId(null)}
-        >
-          <p className="text-sm text-gray-600">
-            Esta acción eliminará la incidencia permanentemente. No se puede deshacer.
-          </p>
-        </Modal>
-      )}
+      <ConfirmModal
+        isOpen={!!confirmDeleteId}
+        title="Eliminar incidencia"
+        message="Esta acción eliminará la incidencia permanentemente. No se puede deshacer."
+        confirmLabel="Eliminar definitivamente"
+        onConfirm={() => eliminar(confirmDeleteId!)}
+        onClose={() => setConfirmDeleteId(null)}
+        variant="danger"
+      />
     </div>
   )
 }

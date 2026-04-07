@@ -13,6 +13,7 @@ import FilterBar from '../components/ui/FilterBar'
 import Tooltip from '../components/ui/Tooltip'
 import Badge from '../components/ui/Badge'
 import Modal from '../components/ui/Modal'
+import ConfirmModal from '../components/ui/ConfirmModal'
 import Select from '../components/ui/Select'
 import FormField from '../components/ui/FormField'
 import { exportToExcel } from '../utils/exportExcel'
@@ -112,7 +113,7 @@ export default function ServicePage() {
   const [rHora, setRHora]               = useState('')
   const [rCliente, setRCliente]         = useState('')
   const [rTratamiento, setRTratamiento] = useState('')
-  const [rNotas, setRNotas]             = useState('')
+  const [rNotes, setRNotes]             = useState('')
   const [rMetodo, setRMetodo]           = useState<'efectivo' | 'tarjeta'>('tarjeta')
   const [rPrecio, setRPrecio]           = useState('')
   const [rEmpleado, setREmpleado]       = useState('')  // employee_id seleccionado
@@ -120,6 +121,8 @@ export default function ServicePage() {
   // Lista de empleados activos asignados a este servicio (para el select del modal)
   const [empleados, setEmpleados]         = useState<Empleado[]>([])
   const [mostrarSelectorEmpleado, setMostrarSelectorEmpleado] = useState(false)
+  
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null)
   const [rGuardando, setRGuardando] = useState(false)
   const [rError, setRError]         = useState<string | null>(null)
 
@@ -166,7 +169,7 @@ export default function ServicePage() {
   async function abrirNuevo() {
     const hoy = new Date().toISOString().split('T')[0]
     setRFecha(hoy); setRHora(''); setRCliente('')
-    setRTratamiento(''); setRNotas(''); setRMetodo('tarjeta'); setRPrecio('')
+    setRTratamiento(''); setRNotes(''); setRMetodo('tarjeta'); setRPrecio('')
     setRError(null)
 
     const lista = await cargarEmpleados()
@@ -183,7 +186,7 @@ export default function ServicePage() {
     setRHora(formatHora(r.hora))
     setRCliente(r.cliente)
     setRTratamiento(r.tratamiento)
-    setRNotas(r.notas ?? '')
+    setRNotes(r.notas ?? '')
     setRMetodo(r.metodo_pago)
     setRPrecio(String(r.precio))
     setREmpleado(r.employee_id ?? '')
@@ -213,7 +216,7 @@ export default function ServicePage() {
       hora: rHora,
       cliente: rCliente.trim(),
       tratamiento: rTratamiento.trim(),
-      notas: rNotas.trim() || null,
+      notas: rNotes.trim() || null,
       metodo_pago: rMetodo,
       precio: Number.parseFloat(rPrecio),
     }
@@ -236,6 +239,7 @@ export default function ServicePage() {
   async function eliminarRegistro(id: string) {
     await supabase.from('records').delete().eq('id', id)
     recargar()
+    setConfirmDeleteId(null)
   }
 
   const totalIngresos = registrosFiltrados.reduce((sum, r) => sum + r.precio, 0)
@@ -379,7 +383,7 @@ export default function ServicePage() {
                                 Editar
                               </button>
                               <button
-                                onClick={() => eliminarRegistro(r.id)}
+                                onClick={() => setConfirmDeleteId(r.id)}
                                 className="px-2.5 py-1 rounded-md border border-red-100 text-xs text-red-500 hover:bg-red-50 transition-colors"
                               >
                                 Eliminar
@@ -543,7 +547,7 @@ export default function ServicePage() {
           </div>
 
           <FormField id="r-notas" label="Notas" optional>
-            <textarea id="r-notas" value={rNotas} onChange={e => setRNotas(e.target.value)} placeholder="Observaciones..." rows={2} className={`${inputCls} resize-none`} />
+            <textarea id="r-notas" value={rNotes} onChange={e => setRNotes(e.target.value)} placeholder="Observaciones..." rows={2} className={`${inputCls} resize-none`} />
           </FormField>
 
           {rError && (
@@ -552,6 +556,15 @@ export default function ServicePage() {
         </Modal>
       )}
 
+      <ConfirmModal
+        isOpen={!!confirmDeleteId}
+        title="Eliminar registro"
+        message="¿Estás seguro de que deseas eliminar este registro de sesión? Esta acción no se puede deshacer."
+        confirmLabel="Eliminar"
+        onConfirm={() => confirmDeleteId && eliminarRegistro(confirmDeleteId)}
+        onClose={() => setConfirmDeleteId(null)}
+        variant="danger"
+      />
     </div>
   )
 }

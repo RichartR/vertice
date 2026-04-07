@@ -7,6 +7,7 @@ export type SupplementClient = {
   phone: string | null
   notes: string | null
   total_sales: number
+  active: boolean
 }
 
 export function useSupplementClients() {
@@ -14,7 +15,7 @@ export function useSupplementClients() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  const fetchClients = useCallback(async (search?: string) => {
+  const fetchClients = useCallback(async (search?: string, includeArchived = false) => {
     setLoading(true)
     setError(null)
     try {
@@ -24,11 +25,16 @@ export function useSupplementClients() {
           *,
           supplement_sales(count)
         `)
-        .order('full_name', { ascending: true })
+      
+      if (!includeArchived) {
+        query = query.eq('active', true)
+      }
 
       if (search) {
         query = query.or(`full_name.ilike.%${search}%,phone.ilike.%${search}%`)
       }
+
+      query = query.order('full_name', { ascending: true })
 
       const { data, error: fetchError } = await query
 
@@ -39,7 +45,8 @@ export function useSupplementClients() {
         full_name: row.full_name,
         phone: row.phone,
         notes: row.notes,
-        total_sales: row.supplement_sales?.[0]?.count ?? 0
+        total_sales: row.supplement_sales?.[0]?.count ?? 0,
+        active: row.active ?? true
       }))
 
       setClients(mapped)
@@ -57,7 +64,7 @@ export function useSupplementClients() {
     try {
       const { data, error: err } = await supabase
         .from('supplement_clients')
-        .insert({ full_name: fullName, phone, notes })
+        .insert({ full_name: fullName, phone, notes, active: true })
         .select()
         .single()
       if (err) throw err
@@ -69,7 +76,7 @@ export function useSupplementClients() {
     }
   }, [fetchClients])
 
-  const updateClient = useCallback(async (id: string, data: { full_name?: string; phone?: string; notes?: string }) => {
+  const updateClient = useCallback(async (id: string, data: { full_name?: string; phone?: string; notes?: string; active?: boolean }) => {
     try {
       const { error: err } = await supabase
         .from('supplement_clients')
@@ -83,12 +90,52 @@ export function useSupplementClients() {
     }
   }, [fetchClients])
 
+  const deleteClient = useCallback(async (client: SupplementClient) => {
+    try {
+      if (client.total_sales > 0) {
+        // Soft delete (archive)
+        const { error: err } = await supabase
+          .from('supplement_clients')
+          .update({ active: false })
+          .eq('id', client.id)
+        if (err) throw err
+      } else {
+        // Physical delete
+        const { error: err } = await supabase
+          .from('supplement_clients')
+          .delete()
+          .eq('id', client.id)
+        if (err) throw err
+      }
+      await fetchClients()
+    } catch (err: any) {
+      console.error('Error deleting client:', err)
+      throw err
+    }
+  }, [fetchClients])
+
+  const activateClient = useCallback(async (id: string) => {
+    try {
+      const { error: err } = await supabase
+        .from('supplement_clients')
+        .update({ active: true })
+        .eq('id', id)
+      if (err) throw err
+      await fetchClients(undefined, true) // Refresh showing all to maintain view
+    } catch (err: any) {
+      console.error('Error activating client:', err)
+      throw err
+    }
+  }, [fetchClients])
+
   return {
     clients,
     loading,
     error,
     fetchClients,
     createClient,
-    updateClient
+    updateClient,
+    deleteClient,
+    activateClient
   }
 }

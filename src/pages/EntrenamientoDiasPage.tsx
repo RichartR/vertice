@@ -5,6 +5,7 @@ import { supabase } from '../lib/supabase'
 import { useTrainingDays } from '../hooks/useTrainingDays'
 import Modal from '../components/ui/Modal'
 import FormField from '../components/ui/FormField'
+import ConfirmModal from '../components/ui/ConfirmModal'
 
 const MESES = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic']
 
@@ -20,7 +21,7 @@ export default function EntrenamientoDiasPage() {
     mesocycleId: string
   }>()
   const navigate = useNavigate()
-  const { days, loading, createDay, getDayCount } = useTrainingDays(mesocycleId ?? '')
+  const { days, loading, createDay, getDayCount, deleteDay } = useTrainingDays(mesocycleId ?? '')
 
   const [clientName, setClientName] = useState('')
   const [mesoName, setMesoName] = useState('')
@@ -30,6 +31,7 @@ export default function EntrenamientoDiasPage() {
   const [nombreDia, setNombreDia] = useState('')
   const [guardando, setGuardando] = useState(false)
   const [errModal, setErrModal] = useState('')
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null)
 
   useEffect(() => {
     supabase
@@ -72,6 +74,16 @@ export default function EntrenamientoDiasPage() {
     }
   }
 
+  async function handleBorrar() {
+    if (!confirmDeleteId) return
+    try {
+      await deleteDay(confirmDeleteId)
+      setConfirmDeleteId(null)
+    } catch (e: any) {
+      alert(e.message ?? 'Error al eliminar')
+    }
+  }
+
   const maxDaysReached = days.length >= 5
   const baseRoute = `/entrenamientos/bloques/${blockId}/clientes/${clientId}/mesociclos/${mesocycleId}`
 
@@ -93,14 +105,27 @@ export default function EntrenamientoDiasPage() {
     return (
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {days.map(day => (
-          <button
+          <div
             key={day.id}
-            onClick={() => navigate(`${baseRoute}/dias/${day.id}`)}
-            className="flex items-center justify-between gap-3 p-5 bg-white rounded-2xl border border-gray-200 hover:border-accent hover:shadow-sm transition-all text-left group"
+            className="group relative flex items-center bg-white rounded-2xl border border-gray-200 hover:border-accent hover:shadow-sm transition-all"
           >
-            <p className="font-semibold text-gray-900 group-hover:text-gray-700">{day.name}</p>
-            <span className="text-gray-300 group-hover:text-accent transition-colors shrink-0">→</span>
-          </button>
+            <button
+              onClick={() => navigate(`${baseRoute}/dias/${day.id}`)}
+              className="flex-1 flex items-center justify-between gap-3 p-5 text-left"
+            >
+              <p className="font-semibold text-gray-900 group-hover:text-gray-700">{day.name}</p>
+              <span className="text-gray-300 group-hover:text-accent transition-colors shrink-0">→</span>
+            </button>
+            <button
+              onClick={(e) => { e.stopPropagation(); setConfirmDeleteId(day.id) }}
+              className="absolute -top-3 -right-3 w-9 h-9 flex items-center justify-center bg-white rounded-full border border-gray-200 shadow-md text-gray-400 hover:text-red-600 hover:scale-110 opacity-0 group-hover:opacity-100 transition-all z-10"
+              title="Eliminar día"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v2m-3 0h10" />
+              </svg>
+            </button>
+          </div>
         ))}
       </div>
     )
@@ -166,6 +191,17 @@ export default function EntrenamientoDiasPage() {
           </FormField>
           {errModal && <p className="text-xs text-red-500">{errModal}</p>}
         </Modal>
+      )}
+
+      {confirmDeleteId && (
+        <ConfirmModal
+          isOpen={true}
+          title="Eliminar día"
+          message="¿Estás seguro de que quieres eliminar este día? Se borrarán todos los bloques y ejercicios configurados en él. Esta acción no se puede deshacer."
+          onConfirm={handleBorrar}
+          onClose={() => setConfirmDeleteId(null)}
+          variant="danger"
+        />
       )}
     </div>
   )

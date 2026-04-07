@@ -50,5 +50,11 @@ export function useTrainingDays(mesocycleId: string) {
     await fetchDays()
   }
 
-  return { days, loading, error, fetchDays, createDay, getDayCount }
+  async function deleteDay(id: string) {
+    const { error: err } = await supabase.from('training_days').delete().eq('id', id)
+    if (err) throw new Error(err.message)
+    await fetchDays()
+  }
+
+  return { days, loading, error, fetchDays, createDay, getDayCount, deleteDay }
 }

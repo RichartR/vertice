@@ -157,7 +157,9 @@ export default function EntrenamientoClientesPage() {
             >
               ← Bloques
             </button>
-            <h1 className="text-xl font-semibold text-gray-900">{blockName || '…'}</h1>
+            <div className="shrink-0 mb-8">
+              <h1 className="text-2xl font-bold text-gray-900">{blockName || '…'}</h1>
+            </div>
           </div>
           <button
             onClick={abrirModal}

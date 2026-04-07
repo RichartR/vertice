@@ -9,6 +9,7 @@ import type { ExerciseRow, SectionBlock, WeekStatus } from '../utils/trainingUti
 import { calcularKgMovidos, calcularTotalKgMovidos } from '../utils/trainingUtils'
 import { exportTrainingDay } from '../utils/exportTraining'
 import Tooltip from '../components/ui/Tooltip'
+import ConfirmModal from '../components/ui/ConfirmModal'
 
 // ─── Tipos ───────────────────────────────────────────────────────────────────
 
@@ -238,7 +239,6 @@ function SectionBlockComponent({
   onUpdateField, onUpdateWeek, onToggleWeek, onSaveStart, onSaveEnd,
 }: SectionBlockProps) {
   const headerFields = section === 'metabolic' ? HEADER_FIELDS_METABOLIC : HEADER_FIELDS_NORMAL
-  const [confirmDelete, setConfirmDelete] = useState(false)
 
   const debouncedName = useDebounce(async (name: string) => {
     onSaveStart()
@@ -270,19 +270,11 @@ function SectionBlockComponent({
                     placeholder="Nombre del bloque"
                     className="text-sm font-semibold text-gray-700 bg-transparent border-0 outline-none focus:bg-white rounded px-1 py-0.5 flex-1 min-w-0"
                   />
-                  {confirmDelete ? (
-                    <div className="flex items-center gap-1 text-xs shrink-0">
-                      <span className="text-gray-400">¿Eliminar?</span>
-                      <button onClick={() => onDeleteBlock(block.id)} className="px-1.5 py-0.5 bg-red-100 text-red-600 rounded hover:bg-red-200 transition-colors">Sí</button>
-                      <button onClick={() => setConfirmDelete(false)} className="px-1.5 py-0.5 bg-gray-100 text-gray-600 rounded hover:bg-gray-200 transition-colors">No</button>
-                    </div>
-                  ) : (
-                    <button
-                      onClick={() => setConfirmDelete(true)}
-                      className="text-gray-300 hover:text-red-400 transition-colors px-1 shrink-0"
-                      title="Eliminar sub-bloque"
-                    >🗑</button>
-                  )}
+                  <button
+                    onClick={() => onDeleteBlock(block.id)}
+                    className="text-gray-300 hover:text-red-400 transition-colors px-1 shrink-0"
+                    title="Eliminar sub-bloque"
+                  >🗑</button>
                 </div>
               </th>
               {WEEKS.map(w => {
@@ -396,6 +388,8 @@ export default function EntrenamientoDiaPage() {
   const [mesoName, setMesoName] = useState('')
   const [saveStatus, setSaveStatus] = useState<SaveStatus>('idle')
   const [exporting, setExporting] = useState(false)
+  const [confirmDeleteBlockId, setConfirmDeleteBlockId] = useState<string | null>(null)
+  const [confirmDeleteRowId, setConfirmDeleteRowId] = useState<string | null>(null)
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   useEffect(() => {
@@ -430,9 +424,17 @@ export default function EntrenamientoDiaPage() {
     } catch { handleSaveEnd(false) }
   }
 
-  async function handleDeleteBlock(id: string) {
+  async function handleDeleteBlockConfirm(id: string) {
+    setConfirmDeleteBlockId(id)
+  }
+
+  async function handleDeleteBlockExecute(id: string) {
     handleSaveStart()
-    try { await deleteSectionBlock(id); handleSaveEnd(true) }
+    try { 
+      await deleteSectionBlock(id)
+      handleSaveEnd(true) 
+      setConfirmDeleteBlockId(null)
+    }
     catch { handleSaveEnd(false) }
   }
 
@@ -446,9 +448,17 @@ export default function EntrenamientoDiaPage() {
     } catch { handleSaveEnd(false) }
   }
 
-  async function handleDeleteRow(id: string) {
+  async function handleDeleteRowConfirm(id: string) {
+    setConfirmDeleteRowId(id)
+  }
+
+  async function handleDeleteRowExecute(id: string) {
     handleSaveStart()
-    try { await deleteExerciseRow(id); handleSaveEnd(true) }
+    try { 
+      await deleteExerciseRow(id)
+      handleSaveEnd(true) 
+      setConfirmDeleteRowId(null)
+    }
     catch { handleSaveEnd(false) }
   }
 
@@ -531,9 +541,9 @@ export default function EntrenamientoDiaPage() {
                         weekStatuses={sectionWeekStatuses}
                         onUpdateBlockName={updateSectionBlockName}
                         onUpdateBlockSets={updateBlockWeekSets}
-                        onDeleteBlock={handleDeleteBlock}
+                        onDeleteBlock={handleDeleteBlockConfirm}
                         onAddRow={handleAddRow}
-                        onDeleteRow={handleDeleteRow}
+                        onDeleteRow={handleDeleteRowConfirm}
                         onUpdateField={updateExerciseRow}
                         onUpdateWeek={updateWeekData}
                         onToggleWeek={(w, completed) => handleToggleWeek(key, w, completed)}
@@ -578,6 +588,29 @@ export default function EntrenamientoDiaPage() {
           </div>
         )}
       </main>
+
+      {/* Modales de Confirmación */}
+      {confirmDeleteBlockId && (
+        <ConfirmModal
+          isOpen={true}
+          title="Eliminar bloque"
+          message="¿Estás seguro de que quieres eliminar este bloque y todos sus ejercicios? Esta acción no se puede deshacer."
+          onConfirm={() => handleDeleteBlockExecute(confirmDeleteBlockId)}
+          onClose={() => setConfirmDeleteBlockId(null)}
+          variant="danger"
+        />
+      )}
+
+      {confirmDeleteRowId && (
+        <ConfirmModal
+          isOpen={true}
+          title="Eliminar ejercicio"
+          message="¿Estás seguro de que quieres eliminar esta fila de ejercicio?"
+          onConfirm={() => handleDeleteRowExecute(confirmDeleteRowId)}
+          onClose={() => setConfirmDeleteRowId(null)}
+          variant="danger"
+        />
+      )}
     </div>
   )
 }

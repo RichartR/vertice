@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react'
 import { supabase } from '../../lib/supabase'
 import SearchInput from '../../components/ui/SearchInput'
 import Modal from '../../components/ui/Modal'
+import ConfirmModal from '../../components/ui/ConfirmModal'
 import Badge from '../../components/ui/Badge'
 import FormField from '../../components/ui/FormField'
 import MultiSelect from '../../components/ui/MultiSelect'
@@ -403,19 +404,18 @@ export default function AdminUsersPage() {
       </main>
 
       {/* Modal confirmación reset contraseña */}
-      {resetEmail && (
-        <Modal
-          title="Restablecer contraseña"
-          confirmLabel={enviandoReset ? 'Enviando...' : 'Enviar email'}
-          confirmDisabled={enviandoReset}
-          onConfirm={handleReset}
-          onClose={() => setResetEmail(null)}
-        >
-          <p className="text-sm text-gray-600">
-            ¿Enviar email de restablecimiento de contraseña a <span className="font-medium text-gray-900">{resetEmail}</span>?
-          </p>
-        </Modal>
-      )}
+      <ConfirmModal
+        isOpen={!!resetEmail}
+        title="Restablecer contraseña"
+        confirmLabel={enviandoReset ? 'Enviando...' : 'Enviar email'}
+        onConfirm={handleReset}
+        onClose={() => setResetEmail(null)}
+        variant="primary"
+      >
+        <p className="text-sm text-gray-600">
+          ¿Enviar email de restablecimiento de contraseña a <span className="font-medium text-gray-900">{resetEmail}</span>?
+        </p>
+      </ConfirmModal>
 
       {/* Modal creación/edición */}
       {modalOpen && (

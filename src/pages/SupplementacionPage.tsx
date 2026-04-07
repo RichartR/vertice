@@ -105,8 +105,8 @@ export default function SupplementacionPage() {
   ]
 
   return (
-    <div className="p-4 sm:p-8 max-w-7xl mx-auto">
-      <div className="mb-8">
+    <div className="p-4 sm:p-8 max-w-screen-2xl mx-auto flex flex-col h-[calc(100vh-64px)] overflow-auto">
+      <div className="shrink-0 mb-8">
         <h1 className="text-2xl font-bold text-gray-900">Suplementación</h1>
         <p className="text-sm text-gray-500 mt-1">Gestión de catálogo, ventas, stock y pedidos.</p>
       </div>
