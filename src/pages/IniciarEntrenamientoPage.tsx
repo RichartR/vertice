@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { useTrainingBlocks } from '../hooks/useTrainingBlocks'
 import { useTrainingSession } from '../hooks/useTrainingSession'
+import { useWakeLock } from '../hooks/useWakeLock'
 import PanelCliente from '../components/training/PanelCliente'
 
 type Phase = 'block' | 'count' | 'setup' | 'session'
@@ -50,6 +51,8 @@ export default function IniciarEntrenamientoPage() {
   const { clients, loading: clientsLoading, fetchActiveData } = useTrainingSession()
 
   const [phase, setPhase] = useState<Phase>('block')
+  useWakeLock(phase === 'session')
+
   const [selectedBlockName, setSelectedBlockName] = useState('')
   const [panelCount, setPanelCount] = useState(1)
   // Array de panelCount slots; null = sin configurar
