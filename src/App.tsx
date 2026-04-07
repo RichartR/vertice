@@ -21,6 +21,13 @@ const EntrenamientoDiasPage   = lazy(() => import('./pages/EntrenamientoDiasPage
 const EntrenamientoDiaPage    = lazy(() => import('./pages/EntrenamientoDiaPage'))
 const IniciarEntrenamientoPage = lazy(() => import('./pages/IniciarEntrenamientoPage'))
 
+const SupplementacionPage     = lazy(() => import('./pages/SupplementacionPage'))
+const SupplementProductsPage  = lazy(() => import('./pages/SupplementProductsPage'))
+const SupplementSalesPage     = lazy(() => import('./pages/SupplementSalesPage'))
+const SupplementOrdersPage    = lazy(() => import('./pages/SupplementOrdersPage'))
+const SupplementStockPage     = lazy(() => import('./pages/SupplementStockPage'))
+const SupplementStatsPage     = lazy(() => import('./pages/SupplementStatsPage'))
+
 // Renderiza el dashboard correcto según el rol del usuario.
 function DashboardRouter() {
   const { isAdmin } = useAuth()
@@ -61,6 +68,12 @@ export default function App() {
           <Route path="/admin/services"     element={<AdminServicesPage />} />
           <Route path="/admin/services/:id" element={<ServicePage />} />
           <Route path="/admin/incidencias"  element={<AdminIncidenciasPage />} />
+          <Route path="/admin/suplementacion" element={<SupplementacionPage />} />
+          <Route path="/admin/suplementacion/productos" element={<SupplementProductsPage />} />
+          <Route path="/admin/suplementacion/ventas" element={<SupplementSalesPage />} />
+          <Route path="/admin/suplementacion/pedidos" element={<SupplementOrdersPage />} />
+          <Route path="/admin/suplementacion/stock" element={<SupplementStockPage />} />
+          <Route path="/admin/suplementacion/estadisticas" element={<SupplementStatsPage />} />
         </Route>
 
         {/* Fallback — redirigir al dashboard (ProtectedRoute gestiona si no hay sesión) */}

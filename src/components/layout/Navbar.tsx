@@ -63,6 +63,9 @@ export default function Navbar() {
         {isAdmin && (
           <NavLink to="/admin/incidencias" className={navLinkCls}>Incidencias de Asistencia</NavLink>
         )}
+        {isAdmin && (
+          <NavLink to="/admin/suplementacion" className={navLinkCls}>Suplementación</NavLink>
+        )}
         {!isAdmin && serviciosCount > 1 && (
           <NavLink to="/dashboard" end className={navLinkCls}>Mis servicios</NavLink>
         )}
@@ -105,6 +108,11 @@ export default function Navbar() {
           {isAdmin && (
             <NavLink to="/admin/incidencias" onClick={cerrarMenu} className={menuLinkCls}>
               Incidencias
+            </NavLink>
+          )}
+          {isAdmin && (
+            <NavLink to="/admin/suplementacion" onClick={cerrarMenu} className={menuLinkCls}>
+              Suplementación
             </NavLink>
           )}
           {!isAdmin && serviciosCount > 1 && (
