@@ -1,0 +1,408 @@
+import { useState, useEffect, useRef } from 'react'
+import { createPortal } from 'react-dom'
+import { useSupplementProducts } from '../../hooks/useSupplementProducts'
+import { useSupplementOrders } from '../../hooks/useSupplementOrders'
+import ConfirmModal from '../ui/ConfirmModal'
+
+interface NewOrderModalProps {
+  isOpen: boolean
+  onClose: () => void
+  onOrderCreated: () => void
+}
+
+type OrderLineState = {
+  id: string
+  productId: string
+  quantity: number
+  unitCost: number | ''
+}
+
+/**
+ * Componente para una línea individual de pedido
+ */
+interface OrderLineItemProps {
+  line: OrderLineState
+  products: any[]
+  onUpdate: (id: string, updates: Partial<OrderLineState>) => void
+  onRemove: (id: string) => void
+}
+
+function OrderLineItem({ line, products, onUpdate, onRemove }: Readonly<OrderLineItemProps>) {
+  const subtotal = typeof line.unitCost === 'number' ? (line.quantity * line.unitCost) : 0
+  const qtyId = `qty-${line.id}`
+  const costId = `cost-${line.id}`
+
+  return (
+    <div className="flex gap-6 items-start p-8 bg-gray-50/50 rounded-3xl border border-gray-100 hover:border-gray-200 transition-all group shadow-sm">
+      <div className="flex-1 min-w-0 space-y-3">
+        <label className="block text-[10px] font-black text-gray-400 uppercase tracking-[0.15em] ml-1">Producto</label>
+        <ProductSelector 
+          value={line.productId}
+          onChange={(productId) => onUpdate(line.id, { productId })}
+          products={products.filter(p => p.active)}
+        />
+      </div>
+      
+      <div className="w-28 shrink-0 space-y-3">
+        <label htmlFor={qtyId} className="block text-[10px] font-black text-gray-400 uppercase tracking-[0.15em] ml-1">Cant.</label>
+        <input 
+          id={qtyId}
+          type="number"
+          min="1"
+          value={line.quantity}
+          onChange={e => onUpdate(line.id, { quantity: Number.parseInt(e.target.value, 10) || 1 })}
+          className="w-full px-5 py-3 bg-white border border-gray-200 rounded-2xl focus:ring-4 focus:ring-accent/20 focus:border-accent outline-none text-center font-bold text-gray-900 transition-all"
+        />
+      </div>
+      
+      <div className="w-40 shrink-0 space-y-3">
+        <label htmlFor={costId} className="block text-[10px] font-black text-gray-400 uppercase tracking-[0.15em] ml-1">Costo Unit.</label>
+        <div className="relative">
+          <input 
+            id={costId}
+            type="number"
+            step="0.01"
+            min="0"
+            value={line.unitCost}
+            onChange={e => onUpdate(line.id, { unitCost: e.target.value === '' ? '' : Number.parseFloat(e.target.value) })}
+            placeholder="0.00"
+            className="w-full px-5 py-3 bg-white border border-gray-200 rounded-2xl focus:ring-4 focus:ring-accent/20 focus:border-accent outline-none font-bold text-gray-900 text-right pr-12 transition-all"
+          />
+          <span className="absolute right-5 top-3.5 text-gray-400 font-bold">€</span>
+        </div>
+      </div>
+      
+      <div className="w-32 shrink-0 space-y-3 text-right">
+         <label className="block text-[10px] font-black text-gray-400 uppercase tracking-[0.15em]">Subtotal</label>
+         <div className="py-2.5 font-black text-gray-900 text-xl tracking-tight">
+            {subtotal > 0 ? `${subtotal.toFixed(2)} €` : '—'}
+         </div>
+      </div>
+
+      <button 
+        onClick={() => onRemove(line.id)}
+        className="mt-9 p-3 text-gray-300 hover:text-red-500 hover:bg-red-50 rounded-2xl transition-all"
+        title="Eliminar línea"
+      >
+        <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+        </svg>
+      </button>
+    </div>
+  )
+}
+
+export default function NewOrderModal({ isOpen, onClose, onOrderCreated }: Readonly<NewOrderModalProps>) {
+  const { products, fetchProducts } = useSupplementProducts()
+  const { createOrder } = useSupplementOrders()
+  
+  const [orderDate, setOrderDate] = useState(() => new Date().toISOString().split('T')[0])
+  const [notes, setNotes] = useState('')
+  const [lines, setLines] = useState<OrderLineState[]>([])
+  const [saving, setSaving] = useState(false)
+  const [errorModal, setErrorModal] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (isOpen) {
+      fetchProducts()
+      setLines([
+        { id: Math.random().toString(36).slice(2), productId: '', quantity: 1, unitCost: '' }
+      ])
+      setOrderDate(new Date().toISOString().split('T')[0])
+      setNotes('')
+    }
+  }, [isOpen, fetchProducts])
+
+  if (!isOpen) return null
+
+  const handleAddLine = () => {
+    setLines(prev => [...prev, { id: Math.random().toString(36).slice(2), productId: '', quantity: 1, unitCost: '' }])
+  }
+
+  const handleRemoveLine = (id: string) => {
+    setLines(prev => prev.filter(l => l.id !== id))
+  }
+
+  const handleUpdateLine = (id: string, updates: Partial<OrderLineState>) => {
+    setLines(prev => prev.map(l => {
+      if (l.id !== id) return l
+      const updated = { ...l, ...updates }
+      if ('productId' in updates) {
+        const product = products.find(p => p.id === updates.productId)
+        updated.unitCost = product?.pb ?? ''
+      }
+      return updated
+    }))
+  }
+
+  const totalCost = lines.reduce((acc, line) => {
+    const cost = typeof line.unitCost === 'number' ? line.unitCost : 0
+    return acc + (line.quantity * cost)
+  }, 0)
+
+  const isFormValid = lines.length > 0 && lines.every(l => l.productId && l.quantity > 0)
+  
+  const handleSubmit = async () => {
+    if (!isFormValid) {
+      setErrorModal('Debes completar todos los campos obligatorios.')
+      return
+    }
+
+    setSaving(true)
+    try {
+      await createOrder({
+        orderDate,
+        notes,
+        lines: lines.map(l => ({
+          productId: l.productId,
+          quantity: l.quantity,
+          unitCost: typeof l.unitCost === 'number' ? l.unitCost : undefined
+        }))
+      })
+      onOrderCreated()
+    } catch (err: any) {
+      console.error(err)
+      setErrorModal(err.message || 'Error al crear el pedido.')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 animate-in fade-in duration-300">
+      <div className="fixed inset-0 transition-opacity bg-gray-900/60 backdrop-blur-sm" aria-hidden="true" onClick={onClose}></div>
+
+      <div className="bg-white rounded-3xl text-left overflow-hidden shadow-2xl transform transition-all w-full max-w-4xl flex flex-col max-h-[90vh] relative z-10 border border-white/20">
+        <div className="px-8 py-6 border-b border-gray-100 shrink-0 bg-white flex justify-between items-center text-gray-900 uppercase">
+          <h3 className="text-xl font-bold tracking-tight">Nuevo Pedido</h3>
+          <button onClick={onClose} className="p-2 text-gray-400 hover:text-gray-900 hover:bg-gray-100 rounded-full transition-all">
+            <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+
+        <div className="p-8 overflow-y-auto space-y-10 flex-1 scrollbar-hide">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
+            <div className="space-y-1.5">
+              <label htmlFor="order-date" className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest ml-1">Fecha del pedido</label>
+              <input
+                id="order-date"
+                type="date"
+                value={orderDate}
+                onChange={e => setOrderDate(e.target.value)}
+                className="w-full px-5 py-3.5 bg-gray-50/50 border border-gray-100 rounded-2xl focus:ring-4 focus:ring-accent/20 focus:border-accent outline-none transition-all font-bold text-gray-900"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <label htmlFor="order-notes" className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest ml-1">Notas (Opcional)</label>
+              <textarea
+                id="order-notes"
+                value={notes}
+                onChange={e => setNotes(e.target.value)}
+                rows={1}
+                className="w-full px-5 py-3.5 bg-gray-50/50 border border-gray-100 rounded-2xl focus:ring-4 focus:ring-accent/20 focus:border-accent outline-none transition-all resize-y font-medium text-gray-900"
+                placeholder="Ej: Pedido a central de Vitobest..."
+              />
+            </div>
+          </div>
+
+          <div className="space-y-6">
+            <div className="flex justify-between items-center px-1">
+              <h4 className="text-sm font-bold text-gray-900 uppercase tracking-widest">Líneas de Pedido</h4>
+              <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest bg-gray-100 px-3 py-1 rounded-full">{lines.length} productos</span>
+            </div>
+            
+            <div className="space-y-4">
+              {lines.map((line) => (
+                <OrderLineItem 
+                  key={line.id} 
+                  line={line} 
+                  products={products} 
+                  onUpdate={handleUpdateLine} 
+                  onRemove={handleRemoveLine} 
+                />
+              ))}
+            </div>
+            
+            <button
+              onClick={handleAddLine}
+              className="w-full py-4 border-2 border-dashed border-gray-100 text-gray-400 font-bold uppercase text-[10px] tracking-widest rounded-2xl hover:border-accent hover:bg-accent/5 hover:text-accent-dark transition-all flex justify-center items-center gap-3 active:scale-[0.99] transform"
+            >
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M12 4v16m8-8H4" />
+              </svg>
+              Añadir otro producto
+            </button>
+          </div>
+        </div>
+
+        <div className="px-8 py-6 bg-gray-50 border-t border-gray-100 shrink-0 flex items-center justify-between">
+          <div className="flex flex-col">
+             <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Coste Estimado</span>
+             <p className="text-2xl font-bold text-gray-900">{totalCost.toFixed(2)} <span className="text-sm font-bold text-gray-400">€</span></p>
+          </div>
+          <div className="flex gap-3">
+             <button
+               onClick={onClose}
+               className="px-6 py-3 font-bold text-gray-500 hover:text-gray-900 transition-all rounded-xl hover:bg-white"
+             >
+               Cancelar
+             </button>
+             <button
+               onClick={handleSubmit}
+               disabled={!isFormValid || saving}
+               className="px-8 py-3.5 bg-accent-dark hover:bg-accent text-accent-darker font-bold uppercase text-[10px] tracking-widest rounded-xl shadow-lg shadow-accent-dark/20 transition-all disabled:opacity-30 disabled:scale-100 transform active:scale-95 flex items-center gap-2"
+             >
+               {saving ? 'Guardando...' : 'Crear pedido'}
+               {!saving && (
+                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                 </svg>
+               )}
+             </button>
+          </div>
+        </div>
+      </div>
+      
+      {errorModal && (
+        <ConfirmModal 
+          isOpen={true}
+          title="Error"
+          message={errorModal}
+          onConfirm={() => setErrorModal(null)}
+          onClose={() => setErrorModal(null)}
+          confirmLabel="Entendido"
+          variant="primary"
+        />
+      )}
+    </div>
+  )
+}
+
+
+interface ProductSelectorProps {
+  value: string
+  onChange: (val: string) => void
+  products: any[]
+}
+
+function ProductSelector({ value, onChange, products }: Readonly<ProductSelectorProps>) {
+  const [open, setOpen] = useState(false)
+  const [searchTerm, setSearchTerm] = useState('')
+  const triggerRef = useRef<HTMLButtonElement>(null)
+  const dropdownRef = useRef<HTMLDivElement>(null)
+  const [dropdownStyle, setDropdownStyle] = useState<React.CSSProperties>({})
+
+  const selectedProduct = products.find(p => p.id === value)
+
+  const handleToggle = () => {
+    if (!open && triggerRef.current) {
+      setSearchTerm('')
+      const rect = triggerRef.current.getBoundingClientRect()
+      setDropdownStyle({
+        position: 'fixed',
+        top: rect.bottom + 4,
+        left: rect.left,
+        width: rect.width,
+        zIndex: 9999,
+      })
+    }
+    setOpen(!open)
+  }
+
+  useEffect(() => {
+    function handleOutside(e: MouseEvent) {
+      const target = e.target as Node
+      if (triggerRef.current?.contains(target) || dropdownRef.current?.contains(target)) return
+      setOpen(false)
+    }
+    document.addEventListener('mousedown', handleOutside)
+    return () => document.removeEventListener('mousedown', handleOutside)
+  }, [])
+
+  const filtered = products.filter(p => {
+    const s = searchTerm.toLowerCase()
+    return (p.product || '').toLowerCase().includes(s) || 
+           (p.flavor || '').toLowerCase().includes(s) || 
+           (p.code?.toString() || '').includes(s)
+  })
+
+  return (
+    <div>
+      <button
+        ref={triggerRef}
+        type="button"
+        onClick={handleToggle}
+        className="w-full flex items-center justify-between gap-2 px-4 py-2.5 bg-white rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-accent transition-all text-left"
+      >
+        <div className="truncate flex-1">
+          {selectedProduct ? (
+            <span className="font-medium text-gray-900 whitespace-nowrap overflow-hidden text-ellipsis block">
+               [{selectedProduct.code}] {selectedProduct.product} {selectedProduct.flavor ? `(${selectedProduct.flavor})` : ''}
+            </span>
+          ) : (
+            <span className="text-gray-400">Seleccionar producto...</span>
+          )}
+        </div>
+        <span className={`text-gray-400 text-xs shrink-0 transition-transform ${open ? 'rotate-180' : ''}`}>▾</span>
+      </button>
+
+      {open && createPortal(
+        <div ref={dropdownRef} style={dropdownStyle} className="bg-white rounded-lg border border-gray-200 shadow-xl overflow-hidden flex flex-col">
+          <div className="p-2 border-b border-gray-100 shrink-0">
+            <input
+              autoFocus
+              type="text"
+              value={searchTerm}
+              onChange={e => setSearchTerm(e.target.value)}
+              placeholder="Buscar por nombre, sabor o código..."
+              className="w-full px-3 py-2 text-sm bg-gray-50 border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-accent/50"
+              onClick={e => e.stopPropagation()}
+            />
+          </div>
+          <ul className="max-h-64 overflow-y-auto w-full py-1">
+            {filtered.map(p => {
+               // Stock badge color
+               let badgeColor = 'bg-red-100 text-red-700';
+               if (p.stock >= 10) badgeColor = 'bg-green-100 text-green-700';
+               else if (p.stock > 0) badgeColor = 'bg-orange-100 text-orange-700';
+
+               const handleSelect = () => {
+                 onChange(p.id)
+                 setOpen(false)
+               }
+
+               return (
+                 <li
+                   key={p.id}
+                   role="button"
+                   tabIndex={0}
+                   onClick={handleSelect}
+                   onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') handleSelect() }}
+                   className={`px-3 py-2 text-sm cursor-pointer transition-colors flex justify-between items-center ${
+                     p.id === value ? 'bg-accent/10 border-l-2 border-accent-dark' : 'hover:bg-gray-50 border-l-2 border-transparent'
+                   }`}
+                 >
+                   <div className="flex flex-col">
+                      <span className="font-medium text-gray-900">{p.product} {p.flavor ? `(${p.flavor})` : ''}</span>
+                      <span className="text-xs text-gray-500">Cód: {p.code}</span>
+                   </div>
+                   <div className={`px-2 py-0.5 rounded text-xs font-semibold ${badgeColor}`}>
+                      {p.stock} disp.
+                   </div>
+                 </li>
+               )
+            })}
+            {filtered.length === 0 && (
+              <li className="px-3 py-4 text-sm text-center text-gray-400">
+                Sin resultados
+              </li>
+            )}
+          </ul>
+        </div>,
+        document.body
+      )}
+    </div>
+  )
+}

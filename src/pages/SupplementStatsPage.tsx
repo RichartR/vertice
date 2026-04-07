@@ -102,7 +102,7 @@ export default function SupplementStatsPage() {
               <>
                 <button
                   onClick={() => handleOpenEdit(c)}
-                  className="px-3 py-1.5 text-[10px] font-bold text-accent hover:bg-accent/5 rounded-lg transition-all uppercase tracking-wider"
+                  className="px-3 py-1.5 text-[10px] font-bold text-gray-700 bg-accent/20 hover:bg-accent/40 rounded-lg transition-all uppercase tracking-wider"
                 >
                   Editar
                 </button>

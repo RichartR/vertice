@@ -172,7 +172,6 @@ export default function SaleDetailModal({ saleId, onClose, onRefresh }: Readonly
         <div className="px-8 py-6 border-b border-gray-100 bg-white shrink-0 flex justify-between items-center">
           <div className="flex flex-col">
             <h3 className="text-xl font-bold text-gray-900 uppercase tracking-tight">Detalle de Venta</h3>
-            <span className="text-[10px] font-bold text-gray-400 font-mono mt-0.5">#{saleId.split('-')[0].toUpperCase()}</span>
           </div>
           <button 
             onClick={onClose} 
