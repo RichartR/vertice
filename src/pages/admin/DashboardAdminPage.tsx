@@ -2,7 +2,6 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
-import { useAuth } from '../../context/AuthContext'
 import SearchInput from '../../components/ui/SearchInput'
 import { normalizar } from '../../utils/normalizar'
 
@@ -10,7 +9,6 @@ type Servicio = { id: string; nombre: string; descripcion: string; empleados: nu
 
 export default function DashboardAdminPage() {
   const navigate = useNavigate()
-  const { profile } = useAuth()
   const [servicios, setServicios] = useState<Servicio[]>([])
   const [cargando, setCargando] = useState(true)
   const [busqueda, setBusqueda] = useState('')

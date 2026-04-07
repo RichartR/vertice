@@ -1,11 +1,9 @@
 // Página de entrada al módulo de entrenamientos.
 // Muestra accesos rápidos a los distintos subapartados.
 import { useNavigate } from 'react-router-dom'
-import { useAuth } from '../context/AuthContext'
 
 export default function EntrenamientosPage() {
   const navigate = useNavigate()
-  const { profile } = useAuth()
 
   return (
     <div className="min-h-screen bg-gray-50 pb-16">

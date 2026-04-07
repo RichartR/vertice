@@ -159,7 +159,7 @@ export default function SupplementStatsPage() {
       <div className="shrink-0 mb-6">
         <nav className="text-sm text-gray-400 hover:text-gray-600 transition-colors mb-1 block">
           <span className="mx-2">←</span>
-          <Link to="/admin/suplementacion" className="hover:underline text-gray-600">Suplementación</Link>
+          <Link to="/admin/suplementacion" className="hover:text-gray-600">Suplementación</Link>
         </nav>
         <h1 className="text-2xl font-bold text-gray-900">Estadísticas</h1>
       </div>

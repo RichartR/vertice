@@ -1,7 +1,8 @@
 import { useState, useEffect, useMemo } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link } from 'react-router-dom'
 import { useSupplementProducts, type SupplementProduct } from '../hooks/useSupplementProducts'
 import ProductModal from '../components/supplementation/ProductModal'
+import Select from '../components/ui/Select'
 
 const ITEMS_PER_PAGE = 15
 
@@ -9,7 +10,7 @@ export default function SupplementProductsPage() {
   const { products, loading, fetchProducts, createProduct, updateProduct, toggleActive } = useSupplementProducts()
   
   const [searchTerm, setSearchTerm] = useState('')
-  const [activeOnly, setActiveOnly] = useState(false)
+  const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'inactive'>('active')
   const [currentPage, setCurrentPage] = useState(1)
   
   const [isModalOpen, setIsModalOpen] = useState(false)
@@ -22,8 +23,9 @@ export default function SupplementProductsPage() {
   // Local filtering
   const filteredProducts = useMemo(() => {
     return products.filter(p => {
-      // 1. Filter by active
-      if (activeOnly && !p.active) return false
+      // 1. Filter by status
+      if (statusFilter === 'active' && !p.active) return false
+      if (statusFilter === 'inactive' && p.active) return false
       
       // 2. Filter by search term
       if (searchTerm) {
@@ -38,7 +40,7 @@ export default function SupplementProductsPage() {
       }
       return true
     })
-  }, [products, searchTerm, activeOnly])
+  }, [products, searchTerm, statusFilter])
 
   // Pagination
   const totalPages = Math.max(1, Math.ceil(filteredProducts.length / ITEMS_PER_PAGE))
@@ -94,7 +96,7 @@ export default function SupplementProductsPage() {
       <div className="shrink-0 mb-6">
         <nav className="text-sm text-gray-400 hover:text-gray-600 transition-colors mb-1 block">
           <span className="mx-2">←</span>
-          <Link to="/admin/suplementacion" className="hover:underline text-gray-600">Suplementación</Link>
+          <Link to="/admin/suplementacion" className="hover:text-gray-600">Suplementación</Link>
         </nav>
 
         <div className="flex items-center justify-between">
@@ -129,22 +131,22 @@ export default function SupplementProductsPage() {
             </div>
           </div>
           
-          <label className="flex items-center gap-2 cursor-pointer w-full sm:w-auto shrink-0 border border-gray-100 bg-white px-3 py-1.5 rounded-lg shadow-sm">
-            <div className="relative">
-              <input 
-                type="checkbox" 
-                className="sr-only" 
-                checked={activeOnly}
-                onChange={e => {
-                  setActiveOnly(e.target.checked)
-                  setCurrentPage(1)
-                }}
-              />
-              <div className={`block w-10 h-6 rounded-full transition-colors ${activeOnly ? 'bg-accent' : 'bg-gray-200'}`}></div>
-              <div className={`dot absolute left-1 top-1 bg-white w-4 h-4 rounded-full transition-transform ${activeOnly ? 'transform translate-x-4' : ''}`}></div>
-            </div>
-            <span className="text-sm font-medium text-gray-700">Solo activos</span>
-          </label>
+          <div className="flex items-center space-x-3 w-full sm:w-auto">
+            <span className="text-sm font-bold text-gray-700 whitespace-nowrap">Estado:</span>
+            <Select
+              value={statusFilter}
+              onChange={(value) => {
+                setStatusFilter(value as 'all' | 'active' | 'inactive')
+                setCurrentPage(1)
+              }}
+              options={[
+                { value: 'active', label: 'Solo activos' },
+                { value: 'inactive', label: 'Solo inactivos' },
+                { value: 'all', label: 'Todos' }
+              ]}
+              className="w-40"
+            />
+          </div>
         </div>
       </div>
 

@@ -39,6 +39,73 @@ export default function SupplementOrdersPage() {
     exportOrdersToExcel(currentTabOrders, activeTab === 'recibidos')
   }
 
+  const renderTableContent = () => {
+    if (loading) {
+      return (
+        <tr>
+          <td colSpan={10} className="px-6 py-12 text-center text-gray-500">
+            <div className="flex flex-col items-center justify-center">
+              <span className="w-8 h-8 border-2 border-accent-dark border-t-transparent rounded-full animate-spin mb-4" />
+              <span className="text-gray-500 font-medium">Cargando pedidos...</span>
+            </div>
+          </td>
+        </tr>
+      )
+    }
+
+    if (paginatedOrders.length === 0) {
+      return (
+        <tr>
+          <td colSpan={10} className="px-6 py-12 text-center text-gray-500">
+            No hay pedidos {activeTab}
+          </td>
+        </tr>
+      )
+    }
+
+    return paginatedOrders.map((order) => {
+      let displayNotes = '—'
+      if (order.notes) {
+        displayNotes = order.notes.length > 40 
+          ? `${order.notes.substring(0, 40)}...` 
+          : order.notes
+      }
+
+      return (
+        <tr key={order.id} className="hover:bg-gray-50/50 transition-colors">
+          <td className="px-6 py-4 font-medium text-gray-900">
+            {order.order_date.split('-').reverse().join('/')}
+          </td>
+          {activeTab === 'recibidos' && (
+            <td className="px-6 py-4 text-gray-600">
+              {order.received_at ? new Date(order.received_at).toLocaleString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '—'}
+            </td>
+          )}
+          <td className="px-6 py-4 text-center text-gray-600">
+            {order.lines?.length || 0}
+          </td>
+          <td className="px-6 py-4 text-center font-medium text-gray-900">
+            {order.total_units}
+          </td>
+          <td className="px-6 py-4 text-right font-semibold text-gray-900">
+            {order.total_cost === null ? '—' : `${order.total_cost.toFixed(2)} €`}
+          </td>
+          <td className="px-6 py-4 text-gray-500 truncate max-w-[200px]" title={order.notes || ''}>
+            {displayNotes}
+          </td>
+          <td className="px-6 py-4 text-right">
+            <button
+              onClick={() => setSelectedOrderId(order.id)}
+              className="px-3 py-1.5 text-xs font-semibold text-gray-700 bg-white border border-gray-200 hover:bg-gray-50 hover:text-gray-900 rounded-lg transition-all"
+            >
+              Ver detalle
+            </button>
+          </td>
+        </tr>
+      )
+    })
+  }
+
   return (
     <div className="p-8 max-w-7xl mx-auto">
       {/* Breadcrumb */}
@@ -134,55 +201,7 @@ export default function SupplementOrdersPage() {
                </tr>
              </thead>
              <tbody className="divide-y divide-gray-100">
-               {loading ? (
-                 <tr>
-                   <td colSpan={10} className="px-6 py-12 text-center text-gray-500">
-                     <div className="flex flex-col items-center justify-center">
-                       <span className="w-8 h-8 border-2 border-accent-dark border-t-transparent rounded-full animate-spin mb-4" />
-                       Cargando pedidos...
-                     </div>
-                   </td>
-                 </tr>
-               ) : paginatedOrders.length === 0 ? (
-                 <tr>
-                   <td colSpan={10} className="px-6 py-12 text-center text-gray-500">
-                     No hay pedidos {activeTab}
-                   </td>
-                 </tr>
-               ) : (
-                 paginatedOrders.map((order) => (
-                   <tr key={order.id} className="hover:bg-gray-50/50 transition-colors">
-                     <td className="px-6 py-4 font-medium text-gray-900">
-                       {order.order_date.split('-').reverse().join('/')}
-                     </td>
-                     {activeTab === 'recibidos' && (
-                       <td className="px-6 py-4 text-gray-600">
-                         {order.received_at ? new Date(order.received_at).toLocaleString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '—'}
-                       </td>
-                     )}
-                     <td className="px-6 py-4 text-center text-gray-600">
-                       {order.lines?.length || 0}
-                     </td>
-                     <td className="px-6 py-4 text-center font-medium text-gray-900">
-                       {order.total_units}
-                     </td>
-                     <td className="px-6 py-4 text-right font-semibold text-gray-900">
-                       {order.total_cost !== null ? `${order.total_cost.toFixed(2)} €` : '—'}
-                     </td>
-                     <td className="px-6 py-4 text-gray-500 truncate max-w-[200px]" title={order.notes || ''}>
-                       {order.notes ? (order.notes.length > 40 ? order.notes.substring(0, 40) + '...' : order.notes) : '—'}
-                     </td>
-                     <td className="px-6 py-4 text-right">
-                       <button
-                         onClick={() => setSelectedOrderId(order.id)}
-                         className="px-3 py-1.5 text-xs font-semibold text-gray-700 bg-white border border-gray-200 hover:bg-gray-50 hover:text-gray-900 rounded-lg transition-all"
-                       >
-                         Ver detalle
-                       </button>
-                     </td>
-                   </tr>
-                 ))
-               )}
+               {renderTableContent()}
              </tbody>
           </table>
         </div>

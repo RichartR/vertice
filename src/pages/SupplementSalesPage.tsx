@@ -15,6 +15,79 @@ const FILTROS_INICIALES: SaleFilters = {
   paymentMethod: ''
 }
 
+interface SaleRowProps {
+  sale: any;
+  onView: (id: string) => void;
+  onDelete: (sale: any) => void;
+}
+
+const SaleRow = ({ sale: s, onView, onDelete }: SaleRowProps) => {
+  const renderPaymentBadge = (method: string) => {
+    const mMatch = method.toLowerCase().trim()
+    const colors = {
+      efectivo: 'bg-green-100 text-green-800 border-green-200',
+      tarjeta: 'bg-blue-100 text-blue-800 border-blue-200',
+      bizum: 'bg-purple-100 text-purple-800 border-purple-200'
+    }
+    const color = colors[mMatch as keyof typeof colors] || 'bg-gray-100 text-gray-600 border-gray-200'
+    return (
+      <span className={`px-2 py-0.5 rounded text-[10px] font-medium uppercase border ${color}`}>
+        {method}
+      </span>
+    )
+  }
+
+  return (
+    <tr className="hover:bg-gray-50/50 transition-colors">
+      <td className="px-4 py-2 font-medium text-gray-900 border-l-4 border-transparent hover:border-accent/10">
+        {s.sale_date.split('-').reverse().join('/')}
+      </td>
+      <td className="px-4 py-2">
+        <span className={`text-sm ${s.client_name ? 'text-gray-900 font-bold' : 'text-gray-400 italic font-medium'}`}>
+          {s.client_name || 'Venta General'}
+        </span>
+      </td>
+      <td className="px-4 py-2 text-center">
+        <button
+          onClick={() => onView(s.id)}
+          className="px-2.5 py-1 bg-gray-100/50 text-gray-500 rounded-lg text-xs font-medium hover:bg-accent/10 hover:text-accent transition-colors"
+        >
+          {s.lines?.reduce((sum: number, l: any) => sum + l.quantity, 0) || 0} UNI.
+        </button>
+      </td>
+      <td className="px-4 py-2 text-right font-semibold text-gray-900 text-base">
+        {s.total.toFixed(2)} €
+      </td>
+      <td className="px-4 py-2 text-center">
+        {renderPaymentBadge(s.payment_method)}
+      </td>
+      <td className="px-4 py-4 text-right">
+        <div className="flex items-center justify-end gap-2">
+          <button
+            onClick={() => onView(s.id)}
+            className="p-2 text-gray-300 hover:text-accent hover:bg-accent/5 rounded-xl transition-all"
+            title="Ver detalles"
+          >
+            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+            </svg>
+          </button>
+          <button
+            onClick={() => onDelete(s)}
+            className="p-2 text-gray-300 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all"
+            title="Eliminar venta"
+          >
+            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+            </svg>
+          </button>
+        </div>
+      </td>
+    </tr>
+  )
+}
+
 export default function SupplementSalesPage() {
   const { sales, loading, fetchSales, deleteSale } = useSupplementSales()
   
@@ -73,24 +146,19 @@ export default function SupplementSalesPage() {
            clientSearch !== ''
   }
 
-  const renderPaymentBadge = (method: string) => {
-    const mMatch = method.toLowerCase().trim()
-    const colors = {
-      efectivo: 'bg-green-100 text-green-800 border-green-200',
-      tarjeta: 'bg-blue-100 text-blue-800 border-blue-200',
-      bizum: 'bg-purple-100 text-purple-800 border-purple-200'
-    }
-    const color = colors[mMatch as keyof typeof colors] || 'bg-gray-100 text-gray-600 border-gray-200'
-    return (
-      <span className={`px-2 py-0.5 rounded text-[10px] font-medium uppercase border ${color}`}>
-        {method}
-      </span>
-    )
-  }
 
   const handleDeleteSale = async (id: string) => {
     await deleteSale(id)
     fetchSales(filters)
+  }
+
+  const openDeleteConfirm = (sale: any) => {
+    setConfirmData({
+      isOpen: true,
+      title: 'Eliminar Venta',
+      message: '¿Estás seguro de que deseas eliminar esta venta? El stock de los productos se restaurará automáticamente.',
+      onConfirm: () => handleDeleteSale(sale.id)
+    })
   }
 
   const renderTableBody = () => {
@@ -115,60 +183,12 @@ export default function SupplementSalesPage() {
     }
 
     return paginatedSales.map((s) => (
-      <tr key={s.id} className="hover:bg-gray-50/50 transition-colors">
-        <td className="px-4 py-2 font-medium text-gray-900 border-l-4 border-transparent hover:border-accent/10">
-          {s.sale_date.split('-').reverse().join('/')}
-        </td>
-        <td className="px-4 py-2">
-          <span className={`text-sm ${s.client_name ? 'text-gray-900 font-bold' : 'text-gray-400 italic font-medium'}`}>
-            {s.client_name || 'Venta General'}
-          </span>
-        </td>
-        <td className="px-4 py-2 text-center">
-          <button
-            onClick={() => setSelectedSaleId(s.id)}
-            className="px-2.5 py-1 bg-gray-100/50 text-gray-500 rounded-lg text-xs font-medium hover:bg-accent/10 hover:text-accent transition-colors"
-          >
-            {s.lines?.reduce((sum, l) => sum + l.quantity, 0) || 0} UNI.
-          </button>
-        </td>
-        <td className="px-4 py-2 text-right font-semibold text-gray-900 text-base">
-          {s.total.toFixed(2)} €
-        </td>
-        <td className="px-4 py-2 text-center">
-          {renderPaymentBadge(s.payment_method)}
-        </td>
-        <td className="px-4 py-4 text-right">
-          <div className="flex items-center justify-end gap-2">
-            <button
-              onClick={() => setSelectedSaleId(s.id)}
-              className="p-2 text-gray-300 hover:text-accent hover:bg-accent/5 rounded-xl transition-all"
-              title="Ver detalles"
-            >
-              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-              </svg>
-            </button>
-            <button
-              onClick={() => {
-                setConfirmData({
-                  isOpen: true,
-                  title: 'Eliminar Venta',
-                  message: '¿Estás seguro de que deseas eliminar esta venta? El stock de los productos se restaurará automáticamente.',
-                  onConfirm: () => handleDeleteSale(s.id)
-                })
-              }}
-              className="p-2 text-gray-300 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all"
-              title="Eliminar venta"
-            >
-              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-              </svg>
-            </button>
-          </div>
-        </td>
-      </tr>
+      <SaleRow 
+        key={s.id} 
+        sale={s} 
+        onView={setSelectedSaleId}
+        onDelete={openDeleteConfirm}
+      />
     ))
   }
 
@@ -178,7 +198,7 @@ export default function SupplementSalesPage() {
       <div className="shrink-0 mb-6">
          <nav className="text-sm text-gray-400 hover:text-gray-600 transition-colors mb-1 block">
           <span className="mx-2">←</span>
-          <Link to="/admin/suplementacion" className="hover:underline text-gray-600">Suplementación</Link>
+          <Link to="/admin/suplementacion" className="hover:text-gray-600">Suplementación</Link>
         </nav>
         
         <div className="flex items-center justify-between">
