@@ -64,7 +64,7 @@ export function useSupplementProducts() {
     }
   }, [])
 
-  const createProduct = async (data: Omit<SupplementProduct, 'id' | 'stock'>) => {
+  const createProduct = useCallback(async (data: Omit<SupplementProduct, 'id' | 'stock'>) => {
     try {
       const { error: err } = await supabase.from('supplement_products').insert(data)
       if (err) throw err
@@ -72,9 +72,9 @@ export function useSupplementProducts() {
       console.error('Error creating product:', err)
       throw err
     }
-  }
+  }, [])
 
-  const updateProduct = async (id: string, data: Partial<Omit<SupplementProduct, 'id' | 'stock'>>) => {
+  const updateProduct = useCallback(async (id: string, data: Partial<Omit<SupplementProduct, 'id' | 'stock'>>) => {
     try {
       const { error: err } = await supabase.from('supplement_products').update(data).eq('id', id)
       if (err) throw err
@@ -82,9 +82,9 @@ export function useSupplementProducts() {
       console.error('Error updating product:', err)
       throw err
     }
-  }
+  }, [])
 
-  const toggleActive = async (id: string, active: boolean) => {
+  const toggleActive = useCallback(async (id: string, active: boolean) => {
     try {
       const { error: err } = await supabase.from('supplement_products').update({ active }).eq('id', id)
       if (err) throw err
@@ -93,7 +93,7 @@ export function useSupplementProducts() {
       console.error('Error toggling product state:', err)
       throw err
     }
-  }
+  }, [])
 
   return {
     products,

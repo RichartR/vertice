@@ -97,7 +97,7 @@ export function useSupplementSales() {
     }
   }, [])
 
-  const fetchSaleDetail = async (saleId: string) => {
+  const fetchSaleDetail = useCallback(async (saleId: string) => {
     setLoading(true)
     try {
       const { data, error: err } = await supabase
@@ -145,9 +145,9 @@ export function useSupplementSales() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [])
 
-  const createSale = async (data: {
+  const createSale = useCallback(async (data: {
     clientId: string | null,
     saleDate: string,
     paymentMethod: string,
@@ -198,9 +198,9 @@ export function useSupplementSales() {
       console.error('Error creating sale:', err)
       throw err
     }
-  }
+  }, [fetchSales])
 
-  const deleteSaleLine = async (lineId: string) => {
+  const deleteSaleLine = useCallback(async (lineId: string) => {
     try {
       const { error: err } = await supabase
         .from('supplement_sale_lines')
@@ -213,7 +213,7 @@ export function useSupplementSales() {
       console.error('Error deleting sale line:', err)
       throw err
     }
-  }
+  }, [fetchSales])
 
   const deleteSale = useCallback(async (id: string) => {
     try {
