@@ -60,8 +60,8 @@ function OrderContent({ order, onClose, onReceiveClick, onRevertClick }: Readonl
   return (
     <>
       {/* Header */}
-      <div className="px-8 py-6 border-b border-gray-100 bg-white shrink-0 flex justify-between items-center text-gray-900 uppercase">
-        <h3 className="text-xl font-bold tracking-tight">Detalle del Pedido</h3>
+      <div className="px-6 py-4 sm:px-8 sm:py-6 border-b border-gray-100 bg-white shrink-0 flex justify-between items-center text-gray-900 uppercase">
+        <h3 className="text-lg sm:text-xl font-bold tracking-tight">Detalle del Pedido</h3>
         <button 
           onClick={onClose} 
           className="p-2 text-gray-400 hover:text-gray-900 hover:bg-gray-100 rounded-full transition-all"
@@ -72,9 +72,9 @@ function OrderContent({ order, onClose, onReceiveClick, onRevertClick }: Readonl
         </button>
       </div>
 
-      <div className="p-8 overflow-y-auto bg-white space-y-8 flex-1 scrollbar-hide">
+      <div className="p-4 sm:p-8 overflow-y-auto bg-white space-y-8 flex-1 scrollbar-hide">
         {/* Resumen Cabecera */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 p-6 bg-gray-50 rounded-2xl border border-gray-100">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 p-4 sm:p-6 bg-gray-50 rounded-2xl border border-gray-100">
           <DetailTab label="Fecha Pedido" value={formatDate(order.order_date)} />
           <div className="space-y-1">
             <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block">Estado</span>
@@ -91,24 +91,24 @@ function OrderContent({ order, onClose, onReceiveClick, onRevertClick }: Readonl
         {/* Table */}
         <div className="space-y-4">
           <h4 className="text-[10px] font-bold text-gray-400 uppercase tracking-widest px-1">Productos del Pedido</h4>
-          <div className="rounded-2xl border border-gray-100 overflow-hidden shadow-sm">
-            <table className="w-full text-sm text-left">
+          <div className="overflow-x-auto -mx-4 sm:mx-0">
+            <table className="w-full text-sm text-left min-w-[600px] sm:min-w-0">
               <thead className="text-[9px] text-gray-400 uppercase tracking-widest bg-gray-50 border-b border-gray-50 font-bold">
                 <tr>
-                  <th className="px-6 py-4">Cód</th>
+                  <th className="px-6 py-4 hidden md:table-cell">Cód</th>
                   <th className="px-6 py-4">Producto</th>
                   <th className="px-6 py-4 text-center">Cant.</th>
-                  <th className="px-6 py-4 text-right">Costo Unit.</th>
+                  <th className="px-6 py-4 text-right hidden sm:table-cell">Costo Unit.</th>
                   <th className="px-6 py-4 text-right">Subtotal</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-50 bg-white">
                 {order.lines.map((l) => (
                   <tr key={l.id} className="hover:bg-gray-50/50 transition-colors group">
-                    <td className="px-6 py-4 font-mono text-xs text-gray-400">{l.code}</td>
+                    <td className="px-6 py-4 font-mono text-xs text-gray-400 hidden md:table-cell">{l.code}</td>
                     <td className="px-6 py-4 font-bold text-gray-800">{l.product_name}</td>
                     <td className="px-6 py-4 text-center text-gray-600 font-bold">{l.quantity}</td>
-                    <td className="px-6 py-4 text-right text-gray-500 font-medium">{l.unit_cost === null ? '—' : `${l.unit_cost.toFixed(2)} €`}</td>
+                    <td className="px-6 py-4 text-right text-gray-500 font-medium hidden sm:table-cell">{l.unit_cost === null ? '—' : `${l.unit_cost.toFixed(2)} €`}</td>
                     <td className="px-6 py-4 text-right font-bold text-gray-900">
                       {l.subtotal === null ? '—' : `${l.subtotal.toFixed(2)} €`}
                     </td>
@@ -121,36 +121,36 @@ function OrderContent({ order, onClose, onReceiveClick, onRevertClick }: Readonl
       </div>
 
       {/* Footer */}
-      <div className="bg-gray-50/50 px-8 py-6 border-t border-gray-100 shrink-0 flex items-center justify-between">
-        <div className="flex gap-10">
+      <div className="bg-gray-50/50 px-6 py-4 sm:px-8 sm:py-6 border-t border-gray-100 shrink-0 flex flex-col sm:flex-row items-center justify-between gap-6 sm:gap-3">
+        <div className="flex gap-6 sm:gap-10 w-full sm:w-auto justify-between sm:justify-start">
           <div className="flex flex-col">
-            <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Unidades</span>
-            <span className="text-xl font-bold text-gray-900">{order.total_units}</span>
+            <span className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1">Unidades</span>
+            <span className="text-lg sm:text-xl font-bold text-gray-900">{order.total_units}</span>
           </div>
-          <div className="flex flex-col">
-            <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Total Pedido</span>
-            <span className="text-2xl font-bold text-gray-900">{order.total_cost === null ? '—' : `${order.total_cost.toFixed(2)} €`}</span>
+          <div className="flex flex-col items-end sm:items-start">
+            <span className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1">Total Pedido</span>
+            <span className="text-xl sm:text-2xl font-bold text-gray-900">{order.total_cost === null ? '—' : `${order.total_cost.toFixed(2)} €`}</span>
           </div>
         </div>
         
-        <div className="flex gap-3">
+        <div className="flex gap-3 w-full sm:w-auto">
           <button
             onClick={onClose}
-            className="px-6 py-3 border border-gray-200 text-gray-500 hover:bg-white font-bold uppercase text-[10px] tracking-[0.2em] rounded-xl transition-all"
+            className="flex-1 sm:flex-none px-4 sm:px-6 py-3 border border-gray-200 text-gray-500 hover:bg-white font-bold uppercase text-[10px] tracking-[0.2em] rounded-xl transition-all"
           >
             Cerrar
           </button>
           {order.received ? (
             <button
               onClick={onRevertClick}
-              className="px-6 py-3 border border-red-200 text-red-600 hover:bg-red-50 font-bold uppercase text-[10px] tracking-widest rounded-xl transition-all"
+              className="px-4 sm:px-6 py-3 border border-red-200 text-red-600 hover:bg-red-50 font-bold uppercase text-[10px] tracking-widest rounded-xl transition-all"
             >
               Devolver a Pendiente
             </button>
           ) : (
             <button
               onClick={onReceiveClick}
-              className="px-6 py-3 bg-green-500 hover:bg-green-600 text-white font-bold uppercase text-[10px] tracking-widest rounded-xl shadow-lg shadow-green-500/20 transition-all flex items-center gap-2"
+              className="flex-1 sm:flex-none px-4 sm:px-6 py-3 bg-green-500 hover:bg-green-600 text-white font-bold uppercase text-[10px] tracking-widest rounded-xl shadow-lg shadow-green-500/20 transition-all flex items-center justify-center gap-2"
             >
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />

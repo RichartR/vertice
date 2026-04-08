@@ -106,7 +106,7 @@ export default function NewSaleModal({ onClose, onSuccess }: Readonly<Props>) {
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/40 backdrop-blur-sm animate-in fade-in duration-300">
       <div className="bg-white rounded-3xl shadow-2xl w-full max-w-3xl overflow-hidden flex flex-col max-h-[90vh] animate-in zoom-in-95 duration-300">
         {/* Header */}
-        <div className="px-8 py-6 border-b border-gray-100 flex justify-between items-center bg-white shrink-0">
+        <div className="px-6 py-4 sm:px-8 sm:py-6 border-b border-gray-100 flex justify-between items-center bg-white shrink-0">
           <div className="flex flex-col">
              <h2 className="text-xl font-bold text-gray-900 tracking-tight">Nueva Venta</h2>
              <div className="flex items-center gap-2 mt-2">
@@ -126,7 +126,7 @@ export default function NewSaleModal({ onClose, onSuccess }: Readonly<Props>) {
           </button>
         </div>
 
-        <div className="flex-1 overflow-y-auto p-8 scrollbar-hide">
+        <div className="flex-1 overflow-y-auto p-4 sm:p-8 scrollbar-hide">
           {step === 1 && (
             <div className="space-y-8 animate-in slide-in-from-right-4 duration-300">
               <SupplementClientSelector value={selectedClient} onChange={setSelectedClient} />
@@ -186,7 +186,7 @@ export default function NewSaleModal({ onClose, onSuccess }: Readonly<Props>) {
                   const productLabel = product ? `${product.product}${flavorSuffix} - Stock: ${product.stock}` : 'Seleccionar producto...';
                   
                   return (
-                    <div key={line.id} className="flex flex-col sm:flex-row gap-4 p-6 bg-gray-50/50 rounded-3xl border border-gray-100 relative group hover:bg-white hover:shadow-xl transition-all duration-300 pb-10 sm:pb-6">
+                    <div key={line.id} className="flex flex-col sm:flex-row gap-4 p-4 sm:p-6 bg-gray-50/50 rounded-3xl border border-gray-100 relative group hover:bg-white hover:shadow-xl transition-all duration-300 pb-12 sm:pb-6">
                       <div className="flex-1 min-w-0 space-y-2">
                         <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider ml-1">{productLabel}</label>
                         <Select
@@ -260,7 +260,7 @@ export default function NewSaleModal({ onClose, onSuccess }: Readonly<Props>) {
 
           {step === 3 && (
             <div className="space-y-8 animate-in slide-in-from-right-4 duration-300">
-              <div className="grid grid-cols-2 gap-6 p-8 bg-gray-50 border border-gray-100 rounded-3xl text-gray-900 shadow-sm">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6 p-6 sm:p-8 bg-gray-50 border border-gray-100 rounded-3xl text-gray-900 shadow-sm">
                 <div className="space-y-1">
                   <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Cliente</span>
                   <p className="text-lg font-bold truncate">{selectedClient ? selectedClient.full_name : 'Venta General'}</p>
@@ -279,8 +279,8 @@ export default function NewSaleModal({ onClose, onSuccess }: Readonly<Props>) {
                 </div>
               </div>
 
-              <div className="overflow-hidden border border-gray-100 rounded-3xl shadow-sm">
-                <table className="w-full text-left text-sm">
+              <div className="overflow-x-auto -mx-4 sm:mx-0 rounded-3xl border border-gray-100 shadow-sm">
+                <table className="w-full text-left text-sm min-w-[500px] sm:min-w-0">
                   <thead className="bg-gray-50 border-b border-gray-100 font-semibold text-gray-500 uppercase text-xs tracking-wider">
                     <tr>
                       <th className="px-6 py-4">Producto</th>
@@ -299,10 +299,10 @@ export default function NewSaleModal({ onClose, onSuccess }: Readonly<Props>) {
                       }
                       return (
                         <tr key={l.id}>
-                          <td className="px-6 py-4 font-bold text-gray-800">{productName}</td>
-                          <td className="px-6 py-4 text-center font-medium text-gray-600">{l.quantity}</td>
-                          <td className="px-6 py-4 text-right text-gray-500 font-medium">{l.unitPrice.toFixed(2)} €</td>
-                          <td className="px-6 py-4 text-right font-semibold text-gray-900">{(l.quantity * l.unitPrice).toFixed(2)} €</td>
+                          <td className="px-4 sm:px-6 py-3 sm:py-4 font-bold text-gray-800">{productName}</td>
+                          <td className="px-4 sm:px-6 py-3 sm:py-4 text-center font-medium text-gray-600">{l.quantity}</td>
+                          <td className="px-4 sm:px-6 py-3 sm:py-4 text-right text-gray-500 font-medium">{l.unitPrice.toFixed(2)} €</td>
+                          <td className="px-4 sm:px-6 py-3 sm:py-4 text-right font-semibold text-gray-900">{(l.quantity * l.unitPrice).toFixed(2)} €</td>
                         </tr>
                       );
                     })}
@@ -314,13 +314,13 @@ export default function NewSaleModal({ onClose, onSuccess }: Readonly<Props>) {
         </div>
 
         {/* Footer */}
-        <div className="px-8 py-6 border-t border-gray-100 bg-gray-50/50 shrink-0 flex items-center justify-between">
-          <div className="flex flex-col">
+        <div className="px-6 py-4 sm:px-8 sm:py-6 border-t border-gray-100 bg-gray-50/50 shrink-0 flex flex-col sm:flex-row items-center justify-between gap-4">
+          <div className="flex flex-col items-center sm:items-start">
             <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Total acumulado</span>
-            <span className="text-2xl font-bold text-gray-900 tracking-tight">{totalAmount.toFixed(2)} €</span>
+            <span className="text-xl sm:text-2xl font-bold text-gray-900 tracking-tight">{totalAmount.toFixed(2)} €</span>
           </div>
           
-          <div className="flex gap-3">
+          <div className="flex gap-3 w-full sm:w-auto">
              {step > 1 && (
                <button
                  onClick={prevStep}

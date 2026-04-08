@@ -33,7 +33,7 @@ function OrderLineItem({ line, products, onUpdate, onRemove }: Readonly<OrderLin
   const costId = `cost-${line.id}`
 
   return (
-    <div className="flex gap-6 items-start p-8 bg-gray-50/50 rounded-3xl border border-gray-100 hover:border-gray-200 transition-all group shadow-sm">
+    <div className="flex flex-col sm:flex-row gap-4 sm:gap-6 items-stretch sm:items-start p-4 sm:p-8 bg-gray-50/50 rounded-3xl border border-gray-100 hover:border-gray-200 transition-all group shadow-sm relative pb-12 sm:pb-8">
       <div className="flex-1 min-w-0 space-y-3">
         <label className="block text-[10px] font-black text-gray-400 uppercase tracking-[0.15em] ml-1">Producto</label>
         <ProductSelector 
@@ -43,7 +43,7 @@ function OrderLineItem({ line, products, onUpdate, onRemove }: Readonly<OrderLin
         />
       </div>
       
-      <div className="w-28 shrink-0 space-y-3">
+      <div className="w-full sm:w-28 shrink-0 space-y-3">
         <label htmlFor={qtyId} className="block text-[10px] font-black text-gray-400 uppercase tracking-[0.15em] ml-1">Cant.</label>
         <input 
           id={qtyId}
@@ -55,7 +55,7 @@ function OrderLineItem({ line, products, onUpdate, onRemove }: Readonly<OrderLin
         />
       </div>
       
-      <div className="w-40 shrink-0 space-y-3">
+      <div className="w-full sm:w-40 shrink-0 space-y-3">
         <label htmlFor={costId} className="block text-[10px] font-black text-gray-400 uppercase tracking-[0.15em] ml-1">Costo Unit.</label>
         <div className="relative">
           <input 
@@ -72,19 +72,19 @@ function OrderLineItem({ line, products, onUpdate, onRemove }: Readonly<OrderLin
         </div>
       </div>
       
-      <div className="w-32 shrink-0 space-y-3 text-right">
+      <div className="w-full sm:w-32 shrink-0 space-y-1 sm:space-y-3 text-left sm:text-right flex justify-between sm:block">
          <label className="block text-[10px] font-black text-gray-400 uppercase tracking-[0.15em]">Subtotal</label>
-         <div className="py-2.5 font-black text-gray-900 text-xl tracking-tight">
+         <div className="py-0 sm:py-2.5 font-black text-gray-900 text-lg sm:text-xl tracking-tight">
             {subtotal > 0 ? `${subtotal.toFixed(2)} €` : '—'}
          </div>
       </div>
 
       <button 
         onClick={() => onRemove(line.id)}
-        className="mt-9 p-3 text-gray-300 hover:text-red-500 hover:bg-red-50 rounded-2xl transition-all"
+        className="absolute bottom-3 right-3 sm:static sm:mt-9 p-2 sm:p-3 text-gray-300 hover:text-red-500 hover:bg-red-50 rounded-2xl transition-all"
         title="Eliminar línea"
       >
-        <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <svg className="w-5 h-5 sm:w-6 sm:h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
         </svg>
       </button>
@@ -173,8 +173,8 @@ export default function NewOrderModal({ isOpen, onClose, onOrderCreated }: Reado
       <div className="fixed inset-0 transition-opacity bg-gray-900/60 backdrop-blur-sm" aria-hidden="true" onClick={onClose}></div>
 
       <div className="bg-white rounded-3xl text-left overflow-hidden shadow-2xl transform transition-all w-full max-w-4xl flex flex-col max-h-[90vh] relative z-10 border border-white/20">
-        <div className="px-8 py-6 border-b border-gray-100 shrink-0 bg-white flex justify-between items-center text-gray-900 uppercase">
-          <h3 className="text-xl font-bold tracking-tight">Nuevo Pedido</h3>
+        <div className="px-6 py-4 sm:px-8 sm:py-6 border-b border-gray-100 shrink-0 bg-white flex justify-between items-center text-gray-900 uppercase">
+          <h3 className="text-lg sm:text-xl font-bold tracking-tight">Nuevo Pedido</h3>
           <button onClick={onClose} className="p-2 text-gray-400 hover:text-gray-900 hover:bg-gray-100 rounded-full transition-all">
             <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -182,8 +182,8 @@ export default function NewOrderModal({ isOpen, onClose, onOrderCreated }: Reado
           </button>
         </div>
 
-        <div className="p-8 overflow-y-auto space-y-10 flex-1 scrollbar-hide">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
+        <div className="p-4 sm:p-8 overflow-y-auto space-y-8 sm:space-y-10 flex-1 scrollbar-hide">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 sm:gap-8">
             <div className="space-y-1.5">
               <label htmlFor="order-date" className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest ml-1">Fecha del pedido</label>
               <input
@@ -237,22 +237,22 @@ export default function NewOrderModal({ isOpen, onClose, onOrderCreated }: Reado
           </div>
         </div>
 
-        <div className="px-8 py-6 bg-gray-50 border-t border-gray-100 shrink-0 flex items-center justify-between">
-          <div className="flex flex-col">
+        <div className="px-6 py-4 sm:px-8 sm:py-6 bg-gray-50 border-t border-gray-100 shrink-0 flex flex-col sm:flex-row items-center justify-between gap-4">
+          <div className="flex flex-col items-center sm:items-start">
              <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Coste Estimado</span>
-             <p className="text-2xl font-bold text-gray-900">{totalCost.toFixed(2)} <span className="text-sm font-bold text-gray-400">€</span></p>
+             <p className="text-xl sm:text-2xl font-bold text-gray-900">{totalCost.toFixed(2)} <span className="text-sm font-bold text-gray-400">€</span></p>
           </div>
-          <div className="flex gap-3">
+          <div className="flex gap-3 w-full sm:w-auto">
              <button
                onClick={onClose}
-               className="px-6 py-3 font-bold text-gray-500 hover:text-gray-900 transition-all rounded-xl hover:bg-white"
+               className="flex-1 sm:flex-none px-4 sm:px-6 py-3 font-bold text-gray-500 hover:text-gray-900 transition-all rounded-xl hover:bg-white text-xs sm:text-sm"
              >
                Cancelar
              </button>
              <button
                onClick={handleSubmit}
                disabled={!isFormValid || saving}
-               className="px-8 py-3.5 bg-accent-dark hover:bg-accent text-accent-darker font-bold uppercase text-[10px] tracking-widest rounded-xl shadow-lg shadow-accent-dark/20 transition-all disabled:opacity-30 disabled:scale-100 transform active:scale-95 flex items-center gap-2"
+               className="flex-1 sm:flex-none px-4 sm:px-8 py-3.5 bg-accent-dark hover:bg-accent text-accent-darker font-bold uppercase text-[9px] sm:text-[10px] tracking-widest rounded-xl shadow-lg shadow-accent-dark/20 transition-all disabled:opacity-30 disabled:scale-100 transform active:scale-95 flex items-center justify-center gap-2"
              >
                {saving ? 'Guardando...' : 'Crear pedido'}
                {!saving && (

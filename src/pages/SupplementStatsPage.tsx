@@ -166,7 +166,7 @@ export default function SupplementStatsPage() {
 
     return (
       <div className="space-y-6">
-        <div className="bg-white p-6 border border-gray-100 rounded-[2rem] shadow-sm flex flex-col md:flex-row gap-4 items-end">
+        <div className="bg-white p-4 sm:p-6 border border-gray-100 rounded-[1.5rem] sm:rounded-[2rem] shadow-sm flex flex-col lg:flex-row gap-4 items-stretch lg:items-end">
           <div className="flex-1 min-w-[200px]">
             <label htmlFor="topDateFrom" className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Desde (opcional)</label>
             <input 
@@ -206,7 +206,7 @@ export default function SupplementStatsPage() {
           {hasTopFilters && (
             <button 
               onClick={handleClearTopFilters}
-              className="px-6 py-2 bg-gray-100 hover:bg-gray-200 text-gray-600 font-bold rounded-xl transition flex items-center gap-2 h-[42px]"
+              className="px-6 py-2 bg-gray-100 hover:bg-gray-200 text-gray-600 font-bold rounded-xl transition flex items-center justify-center gap-2 h-[42px] w-full lg:w-auto"
             >
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
@@ -231,8 +231,8 @@ export default function SupplementStatsPage() {
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={chartData} layout="vertical" margin={{ top: 5, right: 30, left: 10, bottom: 5 }}>
                     <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#f3f4f6" />
-                    <XAxis type="number" tick={{fontSize: 11, fontWeight: 600, fill: '#9ca3af', fontFamily: 'inherit'}} tickLine={false} axisLine={false} />
-                    <YAxis dataKey="shortName" type="category" width={220} tick={{fontSize: 12, fontWeight: 700, fill: '#4b5563', fontFamily: 'inherit'}} tickLine={false} axisLine={false} />
+                    <XAxis type="number" tick={{fontSize: 10, fontWeight: 600, fill: '#9ca3af', fontFamily: 'inherit'}} tickLine={false} axisLine={false} />
+                    <YAxis dataKey="shortName" type="category" width={window.innerWidth < 640 ? 100 : 220} tick={{fontSize: 10, fontWeight: 700, fill: '#4b5563', fontFamily: 'inherit'}} tickLine={false} axisLine={false} />
                     <RechartsTooltip 
                       cursor={{fill: '#f3f4f6'}}
                       content={<TopProductTooltip />}
@@ -248,19 +248,19 @@ export default function SupplementStatsPage() {
                 <table className="w-full text-left border-collapse">
                   <thead className="bg-gray-50/80 border-b border-gray-100">
                     <tr>
-                      <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase">Producto</th>
-                      <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase">Categoría</th>
-                      <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase text-right">Uds. Vendidas</th>
-                      <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase text-right">Ingresos</th>
+                      <th className="px-4 sm:px-6 py-4 text-[10px] sm:text-xs font-semibold text-gray-500 uppercase">Producto</th>
+                      <th className="px-4 sm:px-6 py-4 text-[10px] sm:text-xs font-semibold text-gray-500 uppercase hidden md:table-cell">Categoría</th>
+                      <th className="px-4 sm:px-6 py-4 text-[10px] sm:text-xs font-semibold text-gray-500 uppercase text-right">Uds. Vendidas</th>
+                      <th className="px-4 sm:px-6 py-4 text-[10px] sm:text-xs font-semibold text-gray-500 uppercase text-right">Ingresos</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-50">
                     {topProducts.map(p => (
-                      <tr key={p.product_id} className="hover:bg-gray-50/50 transition-colors">
-                        <td className="px-6 py-4 font-bold text-gray-900">{p.product_name}</td>
-                        <td className="px-6 py-4 text-gray-500 text-sm">{p.category || '-'}</td>
-                        <td className="px-6 py-4 text-right font-medium">{p.total_units}</td>
-                        <td className="px-6 py-4 text-right font-medium text-accent-dark">{formatEur(p.total_revenue)}</td>
+                      <tr key={p.product_id} className="hover:bg-gray-50/50 transition-colors text-sm sm:text-base">
+                        <td className="px-4 sm:px-6 py-3 sm:py-4 font-bold text-gray-900">{p.product_name}</td>
+                        <td className="px-4 sm:px-6 py-3 sm:py-4 text-gray-500 text-sm hidden md:table-cell">{p.category || '-'}</td>
+                        <td className="px-4 sm:px-6 py-3 sm:py-4 text-right font-medium">{p.total_units}</td>
+                        <td className="px-4 sm:px-6 py-3 sm:py-4 text-right font-medium text-accent-dark">{formatEur(p.total_revenue)}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -357,9 +357,9 @@ export default function SupplementStatsPage() {
                 </tbody>
               </table>
             </div>
-            <div className="bg-gray-50 p-6 border-t border-gray-100 flex justify-end">
-              <div className="text-xl font-medium text-gray-700 items-baseline gap-3 flex">
-                Total histórico gastado: <span className="font-bold text-gray-900 text-2xl">{formatEur(totalSpent)}</span>
+            <div className="bg-gray-50 p-6 border-t border-gray-100 flex justify-end text-center sm:text-right">
+              <div className="text-lg sm:text-xl font-medium text-gray-700 items-center sm:items-baseline gap-2 sm:gap-3 flex flex-col sm:flex-row w-full sm:w-auto">
+                Total histórico gastado: <span className="font-bold text-gray-900 text-xl sm:text-2xl">{formatEur(totalSpent)}</span>
               </div>
             </div>
           </div>
@@ -388,36 +388,34 @@ export default function SupplementStatsPage() {
 
     return (
       <div className="space-y-6">
-        <div className="flex flex-col sm:flex-row gap-6 shrink-0">
-          <div className="bg-white p-6 border border-gray-100 rounded-[2rem] shadow-sm max-w-xs w-full">
-            <label htmlFor="revYear" className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Año Fiscal</label>
-            <select 
-              id="revYear"
-              value={selectedYear}
-              onChange={e => setSelectedYear(Number(e.target.value))}
-              className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-accent outline-none font-medium h-[42px]"
-            >
-              <option value={new Date().getFullYear() + 1}>{new Date().getFullYear() + 1}</option>
-              <option value={new Date().getFullYear()}>{new Date().getFullYear()}</option>
-              <option value={new Date().getFullYear() - 1}>{new Date().getFullYear() - 1}</option>
-              <option value={new Date().getFullYear() - 2}>{new Date().getFullYear() - 2}</option>
-            </select>
-          </div>
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 sm:gap-6">
+            <div className="bg-white p-6 border border-gray-100 rounded-[1.5rem] sm:rounded-[2rem] shadow-sm flex flex-col justify-center">
+              <label htmlFor="revYear" className="block text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-2">Año Fiscal</label>
+              <select 
+                id="revYear"
+                value={selectedYear}
+                onChange={e => setSelectedYear(Number(e.target.value))}
+                className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-accent outline-none font-medium h-[42px]"
+              >
+                <option value={new Date().getFullYear() + 1}>{new Date().getFullYear() + 1}</option>
+                <option value={new Date().getFullYear()}>{new Date().getFullYear()}</option>
+                <option value={new Date().getFullYear() - 1}>{new Date().getFullYear() - 1}</option>
+                <option value={new Date().getFullYear() - 2}>{new Date().getFullYear() - 2}</option>
+              </select>
+            </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 flex-1">
-            <div className="bg-white p-6 border border-gray-100 rounded-[2rem] shadow-sm flex flex-col justify-center">
-              <span className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Total Ingresado</span>
-              <span className="text-3xl font-black text-gray-900 leading-none">{formatEur(totalYear)}</span>
+            <div className="bg-white p-6 border border-gray-100 rounded-[1.5rem] sm:rounded-[2rem] shadow-sm flex flex-col justify-center">
+              <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1">Total Ingresado</span>
+              <span className="text-2xl sm:text-3xl font-black text-gray-900 leading-none">{formatEur(totalYear)}</span>
             </div>
-            <div className="bg-white p-6 border border-gray-100 rounded-[2rem] shadow-sm flex flex-col justify-center">
-              <span className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Mejor Mes ({bestMonth.label})</span>
-              <span className="text-3xl font-black text-accent-dark leading-none">{formatEur(bestMonth.revenue)}</span>
+            <div className="bg-white p-6 border border-gray-100 rounded-[1.5rem] sm:rounded-[2rem] shadow-sm flex flex-col justify-center">
+              <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1">Mejor Mes ({bestMonth.label})</span>
+              <span className="text-2xl sm:text-3xl font-black text-accent-dark leading-none">{formatEur(bestMonth.revenue)}</span>
             </div>
-            <div className="bg-white p-6 border border-gray-100 rounded-[2rem] shadow-sm flex flex-col justify-center">
-              <span className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Mediamensual</span>
-              <span className="text-3xl font-black text-gray-900 leading-none">{formatEur(avgMonthly)}</span>
+            <div className="bg-white p-6 border border-gray-100 rounded-[1.5rem] sm:rounded-[2rem] shadow-sm flex flex-col justify-center">
+              <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1">Mediamensual</span>
+              <span className="text-2xl sm:text-3xl font-black text-gray-900 leading-none">{formatEur(avgMonthly)}</span>
             </div>
-          </div>
         </div>
 
         <div className="bg-white p-6 border border-gray-100 rounded-[2rem] shadow-sm pt-8">
@@ -571,15 +569,15 @@ export default function SupplementStatsPage() {
     return (
       <div className="flex-1 flex flex-col min-h-0 bg-white border border-gray-100 rounded-[2rem] shadow-sm overflow-hidden p-8">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-8 gap-4 shrink-0">
-          <div className="flex items-center gap-4">
-             <div className="p-3 bg-accent/10 rounded-2xl text-accent shadow-sm">
-                <svg className="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <div className="flex items-center gap-3 sm:gap-4">
+             <div className="p-2 sm:p-3 bg-accent/10 rounded-2xl text-accent shadow-sm">
+                <svg className="w-6 h-6 sm:w-7 sm:h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
                 </svg>
              </div>
               <div>
-                <h2 className="text-xl font-bold text-gray-900 leading-none mb-1">Directorio de Clientes</h2>
-                <p className="text-sm font-medium text-gray-500">Base de datos de suplementación</p>
+                <h2 className="text-lg sm:text-xl font-bold text-gray-900 leading-none mb-1">Directorio de Clientes</h2>
+                <p className="text-[10px] sm:text-sm font-medium text-gray-500 uppercase tracking-wider">Base de datos de suplementación</p>
               </div>
           </div>
           <button
@@ -656,27 +654,31 @@ export default function SupplementStatsPage() {
                 ) : (
                   filteredClients.map(c => (
                     <tr key={c.id} className="hover:bg-gray-50/50 transition-colors">
-                      <td className="px-6 py-4">
-                        <span className="font-bold text-gray-900 block">{c.full_name}</span>
+                      <td className="px-4 sm:px-6 py-3 sm:py-4">
+                        <span className="font-bold text-gray-900 block text-sm sm:text-base">{c.full_name}</span>
+                        {/* Visible only on mobile as secondary info */}
+                        <span className="sm:hidden text-[10px] text-gray-500 font-medium">
+                          {c.phone || 'Sin teléfono'}
+                        </span>
                       </td>
-                      <td className="px-6 py-4 font-medium text-gray-600">
+                      <td className="px-4 sm:px-6 py-3 sm:py-4 font-medium text-gray-600 hidden sm:table-cell text-sm">
                         {c.phone || <span className="text-gray-300 italic text-xs font-normal">Sin teléfono</span>}
                       </td>
-                      <td className="px-6 py-4 text-gray-500 text-sm max-w-[300px] truncate">
+                      <td className="px-4 sm:px-6 py-3 sm:py-4 text-gray-500 text-xs sm:text-sm max-w-[200px] truncate hidden md:table-cell">
                         {c.notes || '-'}
                       </td>
-                      <td className="px-6 py-4 text-center">
-                        <span className={`inline-flex items-center justify-center min-w-[1.5rem] h-6 px-2.5 rounded-full text-[10px] font-bold ${c.total_sales > 0 ? 'bg-accent/10 text-accent-dark border border-accent/20' : 'bg-gray-100 text-gray-400'}`}>
+                      <td className="px-4 sm:px-6 py-3 sm:py-4 text-center">
+                        <span className={`inline-flex items-center justify-center min-w-[1.2rem] sm:min-w-[1.5rem] h-5 sm:h-6 px-1.5 sm:px-2.5 rounded-full text-[9px] sm:text-[10px] font-bold ${c.total_sales > 0 ? 'bg-accent/10 text-accent-dark border border-accent/20' : 'bg-gray-100 text-gray-400'}`}>
                           {c.total_sales}
                         </span>
                       </td>
-                      <td className="px-6 py-4 text-right">
-                        <div className="flex justify-end gap-2">
+                      <td className="px-4 sm:px-6 py-3 sm:py-4 text-right">
+                        <div className="flex justify-end gap-1 sm:gap-2">
                           {c.active ? (
                             <>
                               <button
                                 onClick={() => handleOpenEdit(c)}
-                                className="px-3 py-1.5 text-[10px] font-bold text-gray-700 bg-accent/20 hover:bg-accent/40 rounded-lg transition-all uppercase tracking-wider"
+                                className="px-2 sm:px-3 py-1.5 text-[9px] sm:text-[10px] font-bold text-gray-700 bg-accent/20 hover:bg-accent/40 rounded-lg transition-all uppercase tracking-wider"
                               >
                                 Editar
                               </button>
@@ -690,7 +692,7 @@ export default function SupplementStatsPage() {
                                     variant: c.total_sales > 0 ? 'primary' : 'danger'
                                   })
                                 }}
-                                className="px-3 py-1.5 text-[10px] font-bold text-red-600 bg-red-50 hover:bg-red-100 rounded-lg transition-all uppercase tracking-wider"
+                                className="px-2 sm:px-3 py-1.5 text-[9px] sm:text-[10px] font-bold text-red-600 bg-red-50 hover:bg-red-100 rounded-lg transition-all uppercase tracking-wider"
                               >
                                 {c.total_sales > 0 ? 'Archivar' : 'Borrar'}
                               </button>
@@ -699,7 +701,7 @@ export default function SupplementStatsPage() {
                             <>
                               <button
                                 onClick={() => activateClient(c.id)}
-                                className="px-3 py-1.5 text-[10px] font-bold text-green-600 bg-green-50 hover:bg-green-100 rounded-lg transition-all uppercase tracking-wider"
+                                className="px-2 sm:px-3 py-1.5 text-[9px] sm:text-[10px] font-bold text-green-600 bg-green-50 hover:bg-green-100 rounded-lg transition-all uppercase tracking-wider"
                               >
                                 Activar
                               </button>
@@ -714,7 +716,7 @@ export default function SupplementStatsPage() {
                                       variant: 'danger'
                                     })
                                   }}
-                                  className="px-3 py-1.5 text-[10px] font-bold text-red-600 bg-red-50 hover:bg-red-100 rounded-lg transition-all uppercase tracking-wider"
+                                  className="px-2 sm:px-3 py-1.5 text-[9px] sm:text-[10px] font-bold text-red-600 bg-red-50 hover:bg-red-100 rounded-lg transition-all uppercase tracking-wider"
                                 >
                                   Borrar
                                 </button>

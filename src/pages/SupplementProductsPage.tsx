@@ -99,13 +99,16 @@ export default function SupplementProductsPage() {
           <Link to="/admin/suplementacion" className="hover:text-gray-600">Suplementación</Link>
         </nav>
 
-        <div className="flex items-center justify-between">
-          <h1 className="text-2xl font-bold text-gray-900">Catálogo de Productos</h1>
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Catálogo de Productos</h1>
           <button
             onClick={handleOpenNew}
-            className="px-4 py-2 bg-accent hover:bg-accent-dark text-gray-800 text-sm font-medium rounded-lg transition-colors"
+            className="w-full sm:w-auto px-6 py-2.5 bg-accent hover:bg-accent-dark text-gray-800 text-sm font-bold rounded-xl transition-colors shadow-sm flex items-center justify-center gap-2"
           >
-            + Nuevo producto
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+            </svg>
+            NUEVO PRODUCTO
           </button>
         </div>
       </div>
@@ -154,17 +157,17 @@ export default function SupplementProductsPage() {
       <div className="flex-1 min-h-0 bg-white border border-gray-200 rounded-lg shadow-sm flex flex-col overflow-hidden">
         <div className="flex-1 overflow-auto">
           <table className="min-w-full divide-y divide-gray-200 w-full text-sm text-left">
-            <thead className="sticky top-0 z-10 bg-gray-50/80 backdrop-blur-md border-b border-gray-100">
-              <tr className="text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                <th className="px-4 py-4">Código</th>
+            <thead className="sticky top-0 z-10 bg-gray-50/80 backdrop-blur-md border-b border-gray-100 font-bold uppercase tracking-wider text-[10px] text-gray-500">
+              <tr>
+                <th className="px-4 py-4 hidden lg:table-cell">Código</th>
                 <th className="px-4 py-4">Producto</th>
                 <th className="px-4 py-4">Sabor</th>
-                <th className="px-4 py-4">Categoría</th>
-                <th className="px-4 py-4 whitespace-nowrap">P.B</th>
+                <th className="px-4 py-4 hidden md:table-cell">Categoría</th>
+                <th className="px-4 py-4 whitespace-nowrap hidden sm:table-cell">P.B</th>
                 <th className="px-4 py-4 whitespace-nowrap">SRP</th>
-                <th className="px-4 py-4">EAN</th>
+                <th className="px-4 py-4 hidden xl:table-cell">EAN</th>
                 <th className="px-4 py-4">Stock</th>
-                <th className="px-4 py-4">Estado</th>
+                <th className="px-4 py-4 hidden lg:table-cell">Estado</th>
                 <th className="px-4 py-4 text-right">Acciones</th>
               </tr>
             </thead>
@@ -183,27 +186,33 @@ export default function SupplementProductsPage() {
                 </tr>
               ) : (
                 paginatedProducts.map((p) => (
-                  <tr key={p.id} className="hover:bg-gray-50/50 transition-colors">
-                    <td className="px-4 py-2 font-medium text-gray-900">{p.code}</td>
-                    <td className="px-4 py-2 text-gray-700 min-w-[200px]">{p.product}</td>
-                    <td className="px-4 py-2 text-gray-500">{p.flavor || '—'}</td>
-                    <td className="px-4 py-2 text-gray-500 text-xs">{p.category || '—'}</td>
-                    <td className="px-4 py-2 text-gray-700 whitespace-nowrap">{p.pb !== null ? `${p.pb} €` : '—'}</td>
-                    <td className="px-4 py-2 text-gray-700 whitespace-nowrap">{p.srp !== null ? `${p.srp} €` : '—'}</td>
-                    <td className="px-4 py-2 text-gray-500 text-xs font-mono">{p.ean || '—'}</td>
-                    <td className="px-4 py-2">{renderStock(p.stock)}</td>
-                    <td className="px-4 py-2">
+                  <tr key={p.id} className="hover:bg-gray-50/50 transition-colors text-sm sm:text-base">
+                    <td className="px-4 py-3 font-medium text-gray-500 text-xs hidden lg:table-cell">{p.code}</td>
+                    <td className="px-4 py-3">
+                      <span className="font-bold text-gray-900 block">{p.product}</span>
+                      <span className="lg:hidden text-[10px] text-gray-500 font-medium">Cod: {p.code}</span>
+                    </td>
+                    <td className="px-4 py-3 text-gray-600">
+                      {p.flavor || '—'}
+                      <span className="md:hidden block text-[10px] text-gray-400 mt-0.5">{p.category || ''}</span>
+                    </td>
+                    <td className="px-4 py-3 text-gray-500 text-xs hidden md:table-cell">{p.category || '—'}</td>
+                    <td className="px-4 py-3 text-gray-700 whitespace-nowrap hidden sm:table-cell">{p.pb !== null ? `${p.pb}€` : '—'}</td>
+                    <td className="px-4 py-3 text-gray-900 font-bold whitespace-nowrap">{p.srp !== null ? `${p.srp}€` : '—'}</td>
+                    <td className="px-4 py-3 text-gray-500 text-xs font-mono hidden xl:table-cell">{p.ean || '—'}</td>
+                    <td className="px-4 py-3">{renderStock(p.stock)}</td>
+                    <td className="px-4 py-3 hidden lg:table-cell">
                        {p.active ? (
-                        <span className="inline-block px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 border border-green-200">
+                        <span className="inline-block px-2 py-0.5 rounded-full text-[10px] font-bold bg-green-100 text-green-800 border border-green-200 uppercase tracking-tighter">
                           Activo
                         </span>
                       ) : (
-                        <span className="inline-block px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600 border border-gray-200">
+                        <span className="inline-block px-2 py-0.5 rounded-full text-[10px] font-bold bg-gray-100 text-gray-600 border border-gray-200 uppercase tracking-tighter">
                           Inactivo
                         </span>
                       )}
                     </td>
-                    <td className="px-4 py-2 text-right">
+                    <td className="px-4 py-3 text-right">
                       <div className="flex items-center justify-end gap-2">
                         <button
                           onClick={() => handleOpenEdit(p)}
@@ -245,8 +254,8 @@ export default function SupplementProductsPage() {
 
         {/* Footer: Paginación */}
         {filteredProducts.length > 0 && (
-          <div className="shrink-0 bg-gray-50 border-t border-gray-200 px-4 py-3 flex items-center justify-between">
-            <p className="text-sm text-gray-600 font-medium">
+          <div className="shrink-0 bg-gray-50 border-t border-gray-200 px-4 py-3 flex flex-col sm:flex-row items-center justify-between gap-4">
+            <p className="text-xs sm:text-sm text-gray-600 font-medium">
               Mostrando <span className="font-semibold text-gray-900">{((currentPage - 1) * ITEMS_PER_PAGE) + 1}</span> a <span className="font-semibold text-gray-900">{Math.min(currentPage * ITEMS_PER_PAGE, filteredProducts.length)}</span> de <span className="font-semibold text-gray-900">{filteredProducts.length}</span> resultados
             </p>
             <div className="flex items-center gap-2">

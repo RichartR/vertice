@@ -128,36 +128,42 @@ export default function SupplementStockPage() {
       }
 
       return (
-        <tr key={item.id} className="hover:bg-gray-50/50 transition-colors group">
-          <td className="px-6 py-4 font-mono text-xs text-gray-500">{item.code}</td>
-          <td className="px-6 py-4 font-bold text-gray-900">{item.product}</td>
-          <td className="px-6 py-4 font-medium text-gray-600">{item.flavor || '—'}</td>
-          <td className="px-6 py-4">
+        <tr key={item.id} className="hover:bg-gray-50/50 transition-colors group text-sm sm:text-base">
+          <td className="px-4 sm:px-6 py-3 sm:py-4 font-mono text-[10px] sm:text-xs text-gray-500 hidden lg:table-cell">{item.code}</td>
+          <td className="px-4 sm:px-6 py-3 sm:py-4">
+            <span className="font-bold text-gray-900 block">{item.product}</span>
+            <span className="sm:hidden text-[10px] text-gray-500 font-medium">Cod: {item.code}</span>
+          </td>
+          <td className="px-4 sm:px-6 py-3 sm:py-4 font-medium text-gray-600">
+            {item.flavor || '—'}
+            <span className="md:hidden block text-[10px] text-gray-400 mt-0.5">{item.category || ''}</span>
+          </td>
+          <td className="px-4 sm:px-6 py-3 sm:py-4 hidden md:table-cell">
             {item.category ? (
               <span className="inline-flex items-center px-2.5 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider bg-gray-100 text-gray-600">
                 {item.category}
               </span>
             ) : '—'}
           </td>
-          <td className="px-6 py-4 text-right font-medium text-gray-900">
-            {item.srp ? `${item.srp.toFixed(2)} €` : '—'}
+          <td className="px-4 sm:px-6 py-3 sm:py-4 text-right font-medium text-gray-900">
+            {item.srp ? `${item.srp.toFixed(2)}€` : '—'}
           </td>
-          <td className="px-6 py-4 text-center">
-            <div className="flex items-center justify-center gap-2">
-              <span className={`inline-flex items-center justify-center w-8 h-8 rounded-full font-bold text-sm ${badgeClasses}`}>
+          <td className="px-4 sm:px-6 py-3 sm:py-4 text-center">
+            <div className="flex items-center justify-center gap-1 sm:gap-2">
+              <span className={`inline-flex items-center justify-center w-7 h-7 sm:w-8 sm:h-8 rounded-full font-bold text-xs sm:text-sm ${badgeClasses}`}>
                 {item.quantity}
               </span>
               {item.quantity === 0 && (
-                <span className="bg-red-500 text-white text-[9px] font-bold uppercase tracking-widest px-2 py-0.5 rounded shadow-sm">
+                <span className="bg-red-500 text-white text-[8px] sm:text-[9px] font-bold uppercase tracking-widest px-1.5 sm:px-2 py-0.5 rounded shadow-sm">
                   Agotado
                 </span>
               )}
             </div>
           </td>
-          <td className="px-6 py-4 text-center text-xs font-medium text-gray-500">
+          <td className="px-4 sm:px-6 py-3 sm:py-4 text-center text-[10px] sm:text-xs font-medium text-gray-500 hidden xl:table-cell">
             {formatDate(item.updated_at)}
           </td>
-          <td className="px-6 py-4 text-right">
+          <td className="px-4 sm:px-6 py-3 sm:py-4 text-right">
             <button
               onClick={() => setAdjustingItem(item)}
               className="p-2 text-gray-400 hover:text-accent hover:bg-accent/10 rounded-xl transition-all"
@@ -174,7 +180,7 @@ export default function SupplementStockPage() {
   }
 
   return (
-    <div className="p-8 max-w-[1600px] mx-auto space-y-8 pb-32 animate-in fade-in duration-500">
+    <div className="p-4 sm:p-8 max-w-[1600px] mx-auto space-y-6 sm:space-y-8 pb-32 animate-in fade-in duration-500 overflow-y-auto">
       {/* Breadcrumb */}
       <nav className="text-sm text-gray-400 hover:text-gray-600 transition-colors mb-1 block">
           <span className="mx-2">←</span>
@@ -189,9 +195,9 @@ export default function SupplementStockPage() {
       </header>
 
       {/* Tools */}
-      <div className="p-6 bg-white border border-gray-100 rounded-3xl shadow-sm flex flex-col sm:flex-row justify-between items-center gap-4">
-        <div className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto">
-          <div className="relative w-full sm:w-80">
+      <div className="p-4 sm:p-6 bg-white border border-gray-100 rounded-[1.5rem] sm:rounded-3xl shadow-sm flex flex-col lg:flex-row justify-between items-stretch lg:items-center gap-4">
+        <div className="flex flex-col sm:flex-row gap-4 flex-1">
+          <div className="relative flex-1">
             <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none">
               <svg className="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
@@ -202,10 +208,10 @@ export default function SupplementStockPage() {
               placeholder="Buscar por nombre, sabor o código..."
               value={searchTerm}
               onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(1); }}
-              className="w-full pl-11 pr-4 py-3 bg-gray-50 border-none rounded-2xl focus:ring-4 focus:ring-accent/20 focus:bg-white transition-all font-medium text-gray-900"
+              className="w-full pl-11 pr-4 py-3 bg-gray-50 border-none rounded-2xl focus:ring-4 focus:ring-accent/20 focus:bg-white transition-all font-medium text-gray-900 text-sm"
             />
           </div>
-          <div className="flex items-center bg-gray-50 px-4 py-3 rounded-2xl gap-6">
+          <div className="flex flex-wrap items-center bg-gray-50 px-4 py-3 rounded-2xl gap-x-6 gap-y-2">
             <div className="flex items-center">
               <input
                 type="checkbox"
@@ -214,7 +220,7 @@ export default function SupplementStockPage() {
                 onChange={(e) => { setOutOfStockOnly(e.target.checked); setCurrentPage(1); }}
                 className="w-4 h-4 text-accent border-gray-300 rounded focus:ring-accent focus:ring-2"
               />
-              <label htmlFor="outOfStockFilter" className="ml-2 text-sm font-bold text-gray-700 select-none cursor-pointer">
+              <label htmlFor="outOfStockFilter" className="ml-2 text-xs sm:text-sm font-bold text-gray-700 select-none cursor-pointer">
                 Solo agotados
               </label>
             </div>
@@ -227,7 +233,7 @@ export default function SupplementStockPage() {
                 onChange={(e) => { setShowInactive(e.target.checked); setCurrentPage(1); }}
                 className="w-4 h-4 text-accent border-gray-300 rounded focus:ring-accent focus:ring-2"
               />
-              <label htmlFor="inactiveFilter" className="ml-2 text-sm font-bold text-gray-700 select-none cursor-pointer">
+              <label htmlFor="inactiveFilter" className="ml-2 text-xs sm:text-sm font-bold text-gray-700 select-none cursor-pointer">
                 Ver Inactivos
               </label>
             </div>
@@ -247,22 +253,22 @@ export default function SupplementStockPage() {
           <table className="w-full text-sm text-left">
             <thead className="text-[10px] text-gray-400 uppercase tracking-widest bg-gray-50/50 border-b border-gray-100 font-bold">
               <tr>
-                <th className="px-6 py-5">Cód</th>
-                <th className="px-6 py-5 cursor-pointer hover:bg-gray-100 transition-colors" onClick={() => handleSort('product')}>
+                <th className="px-4 sm:px-6 py-5 hidden lg:table-cell">Cód</th>
+                <th className="px-4 sm:px-6 py-5 cursor-pointer hover:bg-gray-100 transition-colors" onClick={() => handleSort('product')}>
                   Producto {getSortIcon('product')}
                 </th>
-                <th className="px-6 py-5 cursor-pointer hover:bg-gray-100 transition-colors" onClick={() => handleSort('flavor')}>
+                <th className="px-4 sm:px-6 py-5 cursor-pointer hover:bg-gray-100 transition-colors" onClick={() => handleSort('flavor')}>
                   Sabor {getSortIcon('flavor')}
                 </th>
-                <th className="px-6 py-5 cursor-pointer hover:bg-gray-100 transition-colors" onClick={() => handleSort('category')}>
+                <th className="px-4 sm:px-6 py-5 cursor-pointer hover:bg-gray-100 transition-colors hidden md:table-cell" onClick={() => handleSort('category')}>
                   Categoría {getSortIcon('category')}
                 </th>
-                <th className="px-6 py-5 text-right">SRP</th>
-                <th className="px-6 py-5 cursor-pointer hover:bg-gray-100 transition-colors text-center" onClick={() => handleSort('quantity')}>
-                  Stock Actual {getSortIcon('quantity')}
+                <th className="px-4 sm:px-6 py-5 text-right">SRP</th>
+                <th className="px-4 sm:px-6 py-5 cursor-pointer hover:bg-gray-100 transition-colors text-center" onClick={() => handleSort('quantity')}>
+                  Stock {getSortIcon('quantity')}
                 </th>
-                <th className="px-6 py-5 text-center">Última Acc.</th>
-                <th className="px-6 py-5 text-right">Acciones</th>
+                <th className="px-4 sm:px-6 py-5 text-center hidden xl:table-cell">Última Acc.</th>
+                <th className="px-4 sm:px-6 py-5 text-right">Acciones</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-50">

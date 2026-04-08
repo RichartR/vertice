@@ -70,8 +70,8 @@ export default function ProductModal({ product, onClose, onSave }: Readonly<Prod
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-gray-900/40 backdrop-blur-sm">
-      <div className="bg-white rounded-2xl shadow-xl w-full max-w-2xl overflow-hidden flex flex-col max-h-full">
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-gray-900/40 backdrop-blur-sm">
+      <div className="bg-white rounded-t-3xl sm:rounded-2xl shadow-xl w-full max-w-2xl overflow-hidden flex flex-col max-h-[95vh] sm:max-h-[90vh]">
         
         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 shrink-0">
           <h2 className="text-lg font-semibold text-gray-900">
@@ -94,25 +94,25 @@ export default function ProductModal({ product, onClose, onSave }: Readonly<Prod
             </div>
           )}
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-4">
             <div>
-              <label className="block text-xs font-medium text-gray-700 mb-1">Código *</label>
+              <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1.5">Código *</label>
               <input 
                 type="number" 
                 required 
                 value={code} 
                 onChange={e => setCode(e.target.value)} 
-                className="w-full border-gray-300 rounded-lg shadow-sm focus:ring-accent focus:border-accent text-sm py-2 px-3 border"
+                className="w-full bg-gray-50 border-none rounded-xl focus:ring-4 focus:ring-accent/20 focus:bg-white transition-all text-sm font-medium py-2.5 px-4"
               />
             </div>
             <div>
-              <label className="block text-xs font-medium text-gray-700 mb-1">Nombre del producto *</label>
+              <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1.5">Nombre del producto *</label>
               <input 
                 type="text" 
                 required 
                 value={name} 
                 onChange={e => setName(e.target.value)} 
-                className="w-full border-gray-300 rounded-lg shadow-sm focus:ring-accent focus:border-accent text-sm py-2 px-3 border"
+                className="w-full bg-gray-50 border-none rounded-xl focus:ring-4 focus:ring-accent/20 focus:bg-white transition-all text-sm font-medium py-2.5 px-4"
               />
             </div>
           </div>

@@ -123,13 +123,13 @@ export default function SaleDetailModal({ saleId, onClose, onRefresh }: Readonly
         {/* Listado de Líneas */}
         <div className="space-y-3">
           <h4 className="text-[10px] font-bold text-gray-400 uppercase tracking-widest px-1">Productos Vendidos</h4>
-          <div className="overflow-hidden border border-gray-100 rounded-2xl bg-white shadow-sm">
-            <table className="w-full text-left text-sm">
+          <div className="overflow-x-auto -mx-4 sm:mx-0">
+            <table className="w-full text-left text-sm min-w-[500px] sm:min-w-0">
               <thead className="bg-gray-50 border-b border-gray-50 font-bold text-gray-400 uppercase text-[9px] tracking-widest">
                 <tr>
                   <th className="px-4 py-3">Detalle</th>
                   <th className="px-4 py-3 text-center">Cant.</th>
-                  <th className="px-4 py-3 text-right">Precio</th>
+                  <th className="px-4 py-3 text-right hidden sm:table-cell">Precio</th>
                   <th className="px-4 py-3 text-right">Subtotal</th>
                   <th className="px-4 py-3 text-right"></th>
                 </tr>
@@ -141,7 +141,7 @@ export default function SaleDetailModal({ saleId, onClose, onRefresh }: Readonly
                       <span className="font-bold text-gray-800">{line.product_name}</span>
                     </td>
                     <td className="px-4 py-3 text-center font-medium text-gray-600">{line.quantity}</td>
-                    <td className="px-4 py-3 text-right text-gray-500 font-medium">{line.unit_price.toFixed(2)} €</td>
+                    <td className="px-4 py-3 text-right text-gray-500 font-medium hidden sm:table-cell">{line.unit_price.toFixed(2)} €</td>
                     <td className="px-4 py-3 text-right font-bold text-gray-900">{line.subtotal.toFixed(2)} €</td>
                     <td className="px-4 py-3 text-right">
                       <button
@@ -169,9 +169,9 @@ export default function SaleDetailModal({ saleId, onClose, onRefresh }: Readonly
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/60 backdrop-blur-sm animate-in fade-in duration-300">
       <div className="bg-white rounded-3xl shadow-2xl w-full max-w-2xl overflow-hidden flex flex-col max-h-[85vh] animate-in zoom-in-95 duration-300">
         {/* Cabecera modal */}
-        <div className="px-8 py-6 border-b border-gray-100 bg-white shrink-0 flex justify-between items-center">
+        <div className="px-6 py-4 sm:px-8 sm:py-6 border-b border-gray-100 bg-white shrink-0 flex justify-between items-center">
           <div className="flex flex-col">
-            <h3 className="text-xl font-bold text-gray-900 uppercase tracking-tight">Detalle de Venta</h3>
+            <h3 className="text-lg sm:text-xl font-bold text-gray-900 uppercase tracking-tight">Detalle de Venta</h3>
           </div>
           <button 
             onClick={onClose} 
@@ -183,15 +183,15 @@ export default function SaleDetailModal({ saleId, onClose, onRefresh }: Readonly
           </button>
         </div>
 
-        <div className="p-8 overflow-y-auto bg-white">
+        <div className="p-4 sm:p-8 overflow-y-auto bg-white">
           {renderContent()}
         </div>
 
-        <div className="flex gap-3 px-8 py-6 border-t border-gray-100 bg-gray-50/50 shrink-0">
+        <div className="flex gap-3 px-6 py-4 sm:px-8 sm:py-6 border-t border-gray-100 bg-gray-50/50 shrink-0">
           <button
             onClick={onClose}
             disabled={isDeleting}
-            className="w-full py-3.5 rounded-2xl border border-gray-200 text-sm font-bold text-gray-500 hover:bg-gray-100 transition-all uppercase tracking-[0.2em]"
+            className="w-full py-3 sm:py-3.5 rounded-2xl border border-gray-200 text-xs sm:text-sm font-bold text-gray-500 hover:bg-gray-100 transition-all uppercase tracking-[0.2em]"
           >
             Cerrar Ventana
           </button>
