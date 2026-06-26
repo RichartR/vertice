@@ -44,7 +44,7 @@ const CURRENT_YEAR = new Date().getFullYear()
 const REGISTROS_POR_PAGINA_OPCIONES = [
   { value: '25', label: '25 por página' },
   { value: '50', label: '50 por página' },
-  { value: '100', label: '100 por página' },
+  { value: '100', label: '100 por página' }
 ]
 
 export default function ServicePage() {
@@ -289,8 +289,8 @@ export default function ServicePage() {
               key={t}
               onClick={() => setTab(t)}
               className={`py-3 text-sm font-medium border-b-2 transition-colors ${tab === t
-                  ? 'border-accent-dark text-gray-900'
-                  : 'border-transparent text-gray-400 hover:text-gray-600'
+                ? 'border-accent-dark text-gray-900'
+                : 'border-transparent text-gray-400 hover:text-gray-600'
                 }`}
             >
               {t === 'registros' ? 'Registros' : 'Estadísticas'}
