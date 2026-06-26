@@ -36,7 +36,7 @@ type Tab = 'registros' | 'estadisticas'
 type Empleado = { id: string; nombre: string }
 
 const MESES = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
-               'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre']
+  'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre']
 
 // Rango de años disponibles en el selector: 5 años atrás hasta el año actual
 const CURRENT_YEAR = new Date().getFullYear()
@@ -44,7 +44,7 @@ const CURRENT_YEAR = new Date().getFullYear()
 const REGISTROS_POR_PAGINA_OPCIONES = [
   { value: '25', label: '25 por página' },
   { value: '50', label: '50 por página' },
-  { value: '100', label: '100 por página' }
+  { value: '100', label: '100 por página' },
 ]
 
 export default function ServicePage() {
@@ -66,7 +66,7 @@ export default function ServicePage() {
 
   // Selector de mes/año para la pestaña de estadísticas (por defecto el mes actual)
   const hoy = new Date()
-  const [mesSel, setMesSel]   = useState(hoy.getMonth() + 1)  // 1–12
+  const [mesSel, setMesSel] = useState(hoy.getMonth() + 1)  // 1–12
   const [yearSel, setYearSel] = useState(hoy.getFullYear())
 
   // Filtros — gestionados como un objeto plano para facilitar el reset
@@ -109,20 +109,20 @@ export default function ServicePage() {
   // --- Modal crear/editar ---
 
   const [registroModal, setRegistroModal] = useState<{ open: boolean; registro: Registro | null }>({ open: false, registro: null })
-  const [rFecha, setRFecha]             = useState('')
-  const [rHora, setRHora]               = useState('')
-  const [rCliente, setRCliente]         = useState('')
+  const [rFecha, setRFecha] = useState('')
+  const [rHora, setRHora] = useState('')
+  const [rCliente, setRCliente] = useState('')
   const [rTratamiento, setRTratamiento] = useState('')
-  const [rNotas, setRNotas]             = useState('')
-  const [rMetodo, setRMetodo]           = useState<'efectivo' | 'tarjeta'>('tarjeta')
-  const [rPrecio, setRPrecio]           = useState('')
-  const [rEmpleado, setREmpleado]       = useState('')  // employee_id seleccionado
+  const [rNotas, setRNotas] = useState('')
+  const [rMetodo, setRMetodo] = useState<'efectivo' | 'tarjeta'>('tarjeta')
+  const [rPrecio, setRPrecio] = useState('')
+  const [rEmpleado, setREmpleado] = useState('')  // employee_id seleccionado
 
   // Lista de empleados activos asignados a este servicio (para el select del modal)
-  const [empleados, setEmpleados]         = useState<Empleado[]>([])
+  const [empleados, setEmpleados] = useState<Empleado[]>([])
   const [mostrarSelectorEmpleado, setMostrarSelectorEmpleado] = useState(false)
   const [rGuardando, setRGuardando] = useState(false)
-  const [rError, setRError]         = useState<string | null>(null)
+  const [rError, setRError] = useState<string | null>(null)
 
   useEffect(() => {
     if (!serviceId) return
@@ -288,11 +288,10 @@ export default function ServicePage() {
             <button
               key={t}
               onClick={() => setTab(t)}
-              className={`py-3 text-sm font-medium border-b-2 transition-colors ${
-                tab === t
+              className={`py-3 text-sm font-medium border-b-2 transition-colors ${tab === t
                   ? 'border-accent-dark text-gray-900'
                   : 'border-transparent text-gray-400 hover:text-gray-600'
-              }`}
+                }`}
             >
               {t === 'registros' ? 'Registros' : 'Estadísticas'}
             </button>
@@ -393,7 +392,7 @@ export default function ServicePage() {
                   </tbody>
                 </table>
               </div>
-              
+
               {/* Paginación */}
               {!cargando && registrosFiltrados.length > 0 && (
                 <Pagination
