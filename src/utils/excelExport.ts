@@ -32,6 +32,8 @@ export const exportOrdersToExcel = (orders: Order[], isReceivedTab: boolean) => 
       ...base,
       'Nº líneas': o.lines?.length || 0,
       'Total unidades': o.total_units,
+      'Base imponible (€)': o.total_base !== null ? o.total_base : '—',
+      'IVA 10% (€)': o.total_iva !== null ? o.total_iva : '—',
       'Coste total (€)': o.total_cost !== null ? o.total_cost : '—',
       Notas: o.notes || '—'
     };

@@ -122,14 +122,22 @@ function OrderContent({ order, onClose, onReceiveClick, onRevertClick }: Readonl
 
       {/* Footer */}
       <div className="bg-gray-50/50 px-6 py-4 sm:px-8 sm:py-6 border-t border-gray-100 shrink-0 flex flex-col sm:flex-row items-center justify-between gap-6 sm:gap-3">
-        <div className="flex gap-6 sm:gap-10 w-full sm:w-auto justify-between sm:justify-start">
+        <div className="flex flex-wrap justify-center sm:justify-start gap-x-8 gap-y-4">
           <div className="flex flex-col">
-            <span className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1">Unidades</span>
-            <span className="text-lg sm:text-xl font-bold text-gray-900">{order.total_units}</span>
+            <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Unidades</span>
+            <span className="text-lg font-bold text-gray-900">{order.total_units}</span>
           </div>
-          <div className="flex flex-col items-end sm:items-start">
-            <span className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1">Total Pedido</span>
-            <span className="text-xl sm:text-2xl font-bold text-gray-900">{order.total_cost === null ? '—' : `${order.total_cost.toFixed(2)} €`}</span>
+          <div className="flex flex-col">
+            <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Base Imponible</span>
+            <span className="text-lg font-bold text-gray-700">{order.total_base === null ? '—' : `${order.total_base.toFixed(2)} €`}</span>
+          </div>
+          <div className="flex flex-col">
+            <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">I.V.A. (10%)</span>
+            <span className="text-lg font-bold text-gray-700">{order.total_iva === null ? '—' : `${order.total_iva.toFixed(2)} €`}</span>
+          </div>
+          <div className="flex flex-col items-center sm:items-start scale-110 sm:scale-125 origin-left px-4 sm:px-0">
+            <span className="text-[10px] font-bold text-accent-darker uppercase tracking-widest mb-1">Total Pedido</span>
+            <span className="text-xl sm:text-2xl font-black text-gray-900">{order.total_cost === null ? '—' : `${order.total_cost.toFixed(2)} €`}</span>
           </div>
         </div>
         

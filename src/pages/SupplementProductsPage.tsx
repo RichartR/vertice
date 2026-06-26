@@ -33,8 +33,9 @@ export default function SupplementProductsPage() {
         const matchProduct = p.product.toLowerCase().includes(lowerSearch)
         const matchFlavor = p.flavor?.toLowerCase().includes(lowerSearch) ?? false
         const matchCode = p.code.toString().includes(lowerSearch)
-        
-        if (!matchProduct && !matchFlavor && !matchCode) {
+        const matchEan = p.ean?.includes(searchTerm) ?? false
+
+        if (!matchProduct && !matchFlavor && !matchCode && !matchEan) {
           return false
         }
       }
@@ -119,7 +120,7 @@ export default function SupplementProductsPage() {
           <div className="relative w-full sm:w-80">
             <input
               type="text"
-              placeholder="Buscar por nombre, sabor o código..."
+              placeholder="Buscar por nombre, sabor, código o EAN..."
               value={searchTerm}
               onChange={e => {
                 setSearchTerm(e.target.value)

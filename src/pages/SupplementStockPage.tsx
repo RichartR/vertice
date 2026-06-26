@@ -55,7 +55,7 @@ export default function SupplementStockPage() {
     return items
   }, [stockItems, searchTerm, outOfStockOnly, showInactive, sortConfig])
 
-  const totalAgotados = stockItems.filter(item => item.quantity === 0).length
+  const totalAgotados = stockItems.filter(item => item.active && item.quantity === 0).length
   const totalStockItems = stockItems.length
 
   const totalPages = Math.ceil(filteredAndSortedItems.length / itemsPerPage)

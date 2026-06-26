@@ -27,7 +27,7 @@ export default function SupplementacionPage() {
           supabase.from('supplement_products').select('*', { count: 'exact', head: true }).eq('active', true),
           supabase.from('supplement_sales').select('*', { count: 'exact', head: true }).eq('sale_date', todayStr),
           supabase.from('supplement_orders').select('*', { count: 'exact', head: true }).eq('received', false),
-          supabase.from('supplement_stock').select('*', { count: 'exact', head: true }).eq('quantity', 0)
+          supabase.from('supplement_stock').select('*, supplement_products!inner(active)', { count: 'exact', head: true }).eq('quantity', 0).eq('supplement_products.active', true)
         ])
 
         setKpis({

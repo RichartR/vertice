@@ -3,6 +3,8 @@ import { createPortal } from 'react-dom'
 import { useSupplementProducts } from '../../hooks/useSupplementProducts'
 import { useSupplementOrders } from '../../hooks/useSupplementOrders'
 import ConfirmModal from '../ui/ConfirmModal'
+import Tooltip from '../ui/Tooltip'
+import { parsePdfInvoice } from '../../utils/parsePdfInvoice'
 
 interface NewOrderModalProps {
   isOpen: boolean
@@ -15,6 +17,7 @@ type OrderLineState = {
   productId: string
   quantity: number
   unitCost: number | ''
+  discount: number
 }
 
 /**
@@ -28,37 +31,38 @@ interface OrderLineItemProps {
 }
 
 function OrderLineItem({ line, products, onUpdate, onRemove }: Readonly<OrderLineItemProps>) {
-  const subtotal = typeof line.unitCost === 'number' ? (line.quantity * line.unitCost) : 0
+  const subtotal = typeof line.unitCost === 'number' ? (line.quantity * line.unitCost * (1 - line.discount / 100)) : 0
   const qtyId = `qty-${line.id}`
   const costId = `cost-${line.id}`
+  const discountId = `disc-${line.id}`
 
   return (
-    <div className="flex flex-col sm:flex-row gap-4 sm:gap-6 items-stretch sm:items-start p-4 sm:p-8 bg-gray-50/50 rounded-3xl border border-gray-100 hover:border-gray-200 transition-all group shadow-sm relative pb-12 sm:pb-8">
+    <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 items-stretch sm:items-start p-4 sm:p-6 bg-gray-50/50 rounded-3xl border border-gray-100 hover:border-gray-200 transition-all group shadow-sm relative pb-12 sm:pb-6">
       <div className="flex-1 min-w-0 space-y-3">
         <label className="block text-[10px] font-black text-gray-400 uppercase tracking-[0.15em] ml-1">Producto</label>
         <ProductSelector 
           value={line.productId}
           onChange={(productId) => onUpdate(line.id, { productId })}
-          products={products.filter(p => p.active)}
+          products={products}
         />
       </div>
       
-      <div className="w-full sm:w-28 shrink-0 space-y-3">
+      <div className="w-20 sm:w-20 shrink-0 space-y-2">
         <label htmlFor={qtyId} className="block text-[10px] font-black text-gray-400 uppercase tracking-[0.15em] ml-1">Cant.</label>
-        <input 
+        <input
           id={qtyId}
           type="number"
           min="1"
           value={line.quantity}
           onChange={e => onUpdate(line.id, { quantity: Number.parseInt(e.target.value, 10) || 1 })}
-          className="w-full px-5 py-3 bg-white border border-gray-200 rounded-2xl focus:ring-4 focus:ring-accent/20 focus:border-accent outline-none text-center font-bold text-gray-900 transition-all"
+          className="w-full px-3 py-2 bg-white border border-gray-200 rounded-xl focus:ring-4 focus:ring-accent/20 focus:border-accent outline-none text-center font-bold text-sm text-gray-900 transition-all"
         />
       </div>
       
-      <div className="w-full sm:w-40 shrink-0 space-y-3">
+      <div className="w-28 sm:w-28 shrink-0 space-y-2">
         <label htmlFor={costId} className="block text-[10px] font-black text-gray-400 uppercase tracking-[0.15em] ml-1">Costo Unit.</label>
         <div className="relative">
-          <input 
+          <input
             id={costId}
             type="number"
             step="0.01"
@@ -66,15 +70,32 @@ function OrderLineItem({ line, products, onUpdate, onRemove }: Readonly<OrderLin
             value={line.unitCost}
             onChange={e => onUpdate(line.id, { unitCost: e.target.value === '' ? '' : Number.parseFloat(e.target.value) })}
             placeholder="0.00"
-            className="w-full px-5 py-3 bg-white border border-gray-200 rounded-2xl focus:ring-4 focus:ring-accent/20 focus:border-accent outline-none font-bold text-gray-900 text-right pr-12 transition-all"
+            className="w-full px-3 py-2 bg-white border border-gray-200 rounded-xl focus:ring-4 focus:ring-accent/20 focus:border-accent outline-none font-bold text-sm text-gray-900 text-right pr-8 transition-all"
           />
-          <span className="absolute right-5 top-3.5 text-gray-400 font-bold">€</span>
+          <span className="absolute right-3 top-2 text-gray-400 font-bold text-xs">€</span>
         </div>
       </div>
       
-      <div className="w-full sm:w-32 shrink-0 space-y-1 sm:space-y-3 text-left sm:text-right flex justify-between sm:block">
+      <div className="w-20 sm:w-20 shrink-0 space-y-2">
+        <label htmlFor={discountId} className="block text-[10px] font-black text-gray-400 uppercase tracking-[0.15em] ml-1">Dto. %</label>
+        <div className="relative">
+          <input
+            id={discountId}
+            type="number"
+            step="0.01"
+            min="0"
+            max="100"
+            value={line.discount}
+            onChange={e => onUpdate(line.id, { discount: Math.min(100, Math.max(0, Number.parseFloat(e.target.value) || 0)) })}
+            className="w-full px-3 py-2 bg-white border border-gray-200 rounded-xl focus:ring-4 focus:ring-accent/20 focus:border-accent outline-none font-bold text-sm text-gray-900 text-right pr-6 transition-all"
+          />
+          <span className="absolute right-2 top-2 text-gray-400 font-bold text-xs">%</span>
+        </div>
+      </div>
+
+      <div className="w-full sm:w-28 shrink-0 space-y-1 sm:space-y-2 text-left sm:text-right flex justify-between sm:block">
          <label className="block text-[10px] font-black text-gray-400 uppercase tracking-[0.15em]">Subtotal</label>
-         <div className="py-0 sm:py-2.5 font-black text-gray-900 text-lg sm:text-xl tracking-tight">
+         <div className="py-0 sm:py-1.5 font-black text-gray-900 text-base sm:text-lg tracking-tight">
             {subtotal > 0 ? `${subtotal.toFixed(2)} €` : '—'}
          </div>
       </div>
@@ -101,12 +122,15 @@ export default function NewOrderModal({ isOpen, onClose, onOrderCreated }: Reado
   const [lines, setLines] = useState<OrderLineState[]>([])
   const [saving, setSaving] = useState(false)
   const [errorModal, setErrorModal] = useState<string | null>(null)
+  const [importing, setImporting] = useState(false)
+  const [importResult, setImportResult] = useState<{ matched: number; unmatched: number } | null>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
     if (isOpen) {
       fetchProducts()
       setLines([
-        { id: Math.random().toString(36).slice(2), productId: '', quantity: 1, unitCost: '' }
+        { id: Math.random().toString(36).slice(2), productId: '', quantity: 1, unitCost: '', discount: 0 }
       ])
       setOrderDate(new Date().toISOString().split('T')[0])
       setNotes('')
@@ -116,7 +140,7 @@ export default function NewOrderModal({ isOpen, onClose, onOrderCreated }: Reado
   if (!isOpen) return null
 
   const handleAddLine = () => {
-    setLines(prev => [...prev, { id: Math.random().toString(36).slice(2), productId: '', quantity: 1, unitCost: '' }])
+    setLines(prev => [...prev, { id: Math.random().toString(36).slice(2), productId: '', quantity: 1, unitCost: '', discount: 0 }])
   }
 
   const handleRemoveLine = (id: string) => {
@@ -135,10 +159,88 @@ export default function NewOrderModal({ isOpen, onClose, onOrderCreated }: Reado
     }))
   }
 
-  const totalCost = lines.reduce((acc, line) => {
+  const handlePdfImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    e.target.value = ''
+
+    setImporting(true)
+    setImportResult(null)
+    try {
+      const result = await parsePdfInvoice(file)
+
+      if (result.lines.length === 0) {
+        setErrorModal('No se encontraron líneas de producto en el PDF. Comprueba que el formato de la factura es compatible.')
+        return
+      }
+
+      const newLines: OrderLineState[] = []
+      let matched = 0
+      let unmatched = 0
+
+      for (const invoiceLine of result.lines) {
+        const digits = String(invoiceLine.code)
+        const isEan = digits.length > 4
+        if (isEan) {
+          const eanMatch = products.find(p => p.ean === digits)
+          if (eanMatch) {
+            newLines.push({
+              id: Math.random().toString(36).slice(2),
+              productId: eanMatch.id,
+              quantity: invoiceLine.quantity,
+              unitCost: invoiceLine.unitCost,
+              discount: invoiceLine.discount,
+            })
+            matched++
+            continue
+          }
+        }
+        const product = products.find(p => {
+          const isEanLookup = digits.length > 4
+          if (isEanLookup) return p.ean === digits
+          if (p.code !== invoiceLine.code) return false
+          if (invoiceLine.description && p.product) {
+            const pdfDescUpper = invoiceLine.description.toUpperCase()
+            const dbProductWords = p.product.toUpperCase().split(/\s+/).filter((w: string) => w.length > 2)
+            if (!dbProductWords.every((w: string) => pdfDescUpper.includes(w))) return false
+          }
+          if (!invoiceLine.flavor || !p.flavor) return true
+          const dbFlavor = p.flavor.toUpperCase()
+          return invoiceLine.flavor.split(/\s+/).every((w: string) => dbFlavor.includes(w))
+        })
+        if (product) {
+          newLines.push({
+            id: Math.random().toString(36).slice(2),
+            productId: product.id,
+            quantity: invoiceLine.quantity,
+            unitCost: invoiceLine.unitCost,
+            discount: invoiceLine.discount,
+          })
+          matched++
+        } else {
+          unmatched++
+        }
+      }
+
+      if (newLines.length > 0) {
+        setLines(newLines)
+      }
+      setImportResult({ matched, unmatched })
+    } catch (err: any) {
+      console.error(err)
+      setErrorModal('Error al leer el PDF: ' + (err.message || 'Error desconocido'))
+    } finally {
+      setImporting(false)
+    }
+  }
+
+  const subtotal = lines.reduce((acc, line) => {
     const cost = typeof line.unitCost === 'number' ? line.unitCost : 0
-    return acc + (line.quantity * cost)
+    return acc + (line.quantity * cost * (1 - line.discount / 100))
   }, 0)
+
+  const vatAmount = subtotal * 0.10
+  const totalWithVat = subtotal + vatAmount
 
   const isFormValid = lines.length > 0 && lines.every(l => l.productId && l.quantity > 0)
   
@@ -156,7 +258,8 @@ export default function NewOrderModal({ isOpen, onClose, onOrderCreated }: Reado
         lines: lines.map(l => ({
           productId: l.productId,
           quantity: l.quantity,
-          unitCost: typeof l.unitCost === 'number' ? l.unitCost : undefined
+          unitCost: typeof l.unitCost === 'number' ? l.unitCost : undefined,
+          discount: l.discount
         }))
       })
       onOrderCreated()
@@ -175,11 +278,39 @@ export default function NewOrderModal({ isOpen, onClose, onOrderCreated }: Reado
       <div className="bg-white rounded-3xl text-left overflow-hidden shadow-2xl transform transition-all w-full max-w-4xl flex flex-col max-h-[90vh] relative z-10 border border-white/20">
         <div className="px-6 py-4 sm:px-8 sm:py-6 border-b border-gray-100 shrink-0 bg-white flex justify-between items-center text-gray-900 uppercase">
           <h3 className="text-lg sm:text-xl font-bold tracking-tight">Nuevo Pedido</h3>
-          <button onClick={onClose} className="p-2 text-gray-400 hover:text-gray-900 hover:bg-gray-100 rounded-full transition-all">
-            <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </button>
+          <div className="flex items-center gap-3">
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="application/pdf"
+              className="hidden"
+              onChange={handlePdfImport}
+            />
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={importing}
+              className="flex items-center gap-2 px-4 py-2 text-[10px] font-black uppercase tracking-widest text-accent-darker bg-accent-dark/10 hover:bg-accent-dark/20 rounded-xl transition-all disabled:opacity-50"
+              title="Importar desde factura PDF"
+            >
+              {importing ? (
+                <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/>
+                </svg>
+              ) : (
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                </svg>
+              )}
+              {importing ? 'Leyendo...' : 'Importar PDF'}
+            </button>
+            <button onClick={onClose} className="p-2 text-gray-400 hover:text-gray-900 hover:bg-gray-100 rounded-full transition-all">
+              <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
         </div>
 
         <div className="p-4 sm:p-8 overflow-y-auto space-y-8 sm:space-y-10 flex-1 scrollbar-hide">
@@ -206,6 +337,19 @@ export default function NewOrderModal({ isOpen, onClose, onOrderCreated }: Reado
               />
             </div>
           </div>
+
+          {importResult && (
+            <div className={`flex items-center gap-3 px-5 py-3.5 rounded-2xl text-sm font-medium ${importResult.unmatched > 0 ? 'bg-amber-50 border border-amber-200 text-amber-800' : 'bg-green-50 border border-green-200 text-green-800'}`}>
+              <svg className="w-5 h-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={importResult.unmatched > 0 ? "M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" : "M5 13l4 4L19 7"} />
+              </svg>
+              <span>
+                <strong>{importResult.matched}</strong> producto{importResult.matched === 1 ? '' : 's'} importado{importResult.matched === 1 ? '' : 's'}
+                {importResult.unmatched > 0 && <> · <strong>{importResult.unmatched}</strong> código{importResult.unmatched === 1 ? '' : 's'} no encontrado{importResult.unmatched === 1 ? '' : 's'} en catálogo</>}
+              </span>
+              <button onClick={() => setImportResult(null)} className="ml-auto text-current opacity-50 hover:opacity-100">✕</button>
+            </div>
+          )}
 
           <div className="space-y-6">
             <div className="flex justify-between items-center px-1">
@@ -237,10 +381,20 @@ export default function NewOrderModal({ isOpen, onClose, onOrderCreated }: Reado
           </div>
         </div>
 
-        <div className="px-6 py-4 sm:px-8 sm:py-6 bg-gray-50 border-t border-gray-100 shrink-0 flex flex-col sm:flex-row items-center justify-between gap-4">
-          <div className="flex flex-col items-center sm:items-start">
-             <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Coste Estimado</span>
-             <p className="text-xl sm:text-2xl font-bold text-gray-900">{totalCost.toFixed(2)} <span className="text-sm font-bold text-gray-400">€</span></p>
+        <div className="px-6 py-4 sm:px-8 sm:py-6 bg-gray-50 border-t border-gray-100 shrink-0 flex flex-col sm:flex-row items-center justify-between gap-6">
+          <div className="flex flex-wrap justify-center sm:justify-start gap-x-8 gap-y-2">
+            <div className="flex flex-col items-center sm:items-start">
+               <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-0.5">Base Imponible</span>
+               <p className="text-lg font-bold text-gray-700">{subtotal.toFixed(2)} <span className="text-xs font-bold text-gray-400">€</span></p>
+            </div>
+            <div className="flex flex-col items-center sm:items-start">
+               <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-0.5">I.V.A. (10%)</span>
+               <p className="text-lg font-bold text-gray-700">{vatAmount.toFixed(2)} <span className="text-xs font-bold text-gray-400">€</span></p>
+            </div>
+            <div className="flex flex-col items-center sm:items-start scale-110 sm:scale-125 origin-left px-4 sm:px-0">
+               <span className="text-[10px] font-bold text-accent-darker uppercase tracking-widest mb-0.5">Total Factura</span>
+               <p className="text-xl sm:text-2xl font-black text-gray-900">{totalWithVat.toFixed(2)} <span className="text-sm font-bold text-gray-400">€</span></p>
+            </div>
           </div>
           <div className="flex gap-3 w-full sm:w-auto">
              <button
@@ -300,11 +454,14 @@ function ProductSelector({ value, onChange, products }: Readonly<ProductSelector
     if (!open && triggerRef.current) {
       setSearchTerm('')
       const rect = triggerRef.current.getBoundingClientRect()
+      const minWidth = 420
+      const width = Math.max(rect.width, minWidth)
+      const left = Math.min(rect.left, window.innerWidth - width - 8)
       setDropdownStyle({
         position: 'fixed',
         top: rect.bottom + 4,
-        left: rect.left,
-        width: rect.width,
+        left: Math.max(8, left),
+        width,
         zIndex: 9999,
       })
     }
@@ -323,30 +480,43 @@ function ProductSelector({ value, onChange, products }: Readonly<ProductSelector
 
   const filtered = products.filter(p => {
     const s = searchTerm.toLowerCase()
-    return (p.product || '').toLowerCase().includes(s) || 
-           (p.flavor || '').toLowerCase().includes(s) || 
-           (p.code?.toString() || '').includes(s)
+    return (p.product || '').toLowerCase().includes(s) ||
+           (p.flavor || '').toLowerCase().includes(s) ||
+           (p.code?.toString() || '').includes(s) ||
+           (p.ean || '').includes(s)
   })
+
+  const tooltipText = selectedProduct
+    ? `${selectedProduct.product}${selectedProduct.flavor ? ' - ' + selectedProduct.flavor : ''}${selectedProduct.ean ? ' · EAN: ' + selectedProduct.ean : ''}`
+    : ''
+
+  const trigger = (
+    <button
+      ref={triggerRef}
+      type="button"
+      onClick={handleToggle}
+      className="w-full flex items-center justify-between gap-2 px-4 py-2.5 bg-white rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-accent transition-all text-left"
+    >
+      <div className="truncate flex-1">
+        {selectedProduct ? (
+          <span className="font-medium text-gray-900 whitespace-nowrap overflow-hidden text-ellipsis block">
+            [{selectedProduct.code}] {selectedProduct.product} {selectedProduct.flavor ? `(${selectedProduct.flavor})` : ''}
+          </span>
+        ) : (
+          <span className="text-gray-400">Seleccionar producto...</span>
+        )}
+      </div>
+      <span className={`text-gray-400 text-xs shrink-0 transition-transform ${open ? 'rotate-180' : ''}`}>▾</span>
+    </button>
+  )
 
   return (
     <div>
-      <button
-        ref={triggerRef}
-        type="button"
-        onClick={handleToggle}
-        className="w-full flex items-center justify-between gap-2 px-4 py-2.5 bg-white rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-accent transition-all text-left"
-      >
-        <div className="truncate flex-1">
-          {selectedProduct ? (
-            <span className="font-medium text-gray-900 whitespace-nowrap overflow-hidden text-ellipsis block">
-               [{selectedProduct.code}] {selectedProduct.product} {selectedProduct.flavor ? `(${selectedProduct.flavor})` : ''}
-            </span>
-          ) : (
-            <span className="text-gray-400">Seleccionar producto...</span>
-          )}
-        </div>
-        <span className={`text-gray-400 text-xs shrink-0 transition-transform ${open ? 'rotate-180' : ''}`}>▾</span>
-      </button>
+      {selectedProduct ? (
+        <Tooltip text={tooltipText}>
+          {trigger}
+        </Tooltip>
+      ) : trigger}
 
       {open && createPortal(
         <div ref={dropdownRef} style={dropdownStyle} className="bg-white rounded-lg border border-gray-200 shadow-xl overflow-hidden flex flex-col">
@@ -361,9 +531,8 @@ function ProductSelector({ value, onChange, products }: Readonly<ProductSelector
               onClick={e => e.stopPropagation()}
             />
           </div>
-          <ul className="max-h-64 overflow-y-auto w-full py-1">
+          <ul className="max-h-80 overflow-y-auto w-full py-1">
             {filtered.map(p => {
-               // Stock badge color
                let badgeColor = 'bg-red-100 text-red-700';
                if (p.stock >= 10) badgeColor = 'bg-green-100 text-green-700';
                else if (p.stock > 0) badgeColor = 'bg-orange-100 text-orange-700';
@@ -380,15 +549,16 @@ function ProductSelector({ value, onChange, products }: Readonly<ProductSelector
                    tabIndex={0}
                    onClick={handleSelect}
                    onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') handleSelect() }}
-                   className={`px-3 py-2 text-sm cursor-pointer transition-colors flex justify-between items-center ${
+                   className={`px-4 py-2.5 cursor-pointer transition-colors flex justify-between items-center gap-3 ${
                      p.id === value ? 'bg-accent/10 border-l-2 border-accent-dark' : 'hover:bg-gray-50 border-l-2 border-transparent'
                    }`}
                  >
-                   <div className="flex flex-col">
-                      <span className="font-medium text-gray-900">{p.product} {p.flavor ? `(${p.flavor})` : ''}</span>
-                      <span className="text-xs text-gray-500">Cód: {p.code}</span>
+                   <div className="flex flex-col min-w-0">
+                      <span className="font-semibold text-gray-900 text-sm leading-tight">{p.product}</span>
+                      {p.flavor && <span className="text-xs text-gray-500 leading-tight mt-0.5">{p.flavor}</span>}
+                      <span className="text-[11px] text-gray-400 mt-0.5">Cód: {p.code}{p.ean ? ` · EAN: ${p.ean}` : ''}</span>
                    </div>
-                   <div className={`px-2 py-0.5 rounded text-xs font-semibold ${badgeColor}`}>
+                   <div className={`px-2 py-0.5 rounded text-xs font-semibold shrink-0 ${badgeColor}`}>
                       {p.stock} disp.
                    </div>
                  </li>
