@@ -51,6 +51,7 @@ export default function ServicePage() {
   const { id: serviceId } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const { isAdmin, user } = useAuth()
+  const canEditDelete = user?.id === 'fbf41688-90e4-42ea-a713-92188a338318'
 
   const { registros, cargando, recargar } = useRecords(serviceId ?? '')
 
@@ -242,7 +243,7 @@ export default function ServicePage() {
   const mostrarVolver = !isAdmin && serviciosCount > 1
 
   // Columnas de la tabla según rol
-  const columnas = isAdmin
+  const columnas = canEditDelete
     ? ['Fecha', 'Hora', 'Cliente', 'Tratamiento', 'Notas', 'Método', 'Precio', '']
     : ['Fecha', 'Hora', 'Cliente', 'Tratamiento', 'Notas', 'Método', 'Precio']
 
@@ -369,7 +370,7 @@ export default function ServicePage() {
                         <td className="px-4 py-3 text-gray-900 font-medium whitespace-nowrap">
                           {Number(r.precio).toFixed(2)} €
                         </td>
-                        {isAdmin && (
+                        {canEditDelete && (
                           <td className="px-4 py-3 whitespace-nowrap">
                             <div className="flex gap-2">
                               <button
